@@ -1,0 +1,14 @@
+/home/kimberly/paparazzi/sw/include
+/home/kimberly/paparazzi/sw/airborne
+/home/kimberly/paparazzi/conf/autopilot
+/home/kimberly/paparazzi/sw/airborne/arch/linux
+/home/kimberly/paparazzi/var/include
+/home/kimberly/paparazzi/var/aircrafts/ardrone2_raw/ap
+/home/kimberly/paparazzi/sw/include
+/home/kimberly/paparazzi/sw/ext/ardrone2_vision/cv
+/home/kimberly/paparazzi/sw/ext/ardrone2_vision/lib
+/home/kimberly/paparazzi/sw/ext/ardrone2_vision/modules
+/home/kimberly/paparazzi/sw/airborne/arch/linux/modules
+/home/kimberly/paparazzi/sw/airborne/boards/ardrone
+/home/kimberly/paparazzi/sw/airborne/firmwares/rotorcraft
+/home/kimberly/paparazzi/sw/airborne/modules

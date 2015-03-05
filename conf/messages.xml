@@ -184,7 +184,9 @@
     <field name="segment_north_2" type="float" unit="m"/>
   </message>
 
-  <!-- ID 23 is free -->
+  <message name="COLORCOUNT" id="23">
+    <field name="cnt" type="int16"/>
+  </message>
   <!-- ID 24 is free -->
 
   <message name="SVINFO" id="25">
