@@ -29,8 +29,9 @@
     <load name="gps_ubx_ucenter.xml"/>
     <load name="send_imu_mag_current.xml"/>
     <load name="file_logger.xml"/>
-    <!--load name="../../sw/ext/ardrone2_vision/modules/Mjpeg/ViewVideo.xml"/-->
-<load name="../../sw/ext/ardrone2_vision/modules/EdgeDetection/EdgeDetectionHistogram.xml"/>
+    <!--load name="video_rtp_stream.xml"/-->
+	<load name="../../sw/ext/ardrone2_vision/modules/EdgeDetection/EdgeDetectionHistogram.xml"/>
+    <!--load name="../../sw/ext/ardrone2_vision/modules/BottomCamSearch/BottomCamBallSearch.xml"/-->
 <!--load name="../../sw/ext/ardrone2_vision/modules/OpticFlow/OpticFlowHover.xml"/-->
   </modules>
 
