@@ -174,3 +174,9 @@ tests/results/*
 
 *.dSYM
 
+#QT-creator files
+ardone2_raw.config
+ardone2_raw.creator
+ardone2_raw.files
+ardone2_raw.includes
+

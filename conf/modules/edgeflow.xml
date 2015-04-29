@@ -1,0 +1,49 @@
+ <!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="edgeflow" dir="edgeflow_histogram">
+  <doc>
+   <description>
+Edge Flow Calculation
+
+This module calculates the flow seen by the cameras, based on a edge feature histogram.
+   </description>
+  </doc>
+  <header>
+   <file name="edgeflow.h"/>
+  </header>
+  <init fun="init_edgeflow()"/>
+  <periodic fun="periodic_1Hz_edgeflow()" freq="1." start="start_edgeflow()" stop="stop_edgeflow()"/>
+  <makefile  target="ap">
+
+    <file name="edgeflow.c"/>
+
+    <!-- Include the needed Computer Vision files -->
+    <define name="modules/computer_vision" type="include"/>
+    <file name="image.c" dir="modules/computer_vision/lib/vision"/>
+    <file name="jpeg.c" dir="modules/computer_vision/lib/encoding"/>
+    <file name="rtp.c" dir="modules/computer_vision/lib/encoding"/>
+    <file name="v4l2.c" dir="modules/computer_vision/lib/v4l"/>
+
+    
+
+   <raw>
+      VIEWVIDEO_HOST        ?= $(MODEM_HOST)
+      VIEWVIDEO_PORT_OUT    ?= 5000
+      VIEWVIDEO_BROADCAST   ?= $(MODEM_BROADCAST)
+
+      VIEWVID_CFLAGS  = -DVIEWVIDEO_HOST=$(VIEWVIDEO_HOST) -DVIEWVIDEO_PORT_OUT=$(VIEWVIDEO_PORT_OUT)
+      ifeq ($(VIEWVIDEO_USE_NC),)
+        ap.CFLAGS += $(VIEWVID_CFLAGS) -DVIEWVIDEO_BROADCAST=$(VIEWVIDEO_BROADCAST)
+      else
+        ap.CFLAGS += $(VIEWVID_CFLAGS) -DVIEWVIDEO_USE_NC
+      endif
+
+      ap.CFLAGS += -DGUIDANCE_V_MODE_MODULE_SETTING=GUIDANCE_V_MODE_HOVER
+      ap.CFLAGS += -DGUIDANCE_H_MODE_MODULE_SETTING=GUIDANCE_H_MODE_MODULE
+   </raw>
+ </makefile>
+
+  <makefile target="nps">
+    <file name="viewvideo_nps.c"/>
+  </makefile>
+ </module>
