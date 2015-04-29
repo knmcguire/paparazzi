@@ -30,6 +30,7 @@
     <load name="send_imu_mag_current.xml"/>
     <load name="logger_file.xml"/>
     <!--load name="video_rtp_stream.xml"/-->
+    <load name="../../sw/ext/ardrone2_vision/modules/BottomCamSearch/BottomCamBallSearch.xml"/>
   </modules>
 
   <commands>
