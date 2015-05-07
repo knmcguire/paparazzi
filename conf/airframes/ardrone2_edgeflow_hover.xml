@@ -1,6 +1,6 @@
 <!DOCTYPE airframe SYSTEM "airframe.dtd">
 
-<airframe name="ardrone2_raw">
+<airframe name="ardrone2_opticflow">
 
   <firmware name="rotorcraft">
     <target name="ap" board="ardrone2_raw">
@@ -8,10 +8,10 @@
       <subsystem name="radio_control" type="datalink"/>
     </target>
 
-    <target name="nps" board="pc">
+    <!--target name="nps" board="pc">
       <subsystem name="fdm" type="jsbsim"/>
       <subsystem name="radio_control" type="ppm"/>
-    </target>
+    </target-->
 
     <define name="USE_SONAR" value="TRUE"/>
 
@@ -29,8 +29,12 @@
     <load name="gps_ubx_ucenter.xml"/>
     <load name="send_imu_mag_current.xml"/>
     <load name="logger_file.xml"/>
-    <load name="video_rtp_stream.xml"/>
-    <!--load name="../../sw/ext/ardrone2_vision/modules/BottomCamSearch/BottomCamBallSearch.xml"/-->
+    <load name="cv_opticflow.xml">
+	<define name="VIEWVIDEO_DEVICE" value="/dev/video2"/>
+    	<define name="OPTICFLOW_DEBUG" value="TRUE"/>
+    	<define name="OPTICFLOW_SHOW_CORNERS" value="TRUE"/>
+    </load>
+    
   </modules>
 
   <commands>
@@ -68,6 +72,16 @@
     <set servo="BOTTOM_RIGHT" value="motor_mixing.commands[2]"/>
     <set servo="BOTTOM_LEFT" value="motor_mixing.commands[3]"/>
   </command_laws>
+
+   <section name="VISION" prefix="VISION_">
+    <define name="HOVER" value="FALSE"/>
+    <define name="PHI_PGAIN" value="500"/>
+    <define name="PHI_IGAIN" value="10"/>
+    <define name="THETA_PGAIN" value="500"/>
+    <define name="THETA_IGAIN" value="10"/>
+    <define name="DESIRED_VX" value="0"/>
+    <define name="DESIRED_VY" value="0"/>
+   </section>
 
   <section name="IMU" prefix="IMU_">
     <!-- Accelero -->
@@ -207,7 +221,7 @@
   <section name="AUTOPILOT">
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
-    <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
+    <define name="MODE_AUTO1" value="AP_MODE_MODULE"/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
   </section>
 

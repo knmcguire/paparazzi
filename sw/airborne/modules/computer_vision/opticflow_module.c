@@ -229,8 +229,10 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
 #if OPTICFLOW_DEBUG
     jpeg_encode_image(&img, &img_jpeg, 70, FALSE);
+    struct UdpSocket video_sock;
+    udp_socket_create(&video_sock, STRINGIFY(VIEWVIDEO_HOST), VIEWVIDEO_PORT_OUT, -1, VIEWVIDEO_BROADCAST);
     rtp_frame_send(
-      &VIEWVIDEO_DEV,           // UDP device
+      &video_sock,           // UDP device
       &img_jpeg,
       0,                        // Format 422
       70, // Jpeg-Quality

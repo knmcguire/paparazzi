@@ -7,7 +7,6 @@
  */
 #ifndef EDGE_FLOW_H
 #define EDGE_FLOW_H
-#include <image.h>
 
 //Module Functions
 extern void init_edgeflow(void);
