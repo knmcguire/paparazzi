@@ -184,7 +184,10 @@
     <field name="segment_north_2" type="float" unit="m"/>
   </message>
 
-  <!-- ID 23 is free -->
+  <message name="OPTIC_FLOW_EDGE" id="23">
+    <field name="slope" type="float" unit="1/px"/>
+    <field name="yint" type="float" unit="px"/>
+  </message>
   <!-- ID 24 is free -->
 
   <message name="SVINFO" id="25">
