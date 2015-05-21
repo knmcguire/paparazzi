@@ -1,4 +1,5 @@
 #include "edgefilter.h"
+#include "lib/vision/image.h"
 
 
 
@@ -13,9 +14,12 @@ int multiply_disparity=3;
 void sobel_edge_filter(struct image_t *input,struct image_t *output,uint32_t* edge_histogram)
 {
 
-    uint32_t  Sobel[3][3] = {{-1, 0, 1},{-2,0,2},{-1,0,1}};
+    uint32_t  Sobel[3] = {-1, 0, 1};
     int8_t r, c;
-    uint32_t  sobel;
+    uint32_t  sobel=0;
+
+
+
     uint8_t *source = (uint8_t *)input->buf;
     uint8_t *dest = (uint8_t *)output->buf;
 
@@ -30,14 +34,13 @@ void sobel_edge_filter(struct image_t *input,struct image_t *output,uint32_t* ed
             //Convolution
             if(y>1&&y<input->h-1&&x>1&&x<input->w-1)
             {
-                for(r = -1; r <=1; r++)
+
+                for(c = -1; c <= 1; c++)
                 {
-                    for(c = -1; c <= 1; c++)
-                    {
-                        uint32_t idx_filter = input->w*(y+r)*2 + (x+c)*2;
-                        sobel += Sobel[r+1][c+1] * (source[idx_filter]);
-                    }
-                }}
+                    uint32_t idx_filter = input->w*(y)*2 + (x+c)*2;
+                    sobel += Sobel[c+1] * source[idx_filter+1];
+                }
+            }
             sobel=abs(sobel);
 
             edge_histogram_temp += (uint32_t)sobel;
@@ -49,46 +52,53 @@ void sobel_edge_filter(struct image_t *input,struct image_t *output,uint32_t* ed
         edge_histogram[x]=(uint32_t)edge_histogram_temp;
         edge_histogram_temp=0;
     }
+
 }
 
 void calculate_edge_histogram_displacement(uint32_t* edge_histogram,uint32_t* edge_histogram_prev,int32_t* displacement,uint16_t image_width,uint16_t image_height)
 {
     int32_t  c,r;
-uint16_t y,x,flow_ind;
+    uint16_t i,y,x,flow_ind;
 
-int32_t W=20;
-int32_t D=20;
-uint32_t SAD_temp[40];
+    int32_t W=20;
+    int32_t D=20;
+    uint32_t SAD_temp[40];
+    uint16_t edge_histogram_tot=0;
+    uint32_t min_index=0;
 
-uint32_t min_index=0;
+    uint32_t SAD_tot=0;
 
 
-
-
-for(x=0; x<image_width;x++)
-{
-
-    if(x>=W+D&&x<=image_width-W-D)
-    {
-        for(c=-D;c<W;c++)
+        for(x=0; x<image_width;x++)
         {
-            SAD_temp[D+c]=0;
+            SAD_tot=0;
+            if(x>=W+D&&x<=image_width-W-D)
+            {
+                min_index=0;
+                for(c=-D;c<D;c++)
+                {
+                    SAD_temp[D+c]=0;
 
-            for(r=-W;r<W;r++)
-                SAD_temp[c+D]+=abs(edge_histogram[x+r]-edge_histogram_prev[x+r+c]);
+                    for(r=-W;r<W;r++)
+                        SAD_temp[c+D]+=abs(edge_histogram[x+r]-edge_histogram_prev[x+r+c]);
 
+                    SAD_tot+=SAD_temp[D+c];
+                }
 
+                min_index=getMinimum(SAD_temp,40);
+                printf("%d\n",SAD_tot);
+
+                if(SAD_tot>100000)
+                displacement[x]=(int32_t)(min_index-W);
+                else
+                     displacement[x]=0;
+            }else{
+                displacement[x]=0;
+            }
+
+            // displacement[x]=(int32_t)(-1*x+10);
         }
 
-        min_index=getMinimum(SAD_temp,40);
-
-        displacement[x]=(int32_t)(min_index-W);
-    }else{
-        displacement[x]=0;
-    }
-
-    // displacement[x]=(int32_t)(-1*x+10);
-}
 
 
 
@@ -117,13 +127,13 @@ void line_fit(int32_t* displacement, float* Slope, float* Yint,uint16_t image_wi
 
         //if(displacement[x]!=0){
 
-            SumX+=x;
-            SumY+=displacement[x];
+        SumX+=x;
+        SumY+=displacement[x];
 
-            SumX2+=x *x;
-            SumXY+=x *displacement[x];
-            Count++;
-    //}
+        SumX2+=x *x;
+        SumXY+=x *displacement[x];
+        Count++;
+        //}
 
     }
 
@@ -145,20 +155,54 @@ void line_fit(int32_t* displacement, float* Slope, float* Yint,uint16_t image_wi
 
 }
 
-void visualize_divergence(struct image_t* in,struct image_t* out,int32_t* displacement,float Slope, float Yint,uint16_t image_width, uint16_t image_height)
+void visualize_divergence(struct image_t* in,struct image_t* out,uint32_t* edge_histogram,uint32_t* edge_histogram_prev,int32_t* displacement,float Slope, float Yint,uint16_t image_width, uint16_t image_height)
 {
     uint32_t y,x;
     uint32_t line_check1=0;
     uint32_t line_check2=0;
 
-    uint8_t *source = (uint8_t *)in->buf;
-    uint8_t *dest = (uint8_t *)out->buf;
+    //uint8_t *source = (uint8_t *)in->buf;
+    //uint8_t *dest = (uint8_t *)out->buf;
 
-    for( x = 0; x < image_width; x++)
+    image_copy(in,out);
+
+    struct point_t  linedraw;
+    struct point_t linedraw_prev;
+
+
+    for( x = 0; x < image_width-1; x++)
     {
-        line_check1=(uint32_t)(Slope*(float)x+(Yint)+(float)image_height/2);
-        line_check2=(uint32_t)(displacement[x]+image_height/2);
-        for( y = 0; y < image_height; y++)
+        //line_check1=(uint32_t)(Slope*(float)x+(Yint)+(float)image_height/2);
+        //line_check2=(uint32_t)(displacement[x]+image_height/2);
+        //line_check1=(uint32_t)(edge_histogram[x]/50+image_height/2);
+        //line_check2=(uint32_t)(edge_histogram_prev[x]/50+image_height/2);
+
+        linedraw.y =(uint16_t)(displacement[x+1]+image_height/2);
+        linedraw.x=(uint16_t)x+1;
+
+        linedraw_prev.y =(uint16_t)(displacement[x]+image_height/2);
+        linedraw_prev.x=(uint16_t)x;
+
+        image_draw_color_line(out, &linedraw_prev,&linedraw,1);
+
+
+        /*linedraw.y =(uint16_t)(edge_histogram[x+1]/50+image_height/2);
+        linedraw.x=(uint16_t)x+1;
+
+        linedraw_prev.y =(uint16_t)(edge_histogram[x]/50+image_height/2);
+        linedraw_prev.x=(uint16_t)x;
+
+        image_draw_color_line(out, &linedraw_prev,&linedraw,1);
+
+        linedraw.y =(uint16_t)(edge_histogram_prev[x+1]/50+image_height/2);
+        linedraw.x=(uint16_t)x+1;
+
+        linedraw_prev.y =(uint16_t)(edge_histogram_prev[x]/50+image_height/2);
+        linedraw_prev.x=(uint16_t)x;
+        image_draw_color_line(out, &linedraw_prev,&linedraw,255);*/
+
+
+        /*for( y = 0; y < image_height; y++)
         {
             //line_check=(uint32_t)(Slope*x+Yint+image_height/2);
 
@@ -184,11 +228,72 @@ void visualize_divergence(struct image_t* in,struct image_t* out,int32_t* displa
 
 
 
-        }
+        }*/
+
+
 
     }
 
 }
+
+void image_draw_color_line(struct image_t *img, struct point_t *from, struct point_t *to, uint8_t color)
+{
+    int xerr = 0, yerr = 0;
+    uint8_t *img_buf = (uint8_t *)img->buf;
+    uint8_t pixel_width = (img->type == IMAGE_YUV422) ? 2 : 1;
+    uint16_t startx = from->x;
+    uint16_t starty = from->y;
+
+    /* compute the distances in both directions */
+    int32_t delta_x = to->x - from->x;
+    int32_t delta_y = to->y - from->y;
+
+    /* Compute the direction of the increment,
+     an increment of 0 means either a horizontal or vertical
+     line.
+  */
+    int8_t incx, incy;
+    if (delta_x > 0) { incx = 1; }
+    else if (delta_x == 0) { incx = 0; }
+    else { incx = -1; }
+
+    if (delta_y > 0) { incy = 1; }
+    else if (delta_y == 0) { incy = 0; }
+    else { incy = -1; }
+
+    /* determine which distance is greater */
+    uint16_t distance = 0;
+    delta_x = abs(delta_x);
+    delta_y = abs(delta_y);
+    if (delta_x > delta_y) { distance = delta_x * 20; }
+    else { distance = delta_y * 20; }
+
+    /* draw the line */
+    for (uint16_t t = 0; starty >= 0 && starty < img->h && startx >= 0 && startx < img->w && t <= distance + 1; t++) {
+        img_buf[img->w * pixel_width * starty + startx * pixel_width] = (t <= 3) ? 0 :  color;
+
+        if (img->type == IMAGE_YUV422) {
+            img_buf[img->w * pixel_width * starty + startx * pixel_width + 1] = 255;
+
+            if (startx + 1 < img->w) {
+                img_buf[img->w * pixel_width * starty + startx * pixel_width + 2] = (t <= 3) ? 0 :  color;
+                img_buf[img->w * pixel_width * starty + startx * pixel_width + 3] = 255;
+            }
+        }
+
+        xerr += delta_x;
+        yerr += delta_y;
+        if (xerr > distance) {
+            xerr -= distance;
+            startx += incx;
+        }
+        if (yerr > distance) {
+            yerr -= distance;
+            starty += incy;
+        }
+    }
+}
+
 
 uint32_t getMinimum(uint32_t* flow_error, uint32_t max_ind)
 {

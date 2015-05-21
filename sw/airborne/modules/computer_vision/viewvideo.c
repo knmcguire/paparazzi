@@ -251,11 +251,13 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
         uint32_t edge_histogram[img_sobel.w];
         uint32_t edge_histogram_prev[img_sobel.w];
 
+         image_to_grayscale(&img,&img);
+
         sobel_edge_filter(&img, &img_sobel,&edge_histogram);
         sobel_edge_filter(&img_prev, &img_sobel_prev,&edge_histogram_prev);
 
-        int32_t displacement[img_sobel.w];
 
+        int32_t displacement[img_sobel.w];
         calculate_edge_histogram_displacement(&edge_histogram,&edge_histogram_prev,&displacement,img_sobel.w,img_sobel.h);
 
       /*for(int i=0;i<img_sobel.w;i++)
@@ -269,7 +271,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
         printf("%f %f \n",Slope,Yint);
 
-        visualize_divergence(&img,&img_sobel_prev,&displacement,Slope,Yint,img.w,img.h);
+        visualize_divergence(&img,&img_sobel_prev,&edge_histogram,&edge_histogram_prev,&displacement,Slope,Yint,img.w,img.h);
 
         image_copy(&img,&img_prev);
 
