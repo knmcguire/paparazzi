@@ -78,7 +78,7 @@ PRINT_CONFIG_VAR(VIEWVIDEO_DOWNSIZE_FACTOR)
 
 // From 0 to 99 (99=high)
 #ifndef VIEWVIDEO_QUALITY_FACTOR
-#define VIEWVIDEO_QUALITY_FACTOR 99
+#define VIEWVIDEO_QUALITY_FACTOR 50
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_QUALITY_FACTOR)
 
@@ -134,13 +134,15 @@ struct viewvideo_t viewvideo = {
 static pthread_mutex_t opticflow_mutex;            ///< Mutex lock fo thread safety
 static float Slope;
 static float Yint;
+static uint8_t previous_frame_number;
 struct edge_hist_t edge_hist[5];
+static int8_t dynamic_idx=0;
 
 static void opticflow_telem_send(struct transport_tx *trans, struct link_device *dev)
 {
     pthread_mutex_lock(&opticflow_mutex);
     pprz_msg_send_OPTIC_FLOW_EDGE(trans, dev, AC_ID,
-                                  &Slope,&Yint);
+                                  &Slope,&Yint,&previous_frame_number);
     pthread_mutex_unlock(&opticflow_mutex);
 }
 
@@ -193,8 +195,8 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
 
     for(int m=0;m<5;m++){
-    edge_hist[m].horizontal=malloc(sizeof(uint32_t)*img_small.w);
-    edge_hist[m].vertical=malloc(sizeof(uint32_t)*img_small.h);}
+        edge_hist[m].horizontal=malloc(sizeof(uint32_t)*img_small.w);
+        edge_hist[m].vertical=malloc(sizeof(uint32_t)*img_small.h);}
 
     float Yint_prev;
 
@@ -261,53 +263,62 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
         //VISION CODE HERE!!
 
         image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
-        //printf("check");
-
-        //calculate edge feature histograms
-
-
-
-
-        uint32_t edge_histogram[img_sobel.w];
-
-        uint32_t edge_histogram_prev[img_sobel.w];
-
         image_to_grayscale(&img_small,&img_small);
-        //blur_filter(&img,&img_processed);
+
+
+        //calculate edge feature histogram
+
 
 
         sobel_edge_filter(&img_small, &img_sobel,&edge_hist[0]);
-        //sobel_edge_filter(&img_prev, &img_sobel_prev,&edge_hist[1].horizontal);
 
 
         int32_t displacement[img_sobel.w];
 
-         uint8_t previous_frame_number=(uint8_t)(2.0-Yint)/2.0+1;
+        int8_t previous_frame_number_dyn;
+
+        /*if(abs(Yint)<3.0)
+           { previous_frame_number=(uint8_t)(3*(2.0-abs(Yint))/2.0)+1;
+            previous_frame_number_dyn=dynamic_idx+previous_frame_number;
+           }
+        else
+            previous_frame_number_dyn=dynamic_idx+1;
 
 
-        calculate_edge_histogram_displacement(edge_hist,previous_frame_number,&displacement,img_sobel.w,img_sobel.h);
+        if(previous_frame_number_dyn>4)
+             previous_frame_number_dyn=dynamic_idx+1;*/
 
-        /*for(int i=0;i<img_sobel.w;i++)
-            printf("%d ",displacement[i]);
+        previous_frame_number=1;
 
-        printf("\n");*/
 
-        //float Slope=0.0;
-        // float Yint=0.0;
+        /*if(previous_frame_number_dyn<0)
+            previous_frame_number_dyn=4;*/
 
-        line_fit(&displacement,&Slope,&Yint,img_small.w);
+        //printf("%d %dcheck\n", previous_frame_number_dyn,dynamic_idx);
 
-        Yint=Yint/(float)previous_frame_number;
+       // printf("%d\n",previous_frame_number);
 
-        if(abs(Yint-Yint_prev)>1)
+        calculate_edge_histogram_displacement(edge_hist,previous_frame_number,dynamic_idx,&displacement,img_sobel.w,img_sobel.h);
+
+        uint32_t displacement_count;
+        for(int k=0;k<img_small.w;k++)
+            displacement_count+=displacement[k];
+
+        if(displacement_count>0)
+            line_fit_RANSAC(&displacement, &Slope, &Yint,img_small.w);
+        else
         {
-            Yint=(Yint-Yint_prev)/2;
+            Slope=0.0;
+           // Slope[1]=0.0;
+
+            Yint=0.0;
+           // Yint[1]=0.0;
+
         }
-        //printf("%f %f \n",Slope,Yint);
 
+        Yint=Yint/((float)(previous_frame_number));
 
-        visualize_divergence(&img_small,&img_sobel_prev,&edge_histogram,&edge_histogram_prev,&displacement,Slope,Yint,img_small.w,img_small.h);
-
+        //visualize_divergence(&img_small,&img_sobel_prev,&displacement,edge_hist,Slope,Yint,img_small.w,img_small.h);
 
         image_copy(&img_small,&img_prev);
 
@@ -338,6 +349,10 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
         }
 
         Yint_prev=Yint;
+        dynamic_idx--;
+        if(dynamic_idx<0)
+            dynamic_idx=4;
+
         /*--------------------------------------------*/
 
 

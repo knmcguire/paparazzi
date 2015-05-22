@@ -187,6 +187,7 @@
   <message name="OPTIC_FLOW_EDGE" id="23">
     <field name="slope" type="float" unit="1/px"/>
     <field name="yint" type="float" unit="px"/>
+    <field name="previous_frame_number" type="uint8" />
   </message>
   <!-- ID 24 is free -->
 
