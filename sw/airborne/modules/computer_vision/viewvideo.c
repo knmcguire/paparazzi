@@ -72,13 +72,13 @@ PRINT_CONFIG_VAR(VIEWVIDEO_DEVICE_BUFFERS)
 
 // Downsize factor for video stream
 #ifndef VIEWVIDEO_DOWNSIZE_FACTOR
-#define VIEWVIDEO_DOWNSIZE_FACTOR 1
+#define VIEWVIDEO_DOWNSIZE_FACTOR 2
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_DOWNSIZE_FACTOR)
 
 // From 0 to 99 (99=high)
 #ifndef VIEWVIDEO_QUALITY_FACTOR
-#define VIEWVIDEO_QUALITY_FACTOR 50
+#define VIEWVIDEO_QUALITY_FACTOR 99
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_QUALITY_FACTOR)
 
@@ -134,12 +134,14 @@ struct viewvideo_t viewvideo = {
 static pthread_mutex_t opticflow_mutex;            ///< Mutex lock fo thread safety
 static float Slope;
 static float Yint;
+struct edge_hist_t edge_hist[5];
+
 static void opticflow_telem_send(struct transport_tx *trans, struct link_device *dev)
 {
-  pthread_mutex_lock(&opticflow_mutex);
-  pprz_msg_send_OPTIC_FLOW_EDGE(trans, dev, AC_ID,
-                              &Slope,&Yint);
-  pthread_mutex_unlock(&opticflow_mutex);
+    pthread_mutex_lock(&opticflow_mutex);
+    pprz_msg_send_OPTIC_FLOW_EDGE(trans, dev, AC_ID,
+                                  &Slope,&Yint);
+    pthread_mutex_unlock(&opticflow_mutex);
 }
 
 /**
@@ -162,27 +164,39 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
                  IMAGE_YUV422);
 
     //More image structure
+    struct image_t img_processed;
+    image_create(&img_processed,
+                 viewvideo.dev->w ,
+                 viewvideo.dev->h ,
+                 IMAGE_YUV422);
 
     struct image_t img_sobel;
     image_create(&img_sobel,
-                 viewvideo.dev->w ,
-                 viewvideo.dev->h ,
+                 viewvideo.dev->w  / viewvideo.downsize_factor,
+                 viewvideo.dev->h  / viewvideo.downsize_factor,
                  IMAGE_YUV422);
 
     struct image_t img_sobel_prev;
     image_create(&img_sobel_prev,
-                 viewvideo.dev->w ,
-                 viewvideo.dev->h ,
+                 viewvideo.dev->w  / viewvideo.downsize_factor,
+                 viewvideo.dev->h  / viewvideo.downsize_factor,
                  IMAGE_YUV422);
     struct image_t img_prev;
     image_create(&img_prev,
-                 viewvideo.dev->w ,
-                 viewvideo.dev->h ,
+                 viewvideo.dev->w  / viewvideo.downsize_factor,
+                 viewvideo.dev->h  / viewvideo.downsize_factor,
                  IMAGE_YUV422);
 
     // Create the JPEG encoded image
     struct image_t img_jpeg;
     image_create(&img_jpeg, img_small.w, img_small.h, IMAGE_JPEG);
+
+
+    for(int m=0;m<5;m++){
+    edge_hist[m].horizontal=malloc(sizeof(uint32_t)*img_small.w);
+    edge_hist[m].vertical=malloc(sizeof(uint32_t)*img_small.h);}
+
+    float Yint_prev;
 
     // Initialize timing
     uint32_t microsleep = (uint32_t)(1000000. / (float)viewvideo.fps);
@@ -246,47 +260,90 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
         //VISION CODE HERE!!
 
+        image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
+        //printf("check");
+
         //calculate edge feature histograms
 
+
+
+
         uint32_t edge_histogram[img_sobel.w];
+
         uint32_t edge_histogram_prev[img_sobel.w];
 
-         image_to_grayscale(&img,&img);
+        image_to_grayscale(&img_small,&img_small);
+        //blur_filter(&img,&img_processed);
 
-        sobel_edge_filter(&img, &img_sobel,&edge_histogram);
-        sobel_edge_filter(&img_prev, &img_sobel_prev,&edge_histogram_prev);
+
+        sobel_edge_filter(&img_small, &img_sobel,&edge_hist[0]);
+        //sobel_edge_filter(&img_prev, &img_sobel_prev,&edge_hist[1].horizontal);
 
 
         int32_t displacement[img_sobel.w];
-        calculate_edge_histogram_displacement(&edge_histogram,&edge_histogram_prev,&displacement,img_sobel.w,img_sobel.h);
 
-      /*for(int i=0;i<img_sobel.w;i++)
+         uint8_t previous_frame_number=(uint8_t)(2.0-Yint)/2.0+1;
+
+
+        calculate_edge_histogram_displacement(edge_hist,previous_frame_number,&displacement,img_sobel.w,img_sobel.h);
+
+        /*for(int i=0;i<img_sobel.w;i++)
             printf("%d ",displacement[i]);
 
         printf("\n");*/
 
         //float Slope=0.0;
-       // float Yint=0.0;
-        line_fit(&displacement,&Slope,&Yint,img.w);
+        // float Yint=0.0;
 
-        printf("%f %f \n",Slope,Yint);
+        line_fit(&displacement,&Slope,&Yint,img_small.w);
 
-        visualize_divergence(&img,&img_sobel_prev,&edge_histogram,&edge_histogram_prev,&displacement,Slope,Yint,img.w,img.h);
+        Yint=Yint/(float)previous_frame_number;
 
-        image_copy(&img,&img_prev);
+        if(abs(Yint-Yint_prev)>1)
+        {
+            Yint=(Yint-Yint_prev)/2;
+        }
+        //printf("%f %f \n",Slope,Yint);
 
-        image_copy(&img_sobel_prev,&img);
+
+        visualize_divergence(&img_small,&img_sobel_prev,&edge_histogram,&edge_histogram_prev,&displacement,Slope,Yint,img_small.w,img_small.h);
+
+
+        image_copy(&img_small,&img_prev);
+
+        image_copy(&img_sobel_prev,&img_small);
 
         register_periodic_telemetry(DefaultPeriodic, "OPTIC_FLOW_EDGE", opticflow_telem_send);
 
 
+        struct edge_hist_t temp;
+        temp.horizontal=malloc(sizeof(uint32_t)*img_small.w);
+        temp.vertical=malloc(sizeof(uint32_t)*img_small.h);
+
+        for (int j=5-1;j>0;j--){
+
+            memcpy(temp.horizontal,edge_hist[j].horizontal,sizeof(uint32_t)*img_small.w);
+            memcpy(temp.vertical,edge_hist[j].vertical,sizeof(uint32_t)*img_small.h);
+
+            memcpy(edge_hist[j].horizontal,edge_hist[j-1].horizontal,sizeof(uint32_t)*img_small.w);
+            memcpy(edge_hist[j].vertical,edge_hist[j-1].vertical,sizeof(uint32_t)*img_small.h);
+
+            memcpy(edge_hist[j-1].horizontal,temp.horizontal,sizeof(uint32_t)*img_small.w);
+            memcpy(edge_hist[j-1].vertical,temp.vertical,sizeof(uint32_t)*img_small.h);
+
+            //temp=edge_hist[j];
+            //edge_hist[j]=edge_hist[j-1];
+            //edge_hist[j-1]=temp;
+
+        }
+
+        Yint_prev=Yint;
         /*--------------------------------------------*/
 
 
 
         // Only resize when needed
         if (viewvideo.downsize_factor != 1) {
-            image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
             jpeg_encode_image(&img_small, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
         } else {
             jpeg_encode_image(&img, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
@@ -343,6 +400,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
     image_free(&img_small);
     image_free(&img_sobel);
     image_free(&img_sobel_prev);
+    image_free(&img_processed);
     image_free(&img_prev);
 
     return 0;
