@@ -3453,3 +3453,5 @@ var/include/messages.h
 var/include/mtk_protocol.h
 var/include/ubx_protocol.h
 var/include/xsens_protocol.h
+sw/airborne/modules/computer_vision/divergence.c
+sw/airborne/modules/computer_vision/divergence.h

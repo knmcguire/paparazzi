@@ -16,5 +16,5 @@ void calculate_edge_histogram_displacement(struct edge_hist_t edge_histogram[],i
 void line_fit(int32_t* displacement, float* Slope, float* Yint,uint16_t image_width);
 void visualize_divergence(struct image_t* in,struct image_t* out,int32_t* displacement,struct edge_hist_t edge_hist[],float Slope, float Yint,uint16_t image_width, uint16_t image_height);
 void image_draw_color_line(struct image_t *img, struct point_t *from, struct point_t *to, uint8_t color);
-void line_fit_RANSAC( int32_t* displacement, float* Slope, float* Yint,uint16_t size);
+//void line_fit_RANSAC( int32_t* displacement, float* Slope, float* Yint,uint16_t size);
 uint32_t getMinimum(uint32_t* flow_error, uint32_t max_ind);

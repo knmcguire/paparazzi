@@ -182,7 +182,7 @@ void line_fit(int32_t* displacement, float* Slope, float* Yint,uint16_t image_wi
         *Yint=0;}
 }
 
-void line_fit_RANSAC( int32_t* displacement, float* Slope, float* Yint,uint16_t size)
+/*void line_fit_RANSAC( int32_t* displacement, float* Slope, float* Yint,uint16_t size)
 {
 
     //Fit a linear line with RANSAC (from Guido's code)
@@ -245,7 +245,7 @@ void line_fit_RANSAC( int32_t* displacement, float* Slope, float* Yint,uint16_t 
     (*Slope) = a[best_ind] ;
     (*Yint) = b[best_ind];
 
-}
+}*/
 
 
 void visualize_divergence(struct image_t* in,struct image_t* out,int32_t* displacement,struct edge_hist_t edge_hist[],float Slope, float Yint,uint16_t image_width, uint16_t image_height)

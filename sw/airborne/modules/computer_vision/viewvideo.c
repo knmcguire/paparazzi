@@ -31,7 +31,8 @@
 
 // Own header
 #include "modules/computer_vision/viewvideo.h"
-#include "modules/computer_vision/edgefilter.h"
+//#include "modules/computer_vision/edgefilter.h"
+#include "modules/computer_vision/divergence.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -135,8 +136,8 @@ static pthread_mutex_t opticflow_mutex;            ///< Mutex lock fo thread saf
 static float Slope;
 static float Yint;
 static uint8_t previous_frame_number;
-struct edge_hist_t edge_hist[5];
-static int8_t dynamic_idx=0;
+//struct edge_hist_t edge_hist[5];
+//static int8_t dynamic_idx=0;
 
 static void opticflow_telem_send(struct transport_tx *trans, struct link_device *dev)
 {
@@ -193,12 +194,29 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
     struct image_t img_jpeg;
     image_create(&img_jpeg, img_small.w, img_small.h, IMAGE_JPEG);
 
+    struct edge_hist_t* edge_hist;
+        edge_hist=(struct edge_hist_t*)calloc(MAX_HORIZON,sizeof(struct edge_hist_t));
 
-    for(int m=0;m<5;m++){
-        edge_hist[m].horizontal=malloc(sizeof(uint32_t)*img_small.w);
-        edge_hist[m].vertical=malloc(sizeof(uint32_t)*img_small.h);}
+        struct edge_flow_t edge_flow;
+        edge_flow.horizontal[0]=0.0;
+        edge_flow.horizontal[1]=0.0;
+        edge_flow.vertical[0]=0.0;
+        edge_flow.vertical[1]=0.0;
 
-    float Yint_prev;
+
+        //Define arrays and pointers for edge histogram and displacements
+        struct displacement_t displacement;
+        displacement.horizontal[img_small.w];
+        displacement.vertical[img_small.h];
+
+        int rear=1, front=0;
+
+
+    //for(int m=0;m<5;m++){
+      //  edge_hist[m].horizontal=malloc(sizeof(uint32_t)*img_small.w);
+        //edge_hist[m].vertical=malloc(sizeof(uint32_t)*img_small.h);}
+
+    //float Yint_prev;
 
     // Initialize timing
     uint32_t microsleep = (uint32_t)(1000000. / (float)viewvideo.fps);
@@ -266,16 +284,52 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
         image_to_grayscale(&img_small,&img_small);
 
 
+        //from c code
+
+
+        calculate_edge_flow(&img_small,&img_processed,&displacement,&edge_flow,edge_hist,front,rear,img_small.w,img_small.h);
+
+
+        visualize_divergence(&img_small,&img_sobel_prev,&displacement,edge_hist,front,rear,edge_flow.horizontal[0],edge_flow.horizontal[1],img_small.w,img_small.h);
+
+        image_copy(&img_sobel_prev,&img_small);
+
+        // Move the dynamic indices and make them circular
+        front++;
+        rear++;
+
+        if(front>MAX_HORIZON-1)
+            front=0;
+        if(rear>MAX_HORIZON-1)
+            rear=0;
+
+
+
+
+         Slope=edge_flow.horizontal[0];
+       Yint=edge_flow.horizontal[1];
+
+       register_periodic_telemetry(DefaultPeriodic, "OPTIC_FLOW_EDGE", opticflow_telem_send);
+
+        //...........................
+
+
+
+
+
+
+
+
         //calculate edge feature histogram
 
 
 
-        sobel_edge_filter(&img_small, &img_sobel,&edge_hist[0]);
+        //sobel_edge_filter(&img_small, &img_sobel,&edge_hist[0]);
 
 
-        int32_t displacement[img_sobel.w];
+        //int32_t displacement[img_sobel.w];
 
-        int8_t previous_frame_number_dyn;
+       // int8_t previous_frame_number_dyn;
 
         /*if(abs(Yint)<3.0)
            { previous_frame_number=(uint8_t)(3*(2.0-abs(Yint))/2.0)+1;
@@ -288,7 +342,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
         if(previous_frame_number_dyn>4)
              previous_frame_number_dyn=dynamic_idx+1;*/
 
-        previous_frame_number=1;
+        //previous_frame_number=1;
 
 
         /*if(previous_frame_number_dyn<0)
@@ -298,9 +352,9 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
        // printf("%d\n",previous_frame_number);
 
-        calculate_edge_histogram_displacement(edge_hist,previous_frame_number,dynamic_idx,&displacement,img_sobel.w,img_sobel.h);
+       // calculate_edge_histogram_displacement(edge_hist,previous_frame_number,dynamic_idx,&displacement,img_sobel.w,img_sobel.h);
 
-        uint32_t displacement_count;
+        /*uint32_t displacement_count;
         for(int k=0;k<img_small.w;k++)
             displacement_count+=displacement[k];
 
@@ -314,9 +368,9 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
             Yint=0.0;
            // Yint[1]=0.0;
 
-        }
+        }*/
 
-        Yint=Yint/((float)(previous_frame_number));
+        /*Yint=Yint/((float)(previous_frame_number));
 
         //visualize_divergence(&img_small,&img_sobel_prev,&displacement,edge_hist,Slope,Yint,img_small.w,img_small.h);
 
@@ -351,7 +405,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
         Yint_prev=Yint;
         dynamic_idx--;
         if(dynamic_idx<0)
-            dynamic_idx=4;
+            dynamic_idx=4;*/
 
         /*--------------------------------------------*/
 
@@ -359,7 +413,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
         // Only resize when needed
         if (viewvideo.downsize_factor != 1) {
-            jpeg_encode_image(&img_small, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
+            jpeg_encode_image(&img_sobel_prev, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
         } else {
             jpeg_encode_image(&img, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
         }
