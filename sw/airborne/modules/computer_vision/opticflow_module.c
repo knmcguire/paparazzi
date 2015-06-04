@@ -28,6 +28,9 @@
 
 #include "opticflow_module.h"
 
+
+#include "divergence.h"
+
 #include <stdio.h>
 #include <pthread.h>
 #include "state.h"
@@ -72,6 +75,14 @@ static abi_event opticflow_agl_ev;                 ///< The altitude ABI event
 static pthread_t opticflow_calc_thread;            ///< The optical flow calculation thread
 static bool_t opticflow_got_result;                ///< When we have an optical flow calculation
 static pthread_mutex_t opticflow_mutex;            ///< Mutex lock fo thread safety
+
+
+//Define arrays and pointers for edge histogram and displacements
+
+struct displacement_t displacement;
+struct edge_flow_t edge_flow;
+struct edge_hist_t edge_hist;
+
 
 /* Static functions */
 static void *opticflow_module_calc(void *data);                   ///< The main optical flow calculation thread
@@ -205,6 +216,27 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
   image_create(&img_jpeg, opticflow_dev->w, opticflow_dev->h, IMAGE_JPEG);
 #endif
 
+
+    //edge_flow_init(&displacement,&edge_flow,&edge_hist);
+
+
+  struct edge_hist_t* edge_hist;
+      edge_hist=(struct edge_hist_t*)calloc(MAX_HORIZON+1,sizeof(struct edge_hist_t));
+
+      struct edge_flow_t edge_flow;
+      edge_flow.horizontal[0]=0.0;
+      edge_flow.horizontal[1]=0.0;
+      edge_flow.vertical[0]=0.0;
+      edge_flow.vertical[1]=0.0;
+
+
+      //Define arrays and pointers for edge histogram and displacements
+      struct displacement_t* displacement;
+      displacement=(struct displacement_t*)malloc(sizeof(struct displacement_t));
+
+    int rear=1;
+            int front=0;
+
   /* Main loop of the optical flow calculation */
   while (TRUE) {
     // Try to fetch an image
@@ -216,10 +248,30 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
     struct opticflow_state_t temp_state;
     memcpy(&temp_state, &opticflow_state, sizeof(struct opticflow_state_t));
     pthread_mutex_unlock(&opticflow_mutex);
-
-    // Do the optical flow calculation
     struct opticflow_result_t temp_result;
+
+#if EDGE_FLOW
+
+     int previous_frame_number;
+      previous_frame_number=calculate_edge_flow(&img,&img,displacement,&edge_flow,edge_hist,front,rear,img.w,img.h);
+      // Move the dynamic indices and make them circular
+      front++;
+      rear++;
+
+      if(front>MAX_HORIZON+1)
+          front=0;
+      if(rear>MAX_HORIZON+1)
+          rear=0;
+
+
+
+      temp_result.flow_x=(int16_t)edge_flow.horizontal[1];
+      temp_result.flow_y=(int16_t)edge_flow.vertical[1];
+#endif
+    // Do the optical flow calculation
     opticflow_calc_frame(&opticflow, &temp_state, &img, &temp_result);
+
+
 
     // Copy the result if finished
     pthread_mutex_lock(&opticflow_mutex);

@@ -35,6 +35,8 @@
 // Own Header
 #include "opticflow_calculator.h"
 
+#include "divergence.h"
+
 // Computer Vision
 #include "lib/vision/image.h"
 #include "lib/vision/lucas_kanade.h"
@@ -156,6 +158,11 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
     image_copy(&opticflow->img_gray, &opticflow->prev_img_gray);
     opticflow->got_first_img = TRUE;
   }
+#if EDGE_FLOW
+   struct point_t *corners;
+  struct flow_t *vectors;
+
+#else
 
   // *************************************************************************************
   // Corner detection
@@ -186,6 +193,7 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
     image_copy(&opticflow->img_gray, &opticflow->prev_img_gray);
     return;
   }
+
 
   // *************************************************************************************
   // Corner Tracking
@@ -223,17 +231,24 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
     result->flow_y = vectors[result->tracked_cnt / 2].flow_y;
   }
 
+#endif
   // Flow Derotation
   float diff_flow_x = (state->phi - opticflow->prev_phi) * img->w / OPTICFLOW_FOV_W;
   float diff_flow_y = (state->theta - opticflow->prev_theta) * img->h / OPTICFLOW_FOV_H;
   result->flow_der_x = result->flow_x - diff_flow_x * opticflow->subpixel_factor;
   result->flow_der_y = result->flow_y - diff_flow_y * opticflow->subpixel_factor;
+
+ // result->flow_der_x=result->flow_x;
+ // result->flow_der_y=result->flow_y;
+
   opticflow->prev_phi = state->phi;
   opticflow->prev_theta = state->theta;
 
   // Velocity calculation
-  result->vel_x = -result->flow_der_x * result->fps * state->agl/ opticflow->subpixel_factor * img->w / OPTICFLOW_FX;
-  result->vel_y =  result->flow_der_y * result->fps * state->agl/ opticflow->subpixel_factor * img->h / OPTICFLOW_FY;
+ result->vel_x = -result->flow_der_x * result->fps * state->agl/ opticflow->subpixel_factor * img->w / OPTICFLOW_FX;
+ result->vel_y =  result->flow_der_y * result->fps * state->agl/ opticflow->subpixel_factor * img->h / OPTICFLOW_FY;
+ // result->vel_x = -result->flow_der_x * result->fps * state->agl * img->w / OPTICFLOW_FX;
+ // result->vel_y =  result->flow_der_y * result->fps * state->agl * img->h / OPTICFLOW_FY;
 
 
   // *************************************************************************************

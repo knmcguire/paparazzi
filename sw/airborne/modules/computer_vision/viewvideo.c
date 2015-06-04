@@ -91,7 +91,7 @@ PRINT_CONFIG_VAR(VIEWVIDEO_RTP_TIME_INC)
 
 // Frames Per Seconds
 #ifndef VIEWVIDEO_FPS
-#define VIEWVIDEO_FPS 4
+#define VIEWVIDEO_FPS 2
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_FPS)
 
@@ -195,7 +195,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
     image_create(&img_jpeg, img_small.w, img_small.h, IMAGE_JPEG);
 
     struct edge_hist_t* edge_hist;
-        edge_hist=(struct edge_hist_t*)calloc(MAX_HORIZON,sizeof(struct edge_hist_t));
+        edge_hist=(struct edge_hist_t*)calloc(MAX_HORIZON+1,sizeof(struct edge_hist_t));
 
         struct edge_flow_t edge_flow;
         edge_flow.horizontal[0]=0.0;
@@ -205,9 +205,10 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
 
         //Define arrays and pointers for edge histogram and displacements
-        struct displacement_t displacement;
-        displacement.horizontal[img_small.w];
-        displacement.vertical[img_small.h];
+        struct displacement_t* displacement;
+        displacement=(struct displacement_t*)malloc(sizeof(struct displacement_t));
+       // displacement.horizontal[img_small.w];
+       // displacement.vertical[img_small.h];
 
         int rear=1, front=0;
 
@@ -235,11 +236,13 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
     viewvideo.is_streaming = TRUE;
     while (viewvideo.is_streaming) {
         // compute usleep to have a more stable frame rate
-        struct timeval vision_thread_sleep_time;
+      /*  struct timeval vision_thread_sleep_time;
         gettimeofday(&vision_thread_sleep_time, NULL);
         int dt = (int)(vision_thread_sleep_time.tv_sec - last_time.tv_sec) * 1000000 + (int)(vision_thread_sleep_time.tv_usec - last_time.tv_usec);
         if (dt < microsleep) { usleep(microsleep - dt); }
-        last_time = vision_thread_sleep_time;
+        last_time = vision_thread_sleep_time;*/
+        //int dt_print=(int)(vision_thread_sleep_time.tv_sec - last_time.tv_sec);
+        //printf('%d\n',dt_print);
 
         // Wait for a new frame (blocking)
         struct image_t img;
@@ -287,10 +290,10 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
         //from c code
 
 
-        calculate_edge_flow(&img_small,&img_processed,&displacement,&edge_flow,edge_hist,front,rear,img_small.w,img_small.h);
+       previous_frame_number= calculate_edge_flow(&img_small,&img_processed,displacement,&edge_flow,edge_hist,front,rear,img_small.w,img_small.h);
 
 
-        visualize_divergence(&img_small,&img_sobel_prev,&displacement,edge_hist,front,rear,edge_flow.horizontal[0],edge_flow.horizontal[1],img_small.w,img_small.h);
+        //visualize_divergence(&img_small,&img_sobel_prev,displacement,edge_hist,front,rear,edge_flow.horizontal[0],edge_flow.horizontal[1],img_small.w,img_small.h,'d');
 
         image_copy(&img_sobel_prev,&img_small);
 
@@ -298,16 +301,16 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
         front++;
         rear++;
 
-        if(front>MAX_HORIZON-1)
+        if(front>MAX_HORIZON+1)
             front=0;
-        if(rear>MAX_HORIZON-1)
+        if(rear>MAX_HORIZON+1)
             rear=0;
 
 
 
 
-         Slope=edge_flow.horizontal[0];
-       Yint=edge_flow.horizontal[1];
+         Slope=edge_flow.vertical[0];
+       Yint=edge_flow.vertical[1];
 
        register_periodic_telemetry(DefaultPeriodic, "OPTIC_FLOW_EDGE", opticflow_telem_send);
 
@@ -412,11 +415,11 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
 
         // Only resize when needed
-        if (viewvideo.downsize_factor != 1) {
-            jpeg_encode_image(&img_sobel_prev, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
+        /*if (viewvideo.downsize_factor != 1) {
+            jpeg_encode_image(&img_processed, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
         } else {
             jpeg_encode_image(&img, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
-        }
+        }*/
 
 #if VIEWVIDEO_USE_NETCAT
         // Open process to send using netcat (in a fork because sometimes kills itself???)
@@ -442,14 +445,14 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
         }
 #else
         // Send image with RTP
-        rtp_frame_send(
+       /* rtp_frame_send(
                     &video_sock,              // UDP socket
                     &img_jpeg,
                     0,                        // Format 422
                     VIEWVIDEO_QUALITY_FACTOR, // Jpeg-Quality
                     0,                        // DRI Header
                     VIEWVIDEO_RTP_TIME_INC    // 90kHz time increment
-                    );
+                    );*/
         // Extra note: when the time increment is set to 0,
         // it is automaticaly calculated by the send_rtp_frame function
         // based on gettimeofday value. This seems to introduce some lag or jitter.

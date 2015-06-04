@@ -97,7 +97,7 @@
     <file name="opticflow_calculator.c" dir="modules/computer_vision/opticflow"/>
     <file name="stabilization_opticflow.c" dir="modules/computer_vision/opticflow"/>
 
-    <file name="edgeflow.c" dir="modules/edge_histogram"/>
+    <file name="divergence.c" dir="modules/computer_vision"/>
 
     <!-- Main vision calculations -->
     <file name="fast_rosten.c" dir="modules/computer_vision/lib/vision"/>
