@@ -253,7 +253,7 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 #if EDGE_FLOW
 
      int previous_frame_number;
-      previous_frame_number=calculate_edge_flow(&img,&img,displacement,&edge_flow,edge_hist,front,rear,img.w,img.h);
+      previous_frame_number=calculate_edge_flow(&img,&img,displacement,&edge_flow,edge_hist,front,rear,10,20,img.w,img.h);
       // Move the dynamic indices and make them circular
       front++;
       rear++;

@@ -8,7 +8,7 @@
 
 
 
-int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacement_t* displacement,struct edge_flow_t* edge_flow, struct edge_hist_t* edge_hist,int front,int rear,uint16_t image_width,uint16_t image_height)
+int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacement_t* displacement,struct edge_flow_t* edge_flow, struct edge_hist_t* edge_hist,int front,int rear,int windowsize,int max_distance,uint16_t image_width,uint16_t image_height)
 {
 
 
@@ -55,6 +55,17 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
    if(MAX_HORIZON==1)
        previous_frame_number=1;
 
+   int previous_frame_number_y=1;
+   if(fabs(edge_flow->horizontal[1])<MAX_FLOW&&!isnan(edge_flow->horizontal[1]))
+    {
+         previous_frame_number_y=(int)((MAX_HORIZON-1)*((float)MAX_FLOW-fabs(edge_flow->horizontal[1]))/(float)MAX_FLOW)+1;
+    }
+    else
+        previous_frame_number_y=1;
+
+   if(MAX_HORIZON==1)
+        previous_frame_number_y=1;
+
 
     //previous_frame_number=1;
 
@@ -63,12 +74,16 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
     if(previous_frame_number_rel<0)
         previous_frame_number_rel=rear+(MAX_HORIZON-abs(previous_frame_number));
 
+    int previous_frame_number_y_rel=front-previous_frame_number_y;
+    if(previous_frame_number_y_rel<0)
+        previous_frame_number_y_rel=rear+(MAX_HORIZON-abs(previous_frame_number_y));
+
     // Copy previous edge gram to pointer
-    printf("%d %d %d %d \n",front,previous_frame_number,previous_frame_number_rel,rear);
+   // printf("%d %d %d %d \n",front,previous_frame_number,previous_frame_number_rel,rear);
 
 
     memcpy(prev_edge_histogram_x_p,&edge_hist[previous_frame_number_rel].horizontal,sizeof(int)*image_width);
-    memcpy(prev_edge_histogram_y_p,&edge_hist[previous_frame_number_rel].vertical,sizeof(int)*image_height);
+    memcpy(prev_edge_histogram_y_p,&edge_hist[previous_frame_number_y_rel].vertical,sizeof(int)*image_height);
 
 
     //Calculculate current edge_histogram
@@ -77,8 +92,8 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
 
     //calculate displacement based on histogram
-    calculate_displacement(edge_histogram_x_p,prev_edge_histogram_x_p,displacement->horizontal,previous_frame_number,image_width);
-    calculate_displacement(edge_histogram_y_p,prev_edge_histogram_y_p,displacement->vertical,previous_frame_number,image_height);
+    calculate_displacement(edge_histogram_x_p,prev_edge_histogram_x_p,displacement->horizontal,previous_frame_number,windowsize,max_distance,image_width);
+    calculate_displacement(edge_histogram_y_p,prev_edge_histogram_y_p,displacement->vertical,previous_frame_number,windowsize,max_distance,image_height);
 
 
 
@@ -97,8 +112,8 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
     slope_x=slope_x/(float)previous_frame_number;
     trans_x=trans_x/(float)previous_frame_number;
 
-    slope_y=slope_y/(float)previous_frame_number;
-    trans_y=trans_y/(float)previous_frame_number;
+    slope_y=slope_y/(float)previous_frame_number_y;
+    trans_y=trans_y/(float)previous_frame_number_y;
 
     if(isnan(fabs(slope_x)))
         slope_x=0.0;
@@ -111,6 +126,7 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
     if(isnan(fabs(trans_y)))
         trans_y=0.0;
+
 
   /* if(abs(trans_x-edge_flow->horizontal[0])>1)
            trans_x=(trans_x+edge_flow->horizontal[0])/2;*/
@@ -139,7 +155,7 @@ void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edg
 
 
     int  sobel;
-    int Sobel[3] = {-1, 0, 1};
+    int Sobel[3] = {-1.0, 0, 1.0};
     int y,x;
     int edge_histogram_temp;
     int  c,r;
@@ -218,14 +234,14 @@ void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edg
 
 }
 
-void calculate_displacement(int * edge_histogram,int * edge_histogram_prev,int * displacement,int prev_frame_number,int size)
+void calculate_displacement(int * edge_histogram,int * edge_histogram_prev,int * displacement,int prev_frame_number,int windowsize,int max_distance,int size)
 {
 
 
     int  c,r;
     int x;
-    int W=10;
-    int D=10;
+    int W=windowsize;
+    int D=max_distance;
     int d;
     int SAD_temp[2*D];
     int i;
@@ -250,9 +266,9 @@ void calculate_displacement(int * edge_histogram,int * edge_histogram_prev,int *
                     SAD_temp[c+D]+=abs(edge_histogram[x+r]-edge_histogram_prev[x+r+c]);
             }
 
-            min_index=getMinimum(SAD_temp,20);
+            min_index=getMinimum(SAD_temp,D*2);
 
-            displacement[x]=(int)((min_index-W));
+            displacement[x]=(int)((min_index-D));
         }else
             displacement[x]=0;
 
@@ -265,7 +281,7 @@ void line_fit(int* displacement, float* Slope, float* Yint,int size)
 {
     int x;
 
-    int Count=192-20;
+    int Count=size-40;
     int SumY,SumX,SumX2,SumXY;
     int XMean,YMean;
     int k;
@@ -278,7 +294,7 @@ void line_fit(int* displacement, float* Slope, float* Yint,int size)
 
     //double Slope,Yint;
 
-    for(x=10;x<192-10;x++){
+    for(x=20;x<size-20;x++){
 
         SumX+=x;
         SumY+=displacement[x];
