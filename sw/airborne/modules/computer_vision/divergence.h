@@ -20,7 +20,7 @@
 #define RANSAC 1
 #define IMAGE_HEIGHT 240
 #define IMAGE_WIDTH 320
-#define EDGE_FLOW 1
+#define EDGE_FLOW 0
 
 struct edge_hist_t{
 	int  horizontal[IMAGE_WIDTH];

@@ -28,6 +28,16 @@
 
 #include "opticflow_module.h"
 
+
+//--------------EDGEFLOW
+#include "divergence.h"
+
+struct displacement_t displacement;
+struct edge_flow_t edge_flow;
+struct edge_hist_t edge_hist;
+
+//------------------------
+
 #include <stdio.h>
 #include <pthread.h>
 #include "state.h"
@@ -205,6 +215,28 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
   image_create(&img_jpeg, opticflow_dev->w, opticflow_dev->h, IMAGE_JPEG);
 #endif
 
+
+  //-----------------------EDGEFLOW
+
+  struct edge_hist_t* edge_hist;
+      edge_hist=(struct edge_hist_t*)calloc(MAX_HORIZON+1,sizeof(struct edge_hist_t));
+
+      struct edge_flow_t edge_flow;
+      edge_flow.horizontal[0]=0.0;
+      edge_flow.horizontal[1]=0.0;
+      edge_flow.vertical[0]=0.0;
+      edge_flow.vertical[1]=0.0;
+
+
+      //Define arrays and pointers for edge histogram and displacements
+      struct displacement_t* displacement;
+      displacement=(struct displacement_t*)malloc(sizeof(struct displacement_t));
+
+      int rear=1;
+      int front=1;
+
+
+
   /* Main loop of the optical flow calculation */
   while (TRUE) {
     // Try to fetch an image
@@ -219,6 +251,29 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
     // Do the optical flow calculation
     struct opticflow_result_t temp_result;
+
+    //---------------------------EDGEFLOW
+#if EDGE_FLOW
+
+        int previous_frame_number;
+        previous_frame_number=calculate_edge_flow(&img,&img,displacement,&edge_flow,edge_hist,front,rear,10,20,img.w,img.h);
+
+        // Move the dynamic indices and make them circular
+        front++;
+        rear++;
+
+        if(front>MAX_HORIZON+1)
+            front=0;
+        if(rear>MAX_HORIZON+1)
+            rear=0;
+
+
+
+        temp_result.flow_x=(int16_t)edge_flow.horizontal[1];
+        temp_result.flow_y=(int16_t)edge_flow.vertical[1];
+#endif
+        //--------------------------------
+
     opticflow_calc_frame(&opticflow, &temp_state, &img, &temp_result);
 
     // Copy the result if finished
@@ -230,7 +285,7 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 #if OPTICFLOW_DEBUG
     jpeg_encode_image(&img, &img_jpeg, 70, FALSE);
     rtp_frame_send(
-      &VIEWVIDEO_DEV,           // UDP device
+      "/dev/video2",           // UDP device
       &img_jpeg,
       0,                        // Format 422
       70, // Jpeg-Quality
