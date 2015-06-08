@@ -73,7 +73,7 @@ PRINT_CONFIG_VAR(VIEWVIDEO_DEVICE_BUFFERS)
 
 // Downsize factor for video stream
 #ifndef VIEWVIDEO_DOWNSIZE_FACTOR
-#define VIEWVIDEO_DOWNSIZE_FACTOR 2
+#define VIEWVIDEO_DOWNSIZE_FACTOR 1
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_DOWNSIZE_FACTOR)
 
@@ -85,7 +85,7 @@ PRINT_CONFIG_VAR(VIEWVIDEO_QUALITY_FACTOR)
 
 // RTP time increment at 90kHz (default: 0 for automatic)
 #ifndef VIEWVIDEO_RTP_TIME_INC
-#define VIEWVIDEO_RTP_TIME_INC 0
+#define VIEWVIDEO_RTP_TIME_INC 1
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_RTP_TIME_INC)
 
@@ -283,7 +283,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
         //VISION CODE HERE!!
 
-        image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
+       /* image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
         image_to_grayscale(&img_small,&img_small);
 
 
@@ -293,7 +293,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
        previous_frame_number= calculate_edge_flow(&img_small,&img_processed,displacement,&edge_flow,edge_hist,front,rear,img_small.w,img_small.h);
 
 
-        //visualize_divergence(&img_small,&img_sobel_prev,displacement,edge_hist,front,rear,edge_flow.horizontal[0],edge_flow.horizontal[1],img_small.w,img_small.h,'d');
+        visualize_divergence(&img_small,&img_sobel_prev,displacement,edge_hist,front,rear,edge_flow.horizontal[0],edge_flow.horizontal[1],img_small.w,img_small.h,'d');
 
         image_copy(&img_sobel_prev,&img_small);
 
@@ -310,9 +310,13 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
 
          Slope=edge_flow.vertical[0];
-       Yint=edge_flow.vertical[1];
+       Yint=edge_flow.vertical[1];*/
 
-       register_periodic_telemetry(DefaultPeriodic, "OPTIC_FLOW_EDGE", opticflow_telem_send);
+
+
+
+
+       //register_periodic_telemetry(DefaultPeriodic, "OPTIC_FLOW_EDGE", opticflow_telem_send);
 
         //...........................
 
@@ -415,11 +419,11 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
 
         // Only resize when needed
-        /*if (viewvideo.downsize_factor != 1) {
-            jpeg_encode_image(&img_processed, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
+        if (viewvideo.downsize_factor != 1) {
+            jpeg_encode_image(&img, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
         } else {
             jpeg_encode_image(&img, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
-        }*/
+        }
 
 #if VIEWVIDEO_USE_NETCAT
         // Open process to send using netcat (in a fork because sometimes kills itself???)
@@ -445,14 +449,14 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
         }
 #else
         // Send image with RTP
-       /* rtp_frame_send(
+       rtp_frame_send(
                     &video_sock,              // UDP socket
                     &img_jpeg,
                     0,                        // Format 422
                     VIEWVIDEO_QUALITY_FACTOR, // Jpeg-Quality
                     0,                        // DRI Header
                     VIEWVIDEO_RTP_TIME_INC    // 90kHz time increment
-                    );*/
+                    );
         // Extra note: when the time increment is set to 0,
         // it is automaticaly calculated by the send_rtp_frame function
         // based on gettimeofday value. This seems to introduce some lag or jitter.

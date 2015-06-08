@@ -31,7 +31,7 @@
     <load name="logger_file.xml"/>
     <load name="cv_opticflow.xml">
     <define name="OPTICFLOW_DEBUG" value="TRUE"/>
-    <define name="OPTICFLOW_SHOW_CORNERS" value="TRUE"/>
+    <define name="OPTICFLOW_SHOW_CORNERS" value="FALSE"/>
     </load>
     
   </modules>

@@ -28,62 +28,38 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
     float trans_y=0.0;
 
 
-   //int previous_frame_number=1;
 
-   /* if(fabs(edge_flow->horizontal[1])!=0.0||MAX_HORIZON!=1)
+    int previous_frame_number[2];
+
+    if(fabs(edge_flow->horizontal[1])<MAX_FLOW&&!isnan(edge_flow->horizontal[1])&&MAX_HORIZON!=1)
     {
-        if((1/fabs(edge_flow->horizontal[1]))<MAX_HORIZON)
-            previous_frame_number= (int)(1/fabs(edge_flow->horizontal[1]))+1;
-        else
-            previous_frame_number= MAX_HORIZON;
-
-        int print_number=(int)(1/fabs(edge_flow->horizontal[1]));
-       // printf('%d %d',print_number,previous_frame_number);
+        previous_frame_number[0]=(int)((MAX_HORIZON-2)*((float)MAX_FLOW-fabs(edge_flow->horizontal[1]))/(float)MAX_FLOW)+1;
     }
     else
-        previous_frame_number= MAX_HORIZON;
-*/
-
-   int previous_frame_number=1;
-   if(fabs(edge_flow->horizontal[1])<MAX_FLOW&&!isnan(edge_flow->horizontal[1]))
+        previous_frame_number[0]=1;
+    if(fabs(edge_flow->vertical[1])<MAX_FLOW&&!isnan(edge_flow->vertical[1])&&MAX_HORIZON!=1)
     {
-        previous_frame_number=(int)((MAX_HORIZON-1)*((float)MAX_FLOW-fabs(edge_flow->horizontal[1]))/(float)MAX_FLOW)+1;
+        previous_frame_number[1]=(int)((MAX_HORIZON-2)*((float)MAX_FLOW-fabs(edge_flow->vertical[1]))/(float)MAX_FLOW)+1;
     }
     else
-        previous_frame_number=1;
+        previous_frame_number[1]=1;
 
-   if(MAX_HORIZON==1)
-       previous_frame_number=1;
-
-   int previous_frame_number_y=1;
-   if(fabs(edge_flow->horizontal[1])<MAX_FLOW&&!isnan(edge_flow->horizontal[1]))
-    {
-         previous_frame_number_y=(int)((MAX_HORIZON-1)*((float)MAX_FLOW-fabs(edge_flow->horizontal[1]))/(float)MAX_FLOW)+1;
-    }
-    else
-        previous_frame_number_y=1;
-
-   if(MAX_HORIZON==1)
-        previous_frame_number_y=1;
-
-
-    //previous_frame_number=1;
 
     // the previous frame number relative to dynamic parameters
-    int previous_frame_number_rel=front-previous_frame_number;
-    if(previous_frame_number_rel<0)
-        previous_frame_number_rel=rear+(MAX_HORIZON-abs(previous_frame_number));
-
-    int previous_frame_number_y_rel=front-previous_frame_number_y;
-    if(previous_frame_number_y_rel<0)
-        previous_frame_number_y_rel=rear+(MAX_HORIZON-abs(previous_frame_number_y));
+    int previous_frame_number_rel[2];
+    previous_frame_number_rel[0]=front-previous_frame_number[0];
+    previous_frame_number_rel[1]=front-previous_frame_number[1];
+    if(previous_frame_number_rel[0]<0)
+        previous_frame_number_rel[0]=rear+(MAX_HORIZON-1-abs(previous_frame_number[0]));
+    if(previous_frame_number_rel[1]<0)
+        previous_frame_number_rel[1]=rear+(MAX_HORIZON-1-abs(previous_frame_number[1]));
 
     // Copy previous edge gram to pointer
    // printf("%d %d %d %d \n",front,previous_frame_number,previous_frame_number_rel,rear);
 
 
-    memcpy(prev_edge_histogram_x_p,&edge_hist[previous_frame_number_rel].horizontal,sizeof(int)*image_width);
-    memcpy(prev_edge_histogram_y_p,&edge_hist[previous_frame_number_y_rel].vertical,sizeof(int)*image_height);
+    memcpy(prev_edge_histogram_x_p,&edge_hist[previous_frame_number_rel[0]].horizontal,sizeof(int)*image_width);
+    memcpy(prev_edge_histogram_y_p,&edge_hist[previous_frame_number_rel[1]].vertical,sizeof(int)*image_height);
 
 
     //Calculculate current edge_histogram
@@ -92,8 +68,8 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
 
     //calculate displacement based on histogram
-    calculate_displacement(edge_histogram_x_p,prev_edge_histogram_x_p,displacement->horizontal,previous_frame_number,windowsize,max_distance,image_width);
-    calculate_displacement(edge_histogram_y_p,prev_edge_histogram_y_p,displacement->vertical,previous_frame_number,windowsize,max_distance,image_height);
+    int sum_disx=calculate_displacement(edge_histogram_x_p,prev_edge_histogram_x_p,displacement->horizontal,previous_frame_number[0],windowsize,max_distance,image_width);
+    int sum_disy=calculate_displacement(edge_histogram_y_p,prev_edge_histogram_y_p,displacement->vertical,previous_frame_number[1],windowsize,max_distance,image_height);
 
 
 
@@ -109,11 +85,11 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
 
     //Correct Divergence slope and translation by the amount of frames skipped
-    slope_x=slope_x/(float)previous_frame_number;
-    trans_x=trans_x/(float)previous_frame_number;
+    slope_x=slope_x/(float)previous_frame_number[0];
+    trans_x=trans_x/(float)previous_frame_number[0];
 
-    slope_y=slope_y/(float)previous_frame_number_y;
-    trans_y=trans_y/(float)previous_frame_number_y;
+    slope_y=slope_y/(float)previous_frame_number[1];
+    trans_y=trans_y/(float)previous_frame_number[1];
 
     if(isnan(fabs(slope_x)))
         slope_x=0.0;
@@ -130,22 +106,39 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
   /* if(abs(trans_x-edge_flow->horizontal[0])>1)
            trans_x=(trans_x+edge_flow->horizontal[0])/2;*/
+    //Smoothing
+
+    if (abs(trans_x-edge_flow->horizontal[1])>1)
+        trans_x=(trans_x-edge_flow->horizontal[1])/2;
+
+
+    if (abs(trans_y-edge_flow->vertical[1])>1)
+        trans_y=(trans_y-edge_flow->vertical[1])/2;
+
+    //To eliminate noise peaks
+    if(sum_disx>50){
+    edge_flow->horizontal[1]=trans_x;}
+    else {edge_flow->horizontal[1]=0.0;
+    edge_flow->horizontal[0]=0.0;}
+
+    if(sum_disy>50)
+    edge_flow->vertical[1]=trans_y;
+    else
+        edge_flow->vertical[1]=0.0;
 
 
     edge_flow->horizontal[0]=slope_x;
-    edge_flow->horizontal[1]=trans_x;
+
     edge_flow->vertical[0]=slope_y;
-    edge_flow->vertical[1]=trans_y;
 
-
-    //visualize_divergence_debug(in,out,displacement,edge_histogram_x_p,prev_edge_histogram_x_p,front,rear,edge_flow->horizontal[0],edge_flow->horizontal[1],image_width,image_height,'d');
+    visualize_divergence_debug(in,out,displacement,edge_histogram_x_p,prev_edge_histogram_x_p,front,rear,edge_flow->horizontal[0],edge_flow->horizontal[1],image_width,image_height,'e');
 
 
     //Copy new edge histogram to the structure
     memcpy(edge_hist[front].horizontal,edge_histogram_x_p,sizeof(int)*image_width);
     memcpy(edge_hist[front].vertical,edge_histogram_y_p,sizeof(int)*image_height);
 
-    return previous_frame_number;
+    return previous_frame_number[1];
 
 }
 
@@ -234,7 +227,7 @@ void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edg
 
 }
 
-void calculate_displacement(int * edge_histogram,int * edge_histogram_prev,int * displacement,int prev_frame_number,int windowsize,int max_distance,int size)
+int calculate_displacement(int * edge_histogram,int * edge_histogram_prev,int * displacement,int prev_frame_number,int windowsize,int max_distance,int size)
 {
 
 
@@ -272,8 +265,10 @@ void calculate_displacement(int * edge_histogram,int * edge_histogram_prev,int *
         }else
             displacement[x]=0;
 
+        sum_dis+=abs(displacement[x]);
 
     }
+    return sum_dis;
 
 }
 
