@@ -67,13 +67,13 @@ PRINT_CONFIG_MSG("VIEWVIDEO_DEVICE_SIZE = " _SIZE_HELPER(VIEWVIDEO_DEVICE_SIZE))
 
 // The video device buffers (the amount of V4L2 buffers)
 #ifndef VIEWVIDEO_DEVICE_BUFFERS
-#define VIEWVIDEO_DEVICE_BUFFERS 15
+#define VIEWVIDEO_DEVICE_BUFFERS 10
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_DEVICE_BUFFERS)
 
 // Downsize factor for video stream
 #ifndef VIEWVIDEO_DOWNSIZE_FACTOR
-#define VIEWVIDEO_DOWNSIZE_FACTOR 1
+#define VIEWVIDEO_DOWNSIZE_FACTOR 2
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_DOWNSIZE_FACTOR)
 
@@ -85,13 +85,13 @@ PRINT_CONFIG_VAR(VIEWVIDEO_QUALITY_FACTOR)
 
 // RTP time increment at 90kHz (default: 0 for automatic)
 #ifndef VIEWVIDEO_RTP_TIME_INC
-#define VIEWVIDEO_RTP_TIME_INC 1
+#define VIEWVIDEO_RTP_TIME_INC 0
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_RTP_TIME_INC)
 
 // Frames Per Seconds
 #ifndef VIEWVIDEO_FPS
-#define VIEWVIDEO_FPS 2
+#define VIEWVIDEO_FPS 4
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_FPS)
 
@@ -283,14 +283,14 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
         //VISION CODE HERE!!
 
-       /* image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
+        image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
         image_to_grayscale(&img_small,&img_small);
 
 
         //from c code
 
 
-       previous_frame_number= calculate_edge_flow(&img_small,&img_processed,displacement,&edge_flow,edge_hist,front,rear,img_small.w,img_small.h);
+       previous_frame_number= calculate_edge_flow(&img_small,&img_processed,displacement,&edge_flow,edge_hist,front,rear,10,20,img_small.w,img_small.h);
 
 
         visualize_divergence(&img_small,&img_sobel_prev,displacement,edge_hist,front,rear,edge_flow.horizontal[0],edge_flow.horizontal[1],img_small.w,img_small.h,'d');
@@ -310,7 +310,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
 
          Slope=edge_flow.vertical[0];
-       Yint=edge_flow.vertical[1];*/
+       Yint=edge_flow.vertical[1];
 
 
 
@@ -420,7 +420,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
         // Only resize when needed
         if (viewvideo.downsize_factor != 1) {
-            jpeg_encode_image(&img, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
+            jpeg_encode_image(&img_small, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
         } else {
             jpeg_encode_image(&img, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
         }
