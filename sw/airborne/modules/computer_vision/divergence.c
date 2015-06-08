@@ -28,7 +28,7 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
     float trans_y=0.0;
 
 
-
+//determine previous frame number (adapt time
     int previous_frame_number[2];
 
     if(fabs(edge_flow->horizontal[1])<MAX_FLOW&&!isnan(edge_flow->horizontal[1])&&MAX_HORIZON!=1)
@@ -60,6 +60,10 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
     memcpy(prev_edge_histogram_x_p,&edge_hist[previous_frame_number_rel[0]].horizontal,sizeof(int)*image_width);
     memcpy(prev_edge_histogram_y_p,&edge_hist[previous_frame_number_rel[1]].vertical,sizeof(int)*image_height);
+
+
+   //blur_filter(in,out,3,1);
+
 
 
     //Calculculate current edge_histogram
@@ -107,31 +111,29 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
   /* if(abs(trans_x-edge_flow->horizontal[0])>1)
            trans_x=(trans_x+edge_flow->horizontal[0])/2;*/
     //Smoothing
+/*if (abs(trans_x-edge_flow->horizontal[1])>10)
+        trans_x=edge_flow->horizontal[1];
 
-    if (abs(trans_x-edge_flow->horizontal[1])>1)
-        trans_x=(trans_x-edge_flow->horizontal[1])/2;
 
-
-    if (abs(trans_y-edge_flow->vertical[1])>1)
-        trans_y=(trans_y-edge_flow->vertical[1])/2;
+    if (abs(trans_y-edge_flow->vertical[1])>10)
+        trans_y=edge_flow->vertical[1];*/
 
     //To eliminate noise peaks
-    if(sum_disx>50){
+    if(sum_disx>0){
     edge_flow->horizontal[1]=trans_x;}
-    else {edge_flow->horizontal[1]=0.0;
-    edge_flow->horizontal[0]=0.0;}
+    else edge_flow->horizontal[1]=0.0;
 
-    if(sum_disy>50)
+    if(sum_disy>0)
     edge_flow->vertical[1]=trans_y;
     else
         edge_flow->vertical[1]=0.0;
 
 
     edge_flow->horizontal[0]=slope_x;
-
     edge_flow->vertical[0]=slope_y;
 
-    visualize_divergence_debug(in,out,displacement,edge_histogram_x_p,prev_edge_histogram_x_p,front,rear,edge_flow->horizontal[0],edge_flow->horizontal[1],image_width,image_height,'e');
+
+    visualize_divergence_debug(out,in,displacement,edge_histogram_x_p,prev_edge_histogram_x_p,front,rear,edge_flow->horizontal[0],edge_flow->horizontal[1],image_width,image_height,'l');
 
 
     //Copy new edge histogram to the structure
@@ -141,6 +143,8 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
     return previous_frame_number[1];
 
 }
+
+
 
 
 void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edge_histogram,int image_width,int image_height,char direction)
@@ -158,10 +162,10 @@ void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edg
     uint8_t *dest = (uint8_t *)out->buf;
 
     if(direction=='x')
-        for( x = 0; x < image_width; x++)
+        for( x = 1; x < image_width-1; x++)
         {
             edge_histogram_temp=0;
-            for( y = 0; y < image_height; y++)
+            for( y = 1; y < image_height-1; y++)
             {
 
 
@@ -193,10 +197,10 @@ void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edg
         }
     else if(direction=='y')
 
-        for( y = 0; y < image_height; y++)
+        for( y = 1; y < image_height-1; y++)
         {
             edge_histogram_temp=0;
-            for( x = 0;x < image_width; x++)
+            for( x = 1;x < image_width-1; x++)
             {
 
                 idx = image_width*y*2 + (x)*2;
@@ -261,11 +265,17 @@ int calculate_displacement(int * edge_histogram,int * edge_histogram_prev,int * 
 
             min_index=getMinimum(SAD_temp,D*2);
 
+            //if (abs(min_index-D)<D-5)
             displacement[x]=(int)((min_index-D));
+          //  else
+             //   displacement[x]=0;
+
         }else
             displacement[x]=0;
 
         sum_dis+=abs(displacement[x]);
+
+
 
     }
     return sum_dis;
@@ -378,10 +388,10 @@ void line_fit_RANSAC( int* displacement, float* Slope, float* Yint,int size)
             errors[it] = total_error;
         }
         // select best fit:
-        best_ind = getMinimum(errors, 20);
+        best_ind = getMinimum(errors, ransac_iter);
         //printf("%d\n",best_ind);
         (*Slope) = (float)a[best_ind] ;
-        (*Yint) = (float)b[best_ind];
+        (*Yint) = (float)b[best_ind]+a[best_ind]*size/2;
     }
     else
     {
@@ -586,21 +596,102 @@ void image_draw_color_line(struct image_t *img, struct point_t *from, struct poi
 int getMinimum(int * flow_error, int  max_ind)
 {
     uint32_t i;
-    uint32_t min_ind = 0;
-    uint32_t min_err = flow_error[0];
-    for(i = 1; i < max_ind; i++)
+    uint32_t min_ind_left = max_ind/2;
+    uint32_t min_ind_right = max_ind/2;
+
+    uint32_t min_err_left = flow_error[max_ind/2];
+    uint32_t min_err_right = flow_error[max_ind/2];
+
+    for(i = max_ind/2; i >0; i--)
     {
-        if(flow_error[i] < min_err)
+
+        if(flow_error[i] < min_err_left)
         {
-            min_ind = i;
-            min_err = flow_error[i];
+            min_ind_left = i;
+            min_err_left = flow_error[i];
         }
     }
-    return min_ind;
+    for(i = max_ind/2; i < max_ind; i++)
+        {
+        if(flow_error[i] < min_err_right)
+        {
+            min_ind_right = i;
+            min_err_right = flow_error[i];
+        }
+    }
+    if(min_err_left>min_err_right)
+        return min_ind_right;
+    else
+        return min_ind_left;
+
+
+
 }
 
 
 
 
+void blur_filter(struct image_t *in,struct image_t *out,int Gsize,int sigma)
+{
 
+
+
+    double  Gaussian[Gsize][Gsize];
+    int G_hsize=(Gsize-1)/2;
+    double radius;
+    // sum is for normalization
+    double sum = 0.0;
+    // generate  kernel
+    for (int k = -G_hsize; k <= G_hsize; k++)
+    {
+        for(int m = -G_hsize; m <= G_hsize; m++)
+        {
+
+            radius = sqrt(k*k + m*m);
+            Gaussian[k + G_hsize][m + G_hsize] = exp(-(radius*radius)/(2*sigma*sigma));
+            sum += Gaussian[k + G_hsize][m + G_hsize];
+        }    //printf("%d",(size-1)/2);
+
+    }
+
+    // normalize the Kernel
+    for(int i = 0; i < Gsize; ++i){
+        for(int j = 0; j < Gsize; ++j){
+            Gaussian[i][j] /= sum;
+        }
+    }
+    //double  Gaussian[5][5] = {{0.0232,0.0338,0.0383,0.0338,0.0232},{0.0338 ,0.0492,0.0558 ,0.0492,0.0338},{0.0383 ,0.0558 ,0.0632,0.0558 ,0.0383},{0.0338,0.0492,0.0558,0.0492,0.0338}, {0.0232,0.0338,0.0383,0.0338 ,0.0232}};
+    int8_t r, c;
+    uint32_t  gaussian;
+    uint8_t *source = (uint8_t *)in->buf;
+    uint8_t *dest = (uint8_t *)out->buf;
+
+
+    for(uint16_t y = 0; y < in->h; y++) {
+        for(uint16_t x = 0; x < in->w; x++) {
+            uint32_t idx = in->w*y*2 + (x)*2;
+
+            //Convolution
+            if(y>G_hsize&&y<in->h-G_hsize&&x>G_hsize&&x<in->w-G_hsize)
+            {
+                gaussian=0;
+                for(r = -G_hsize; r <=G_hsize; r++)
+                {
+                    for(c = -G_hsize; c <= G_hsize; c++)
+                    {
+                        uint32_t idx_filter = in->w*(y+r)*2 + (x+c)*2;
+                        gaussian += (uint32_t)(Gaussian[r+G_hsize][c+G_hsize] * (source[idx_filter+1]));
+                    }
+                }
+                gaussian=abs(gaussian);
+                dest[idx+1] = gaussian;//abs(-1*source[idx_left+1]+source[idx_right+1]);
+                dest[idx]=127;
+            }else{
+                dest[idx]=127;
+
+            }
+
+        }
+    }
+}
 

@@ -49,15 +49,42 @@
 // Threaded computer vision
 #include <pthread.h>
 
+//--------------EDGEFLOW
+#include "divergence.h"
+
+struct displacement_t displacement;
+struct edge_flow_t edge_flow;
+struct edge_hist_t edge_hist;
+
+
+#include "subsystems/datalink/telemetry.h"
+static pthread_mutex_t opticflow_mutex;            ///< Mutex lock fo thread safety
+static float Slope;
+static float Yint;
+static uint8_t previous_frame_number;
+//struct edge_hist_t edge_hist[5];
+//static int8_t dynamic_idx=0;
+
+static void opticflow_telem_send(struct transport_tx *trans, struct link_device *dev)
+{
+    pthread_mutex_lock(&opticflow_mutex);
+    pprz_msg_send_OPTIC_FLOW_EDGE(trans, dev, AC_ID,
+                                  &Slope,&Yint,&previous_frame_number);
+    pthread_mutex_unlock(&opticflow_mutex);
+}
+//------------------------
+
 // The video device
 #ifndef VIEWVIDEO_DEVICE
-#define VIEWVIDEO_DEVICE /dev/video1
+#define VIEWVIDEO_DEVICE /dev/video2
+//#define VIEWVIDEO_DEVICE /dev/video1
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_DEVICE)
 
 // The video device size (width, height)
 #ifndef VIEWVIDEO_DEVICE_SIZE
-#define VIEWVIDEO_DEVICE_SIZE 1280,720
+#define VIEWVIDEO_DEVICE_SIZE 320,240
+//#define VIEWVIDEO_DEVICE_SIZE 1280,720
 #endif
 #define __SIZE_HELPER(x, y) #x", "#y
 #define _SIZE_HELPER(x) __SIZE_HELPER(x)
@@ -71,7 +98,8 @@ PRINT_CONFIG_VAR(VIEWVIDEO_DEVICE_BUFFERS)
 
 // Downsize factor for video stream
 #ifndef VIEWVIDEO_DOWNSIZE_FACTOR
-#define VIEWVIDEO_DOWNSIZE_FACTOR 4
+#define VIEWVIDEO_DOWNSIZE_FACTOR 1
+//#define VIEWVIDEO_DOWNSIZE_FACTOR 4
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_DOWNSIZE_FACTOR)
 
@@ -147,6 +175,34 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
                viewvideo.dev->h / viewvideo.downsize_factor,
                IMAGE_YUV422);
 
+
+
+  //-----------------------EDGEFLOW
+  struct image_t img_processed;
+  image_create(&img_processed,
+               viewvideo.dev->w / viewvideo.downsize_factor,
+               viewvideo.dev->h / viewvideo.downsize_factor,
+               IMAGE_YUV422);
+
+  struct edge_hist_t* edge_hist;
+      edge_hist=(struct edge_hist_t*)calloc(MAX_HORIZON+1,sizeof(struct edge_hist_t));
+
+      struct edge_flow_t edge_flow;
+      edge_flow.horizontal[0]=0.0;
+      edge_flow.horizontal[1]=0.0;
+      edge_flow.vertical[0]=0.0;
+      edge_flow.vertical[1]=0.0;
+
+
+      //Define arrays and pointers for edge histogram and displacements
+      struct displacement_t* displacement;
+      displacement=(struct displacement_t*)malloc(sizeof(struct displacement_t));
+
+      int rear=1;
+      int front=1;
+
+      //,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
   // Create the JPEG encoded image
   struct image_t img_jpeg;
   image_create(&img_jpeg, img_small.w, img_small.h, IMAGE_JPEG);
@@ -174,6 +230,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
     if (dt < microsleep) { usleep(microsleep - dt); }
     last_time = vision_thread_sleep_time;
 
+    printf("%d\n",dt);
     // Wait for a new frame (blocking)
     struct image_t img;
     v4l2_image_get(viewvideo.dev, &img);
@@ -210,12 +267,37 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
       viewvideo.take_shot = FALSE;
     }
 
-    // Only resize when needed
+    image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
+    //printf("%d\n",dt);
+     if (dt>100000){
+    //int previous_frame_number;
+    previous_frame_number=calculate_edge_flow(&img_small,&img_processed,displacement,&edge_flow,edge_hist,front,rear,10,50,img_small.w,img_small.h);
+    //printf("%f %f\n",slope_x,slope_y);
+
+    // Move the dynamic indices and make them circular
+    front++;
+    rear++;
+
+    if(front>MAX_HORIZON+1)
+        front=0;
+    if(rear>MAX_HORIZON+1)
+        rear=0;
+
+
+    Slope=edge_flow.horizontal[0];
+    Yint=edge_flow.horizontal[1];
+
+
+
+register_periodic_telemetry(DefaultPeriodic, "OPTIC_FLOW_EDGE", opticflow_telem_send);
+     }
+/*
+// Only resize when needed
     if (viewvideo.downsize_factor != 1) {
-      image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
+      //image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
       jpeg_encode_image(&img_small, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
     } else {
-      jpeg_encode_image(&img, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
+      jpeg_encode_image(&img_small, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
     }
 
 #if VIEWVIDEO_USE_NETCAT
@@ -259,7 +341,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
     // Here, we set the time increment to the lowest possible value
     // (1 = 1/90000 s) which is probably stupid but is actually working.
 #endif
-
+*/
     // Free the image
     v4l2_image_free(viewvideo.dev, &img);
   }

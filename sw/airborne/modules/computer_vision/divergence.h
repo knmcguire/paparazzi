@@ -15,12 +15,15 @@
 #include <stdint.h>
 
 
-#define MAX_HORIZON 5
+#define MAX_HORIZON 10
 #define MAX_FLOW 1.0
 #define RANSAC 1
+//#define IMAGE_HEIGHT 180
+//#define IMAGE_WIDTH 320
 #define IMAGE_HEIGHT 240
 #define IMAGE_WIDTH 320
-#define EDGE_FLOW 0
+#define EDGE_FLOW 1
+#define OPTICFLOW_DEBUG 1
 
 struct edge_hist_t{
 	int  horizontal[IMAGE_WIDTH];
@@ -46,5 +49,5 @@ int calculate_displacement(int * edge_histogram,int * edge_histogram_prev,int * 
 int getMinimum(int* flow_error, int max_ind);
 void line_fit_RANSAC( int* displacement, float* Slope, float* Yint,int size);
 void line_fit(int* displacement, float* Slope, float* Yint,int size);
-
+void blur_filter(struct image_t *in,struct image_t *out,int Gsize,int sigma);
 #endif /* DIVERGENCE_H_ */

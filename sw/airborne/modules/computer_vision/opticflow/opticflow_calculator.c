@@ -162,7 +162,7 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
     opticflow->got_first_img = TRUE;
   }
 
-
+//  printf("%f %f\n",&opticflow->prev_timestamp, &result->fps);
 
 
   //------------------------------EDGEFLOW
@@ -218,6 +218,7 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
 #if OPTICFLOW_DEBUG && OPTICFLOW_SHOW_FLOW
   image_show_flow(img, vectors, result->tracked_cnt, opticflow->subpixel_factor);
 #endif
+  if (result->fps>20){
 
   // Get the median flow
   qsort(vectors, result->tracked_cnt, sizeof(struct flow_t), cmp_flow);
@@ -241,7 +242,11 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
     result->flow_y = vectors[result->tracked_cnt / 2].flow_y;
   }
 
+  }
+
 #endif
+  if (result->fps>20){
+
   // Flow Derotation
   float diff_flow_x = (state->phi - opticflow->prev_phi) * img->w / OPTICFLOW_FOV_W;
   float diff_flow_y = (state->theta - opticflow->prev_theta) * img->h / OPTICFLOW_FOV_H;
@@ -250,10 +255,10 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
   opticflow->prev_phi = state->phi;
   opticflow->prev_theta = state->theta;
 
-  // Velocity calculation
-  result->vel_x = -result->flow_der_x * result->fps * state->agl/ opticflow->subpixel_factor * img->w / OPTICFLOW_FX;
-  result->vel_y =  result->flow_der_y * result->fps * state->agl/ opticflow->subpixel_factor * img->h / OPTICFLOW_FY;
-
+// Velocity calculation
+  result->vel_x = -result->flow_der_x * result->fps *1/ opticflow->subpixel_factor * img->w / OPTICFLOW_FX;
+  result->vel_y =  result->flow_der_y * result->fps *1 / opticflow->subpixel_factor * img->h / OPTICFLOW_FY;
+}
   // *************************************************************************************
   // Next Loop Preparation
   // *************************************************************************************

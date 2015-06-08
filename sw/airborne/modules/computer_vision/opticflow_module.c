@@ -217,6 +217,17 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
 
   //-----------------------EDGEFLOW
+  struct image_t img_processed;
+  image_create(&img_processed,
+               320,
+              240,
+               IMAGE_YUV422);
+  struct image_t img_copy;
+  image_create(&img_copy,
+               320,
+              240,
+               IMAGE_YUV422);
+
 
   struct edge_hist_t* edge_hist;
       edge_hist=(struct edge_hist_t*)calloc(MAX_HORIZON+1,sizeof(struct edge_hist_t));
@@ -235,6 +246,7 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
       int rear=1;
       int front=1;
 
+      //,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 
   /* Main loop of the optical flow calculation */
@@ -253,10 +265,12 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
     struct opticflow_result_t temp_result;
 
     //---------------------------EDGEFLOW
+
 #if EDGE_FLOW
 
+    image_copy(&img,&img_copy);
         int previous_frame_number;
-        previous_frame_number=calculate_edge_flow(&img,&img,displacement,&edge_flow,edge_hist,front,rear,10,20,img.w,img.h);
+        previous_frame_number=calculate_edge_flow(&img_copy,&img_processed,displacement,&edge_flow,edge_hist,front,rear,10,20,img.w,img.h);
 
         // Move the dynamic indices and make them circular
         front++;
@@ -268,13 +282,15 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
             rear=0;
 
 
-
         temp_result.flow_x=(int16_t)edge_flow.horizontal[1];
         temp_result.flow_y=(int16_t)edge_flow.vertical[1];
+//temp_result.fps=0;
+
 #endif
         //--------------------------------
 
     opticflow_calc_frame(&opticflow, &temp_state, &img, &temp_result);
+   // printf("%f\n",img.ts);
 
     // Copy the result if finished
     pthread_mutex_lock(&opticflow_mutex);
@@ -285,7 +301,7 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 #if OPTICFLOW_DEBUG
     jpeg_encode_image(&img, &img_jpeg, 70, FALSE);
     rtp_frame_send(
-      "/dev/video2",           // UDP device
+      &opticflow_dev,           // UDP device
       &img_jpeg,
       0,                        // Format 422
       70, // Jpeg-Quality
