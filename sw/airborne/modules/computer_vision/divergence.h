@@ -15,15 +15,16 @@
 #include <stdint.h>
 
 
-#define MAX_HORIZON 10
-#define MAX_FLOW 1.0
+#define MAX_HORIZON 5
+#define MAX_FLOW 5.0
 #define RANSAC 1
 //#define IMAGE_HEIGHT 180
 //#define IMAGE_WIDTH 320
 #define IMAGE_HEIGHT 240
 #define IMAGE_WIDTH 320
 #define EDGE_FLOW 1
-#define OPTICFLOW_DEBUG 1
+
+#define OPTICFLOW_DEBUG 0
 
 struct edge_hist_t{
 	int  horizontal[IMAGE_WIDTH];

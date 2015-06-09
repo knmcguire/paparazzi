@@ -161,6 +161,8 @@ void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edg
     uint8_t *source = (uint8_t *)in->buf;
     uint8_t *dest = (uint8_t *)out->buf;
 
+    int thres=500;
+
     if(direction=='x')
         for( x = 1; x < image_width-1; x++)
         {
@@ -185,15 +187,17 @@ void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edg
 
 
                 sobel=abs(sobel);
+
                 edge_histogram_temp += sobel;
 
                 dest[idx+1]=sobel;
                 dest[idx]=127;
 
             }
-
+               if((int)edge_histogram_temp>thres)
             edge_histogram[x]=(int)edge_histogram_temp;
-
+              else
+            edge_histogram[x]=0;
         }
     else if(direction=='y')
 
@@ -223,8 +227,11 @@ void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edg
 
             }
 
-            edge_histogram[y]=(int)edge_histogram_temp;
-
+            //edge_histogram[y]=(int)edge_histogram_temp;
+            if((int)edge_histogram_temp>thres)
+         edge_histogram[y]=(int)edge_histogram_temp;
+           else
+         edge_histogram[y]=0;
         }
     else
         printf("direction is wrong!!\n");

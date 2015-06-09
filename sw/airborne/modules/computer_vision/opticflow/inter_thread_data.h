@@ -42,6 +42,12 @@ struct opticflow_result_t {
 
   float vel_x;            ///< The velocity in the x direction
   float vel_y;            ///< The velocity in the y direction
+
+  float flow_float_x;
+  float flow_float_y;
+
+  float flow_float_der_x;
+  float flow_float_der_y;
 };
 
 /* The state of the drone when it took an image */

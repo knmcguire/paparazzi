@@ -282,8 +282,8 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
             rear=0;
 
 
-        temp_result.flow_x=(int16_t)edge_flow.horizontal[1];
-        temp_result.flow_y=(int16_t)edge_flow.vertical[1];
+        temp_result.flow_float_x=(int16_t)edge_flow.horizontal[1];
+        temp_result.flow_float_y=(int16_t)edge_flow.vertical[1];
 //temp_result.fps=0;
 
 #endif
