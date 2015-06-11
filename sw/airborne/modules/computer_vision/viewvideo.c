@@ -267,8 +267,8 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
       viewvideo.take_shot = FALSE;
     }
 
-    image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
-    //printf("%d\n",dt);
+   // image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
+    /*//printf("%d\n",dt);
      if (dt>100000){
     //int previous_frame_number;
     previous_frame_number=calculate_edge_flow(&img_small,&img_processed,displacement,&edge_flow,edge_hist,front,rear,10,50,img_small.w,img_small.h);
@@ -285,19 +285,19 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
 
 
     Slope=edge_flow.horizontal[0];
-    Yint=edge_flow.horizontal[1];
+    Yint=edge_flow.horizontal[1];*/
 
 
 
-register_periodic_telemetry(DefaultPeriodic, "OPTIC_FLOW_EDGE", opticflow_telem_send);
-     }
-/*
+//register_periodic_telemetry(DefaultPeriodic, "OPTIC_FLOW_EDGE", opticflow_telem_send);
+
+
 // Only resize when needed
     if (viewvideo.downsize_factor != 1) {
       //image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
       jpeg_encode_image(&img_small, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
     } else {
-      jpeg_encode_image(&img_small, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
+      jpeg_encode_image(&img, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
     }
 
 #if VIEWVIDEO_USE_NETCAT
@@ -341,7 +341,7 @@ register_periodic_telemetry(DefaultPeriodic, "OPTIC_FLOW_EDGE", opticflow_telem_
     // Here, we set the time increment to the lowest possible value
     // (1 = 1/90000 s) which is probably stupid but is actually working.
 #endif
-*/
+
     // Free the image
     v4l2_image_free(viewvideo.dev, &img);
   }

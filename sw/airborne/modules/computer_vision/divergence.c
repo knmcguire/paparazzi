@@ -63,12 +63,23 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
 
    //blur_filter(in,out,3,1);
+    int median_x=GetMedian(prev_edge_histogram_x_p,image_width);
+    int median_y=GetMedian(prev_edge_histogram_y_p,image_height);
 
+    int mean_x=GetMean(prev_edge_histogram_x_p,image_width);
+    int mean_y=GetMean(prev_edge_histogram_y_p,image_height);
+    //printf("%d,%d\n",median_x,median_y);
 
+  //int edge_thres_x=mean_x+(median_x-mean_x)/4;
+   // int edge_thres_y=mean_y+(median_y-mean_y)/4;
+
+    int edge_thres_x=0;//median_x/2;
+    int edge_thres_y=0;//median_y/2;
 
     //Calculculate current edge_histogram
-    calculate_edge_histogram(in,out,edge_histogram_x_p,edge_threshold,image_width,image_height,'x');
-    calculate_edge_histogram(in,out,edge_histogram_y_p,edge_threshold,image_width,image_height,'y');
+    calculate_edge_histogram(in,out,edge_histogram_x_p,edge_thres_x,image_width,image_height,'x');
+    calculate_edge_histogram(in,out,edge_histogram_y_p,edge_thres_y,image_width,image_height,'y');
+
 
 
     //calculate displacement based on histogram
@@ -147,7 +158,7 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
 
 
-void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edge_histogram, int thres,int image_width,int image_height,char direction)
+ calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edge_histogram, int thres,int image_width,int image_height,char direction)
 {
 
 
@@ -162,7 +173,7 @@ void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edg
     uint8_t *dest = (uint8_t *)out->buf;
 
 
-    if(direction=='x')
+    if(direction=='x'){
         for( x = 1; x < image_width-1; x++)
         {
             edge_histogram_temp=0;
@@ -193,13 +204,15 @@ void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edg
                 dest[idx]=127;
 
             }
+
                if((int)edge_histogram_temp>thres)
             edge_histogram[x]=(int)edge_histogram_temp;
               else
             edge_histogram[x]=0;
         }
+    }
     else if(direction=='y')
-
+          {
         for( y = 1; y < image_height-1; y++)
         {
             edge_histogram_temp=0;
@@ -232,6 +245,7 @@ void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edg
            else
          edge_histogram[y]=0;
         }
+    }
     else
         printf("direction is wrong!!\n");
 
@@ -634,8 +648,39 @@ int getMinimum(int * flow_error, int  max_ind)
 
 }
 
+int GetMedian(int* daArray, int iSize) {
+    // Allocate an array of the same size and sort it.
+    int dpSorted[iSize];
+    for (int i = 0; i < iSize; ++i) {
+        dpSorted[i] = daArray[i];
+    }
+    for (int i = iSize - 1; i > 0; --i) {
+        for (int j = 0; j < i; ++j) {
+            if (dpSorted[j] > dpSorted[j+1]) {
+                int dTemp = dpSorted[j];
+                dpSorted[j] = dpSorted[j+1];
+                dpSorted[j+1] = dTemp;
+            }
+        }
+    }
 
+    // Middle or average of middle values in the sorted array.
+    int dMedian = 0;
+    if ((iSize % 2) == 0) {
+        dMedian = (dpSorted[iSize/2] + dpSorted[(iSize/2) - 1])/2.0;
+    } else {
+        dMedian = dpSorted[iSize/2];
+    }
+    return dMedian;
+}
 
+int GetMean(int* daArray, int iSize) {
+    int dSum = daArray[0];
+    for (int i = 1; i < iSize; ++i) {
+        dSum += daArray[i];
+    }
+    return dSum/iSize;
+}
 
 void blur_filter(struct image_t *in,struct image_t *out,int Gsize,int sigma)
 {

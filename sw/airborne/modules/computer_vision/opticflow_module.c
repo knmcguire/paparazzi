@@ -36,7 +36,7 @@ struct displacement_t displacement;
 struct edge_flow_t edge_flow;
 struct edge_hist_t edge_hist;
 
-int edge_thres=500;
+int edge_thres=0;
 int max_distance=50;
 int window_size=10;
 int edge_flow_switch=1;
