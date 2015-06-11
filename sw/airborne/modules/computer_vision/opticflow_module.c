@@ -36,6 +36,11 @@ struct displacement_t displacement;
 struct edge_flow_t edge_flow;
 struct edge_hist_t edge_hist;
 
+int edge_thres=500;
+int max_distance=50;
+int window_size=10;
+int edge_flow_switch=1;
+
 //------------------------
 
 #include <stdio.h>
@@ -72,6 +77,8 @@ PRINT_CONFIG_MSG("OPTICFLOW_DEVICE_SIZE = " _SIZE_HELPER(OPTICFLOW_DEVICE_SIZE))
 #define OPTICFLOW_DEVICE_BUFFERS 15       ///< The video device buffers (the amount of V4L2 buffers)
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_DEVICE_BUFFERS)
+
+
 
 /* The main opticflow variables */
 struct opticflow_t opticflow;                      ///< Opticflow calculations
@@ -246,6 +253,7 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
       int rear=1;
       int front=1;
 
+
       //,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 
 
@@ -267,10 +275,9 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
     //---------------------------EDGEFLOW
 
 #if EDGE_FLOW
-
     image_copy(&img,&img_copy);
         int previous_frame_number;
-        previous_frame_number=calculate_edge_flow(&img_copy,&img_processed,displacement,&edge_flow,edge_hist,front,rear,10,20,img.w,img.h);
+        previous_frame_number=calculate_edge_flow(&img_copy,&img_processed,displacement,&edge_flow,edge_hist,front,rear,window_size,max_distance,edge_thres,img.w,img.h);
 
         // Move the dynamic indices and make them circular
         front++;
@@ -286,8 +293,7 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
         temp_result.flow_float_y=(int16_t)edge_flow.vertical[1];
 //temp_result.fps=0;
 
-#endif
-        //--------------------------------
+#endif       //--------------------------------
 
     opticflow_calc_frame(&opticflow, &temp_state, &img, &temp_result);
    // printf("%f\n",img.ts);

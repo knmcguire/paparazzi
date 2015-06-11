@@ -107,6 +107,12 @@ PRINT_CONFIG_VAR(OPTICFLOW_FAST9_THRESHOLD)
 #endif
 PRINT_CONFIG_VAR(OPTICFLOW_FAST9_MIN_DISTANCE)
 
+
+#ifndef EDGE_FLOW_SWITCH
+#define EDGE_FLOW_SWITCH 1
+#endif
+PRINT_CONFIG_VAR(EDGE_FLOW_SWITCH)
+
 /* Functions only used here */
 static uint32_t timeval_diff(struct timeval *starttime, struct timeval *finishtime);
 static int cmp_flow(const void *a, const void *b);
@@ -167,20 +173,26 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
 
     //------------------------------EDGEFLOW
 
+    //printf("sonar%f\n ",state->agl);
 
 #if EDGE_FLOW
     struct point_t *corners;
     struct flow_t *vectors;
     // Flow Derotation
-    float diff_flow_x =0;// (state->phi - opticflow->prev_phi) * img->w / OPTICFLOW_FOV_W;
-    float diff_flow_y =0;// (state->theta - opticflow->prev_theta) * img->h / OPTICFLOW_FOV_H;
-    result->flow_float_der_x = result->flow_float_x - diff_flow_x * opticflow->subpixel_factor;
-    result->flow_float_der_y = result->flow_float_y - diff_flow_y* opticflow->subpixel_factor;
+    float diff_flow_x =-(state->phi - opticflow->prev_phi) * img->w / OPTICFLOW_FOV_W;
+    float diff_flow_y = -(state->theta - opticflow->prev_theta) * img->h / OPTICFLOW_FOV_H;
+    result->flow_float_der_x = result->flow_float_x - diff_flow_x ;
+    result->flow_float_der_y = result->flow_float_y - diff_flow_y;
     opticflow->prev_phi = state->phi;
     opticflow->prev_theta = state->theta;
 
-    result->vel_x = result->flow_float_der_x * result->fps *state->agl/ opticflow->subpixel_factor  * img->w / OPTICFLOW_FX;
-    result->vel_y = - result->flow_float_der_y * result->fps  *state->agl/ opticflow->subpixel_factor * img->h / OPTICFLOW_FY;
+    //printf(" %f\n",(state->theta - opticflow->prev_theta));
+
+    //printf("diff angle: %f\n",diff_flow_x);
+   // result->vel_x = result->flow_float_x * result->fps *state->agl/ opticflow->subpixel_factor  * img->w / (OPTICFLOW_FX);
+    //result->vel_y = - result->flow_float_y * result->fps  *state->agl/ opticflow->subpixel_factor * img->h / (OPTICFLOW_FY);
+    result->vel_x=100*state->agl*tan(result->flow_float_der_x/(img->w*OPTICFLOW_FOV_W))*result->fps;
+    result->vel_y=100*state->agl*tan(result->flow_float_der_y/(img->h*OPTICFLOW_FOV_H))*result->fps;
 
     result->flow_der_x=(int)result->flow_float_der_x;
     result->flow_der_y=(int)result->flow_float_der_y;
@@ -248,7 +260,7 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
             result->flow_y += vectors[result->tracked_cnt / 2].flow_y;
             result->flow_x += vectors[result->tracked_cnt / 2 + 1].flow_x;
             result->flow_y += vectors[result->tracked_cnt / 2 + 1].flow_y;
-            result->flow_x /= 3;
+            (state->theta - opticflow->prev_theta)result->flow_x /= 3;
             result->flow_y /= 3;
         } else {
             // Take the median point
@@ -269,8 +281,8 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
         opticflow->prev_theta = state->theta;
 
         // Velocity calculation
-        result->vel_x = -result->flow_der_x * result->fps *state->agl/ opticflow->subpixel_factor * img->w / OPTICFLOW_FX;
-        result->vel_y =  result->flow_der_y * result->fps  *state->agl/ opticflow->subpixel_factor * img->h / OPTICFLOW_FY;
+        result->vel_x = -result->flow_der_x * result->fps *state->agl/ opticflow->subpixel_factor * img->w / (OPTICFLOW_FX/10);
+        result->vel_y =  result->flow_der_y * result->fps  *state->agl/ opticflow->subpixel_factor * img->h / (OPTICFLOW_FY/10);
 #endif
 
         // }

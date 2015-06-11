@@ -35,6 +35,12 @@
 // Needed for settings
 extern struct opticflow_t opticflow;
 
+//EdgeFlow
+extern int edge_thres;
+extern int max_distance;
+extern int window_size;
+extern int edge_flow_switch;
+
 // Module functions
 extern void opticflow_module_init(void);
 extern void opticflow_module_run(void);

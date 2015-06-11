@@ -8,7 +8,7 @@
 
 
 
-int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacement_t* displacement,struct edge_flow_t* edge_flow, struct edge_hist_t* edge_hist,int front,int rear,int windowsize,int max_distance,uint16_t image_width,uint16_t image_height)
+int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacement_t* displacement,struct edge_flow_t* edge_flow, struct edge_hist_t* edge_hist,int front,int rear,int windowsize,int max_distance,int edge_threshold,uint16_t image_width,uint16_t image_height)
 {
 
 
@@ -67,8 +67,8 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
 
     //Calculculate current edge_histogram
-    calculate_edge_histogram(in,out,edge_histogram_x_p,image_width,image_height,'x');
-    calculate_edge_histogram(in,out,edge_histogram_y_p,image_width,image_height,'y');
+    calculate_edge_histogram(in,out,edge_histogram_x_p,edge_threshold,image_width,image_height,'x');
+    calculate_edge_histogram(in,out,edge_histogram_y_p,edge_threshold,image_width,image_height,'y');
 
 
     //calculate displacement based on histogram
@@ -147,7 +147,7 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
 
 
-void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edge_histogram,int image_width,int image_height,char direction)
+void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edge_histogram, int thres,int image_width,int image_height,char direction)
 {
 
 
@@ -161,7 +161,6 @@ void calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edg
     uint8_t *source = (uint8_t *)in->buf;
     uint8_t *dest = (uint8_t *)out->buf;
 
-    int thres=500;
 
     if(direction=='x')
         for( x = 1; x < image_width-1; x++)
