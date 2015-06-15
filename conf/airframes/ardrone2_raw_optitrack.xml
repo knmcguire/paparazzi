@@ -16,6 +16,8 @@
       <subsystem name="radio_control" type="ppm"/>
     </target>
 
+    <define name="USE_SONAR" value="TRUE"/>
+
 	<!-- Subsystem section -->
     <subsystem name="motor_mixing"/>
     <subsystem name="actuators" type="ardrone2"/>
@@ -49,6 +51,13 @@
     <servo name="BOTTOM_RIGHT" no="2" min="0" neutral="1" max="500"/>
     <servo name="BOTTOM_LEFT" no="3" min="0" neutral="1" max="500"/>
   </servos>
+
+  <section name="INS" prefix="INS_">
+    <define name="SONAR_MAX_RANGE" value="2.2"/>
+    <define name="SONAR_UPDATE_ON_AGL" value="TRUE"/>
+  </section>
+
+
 
   <section name="MIXING" prefix="MOTOR_MIXING_">
     <define name="TRIM_ROLL" value="0"/>

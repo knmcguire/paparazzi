@@ -191,13 +191,14 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
     //printf("diff angle: %f\n",diff_flow_x);
     //result->vel_x = result->flow_float_der_x * result->fps *state->agl*100  * img->w / (OPTICFLOW_FX/10);
     //result->vel_y = - result->flow_float_der_y * result->fps  *state->agl*100* img->h / (OPTICFLOW_FY/10);
-    result->vel_x=100*state->agl*tan(result->flow_float_der_x*OPTICFLOW_FOV_W/img->w)*result->fps;
-    result->vel_y=-100*state->agl*tan(result->flow_float_der_y*OPTICFLOW_FOV_H/(img->h))*result->fps;
+    result->vel_x=state->agl*tan(result->flow_float_der_x*OPTICFLOW_FOV_W/img->w)*result->fps;
+    result->vel_y=-state->agl*tan(result->flow_float_der_y*OPTICFLOW_FOV_H/(img->h))*result->fps;
 
     result->flow_der_x=(int)result->flow_float_der_x;
     result->flow_der_y=(int)result->flow_float_der_y;
     result->flow_x=(int)result->flow_float_x;
     result->flow_y=(int)result->flow_float_y;
+    result->tracked_cnt=5;
 #else
 
 
@@ -283,6 +284,8 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
         // Velocity calculation
         result->vel_x=-100*state->agl*tan(result->flow_der_x*OPTICFLOW_FOV_W/(img->w))*result->fps;
         result->vel_y=100*state->agl*tan(result->flow_der_y*OPTICFLOW_FOV_H/(img->h))*result->fps;
+
+        printf("velocity: %f\n",result->vel_x);
        // result->vel_x = -result->flow_der_x * result->fps *state->agl*100/ opticflow->subpixel_factor * img->w / (OPTICFLOW_FX);
        // result->vel_y =  result->flow_der_y * result->fps  *state->agl*100/ opticflow->subpixel_factor * img->h / (OPTICFLOW_FY);
 #endif

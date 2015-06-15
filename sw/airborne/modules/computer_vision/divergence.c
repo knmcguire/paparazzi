@@ -73,12 +73,12 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
   //int edge_thres_x=mean_x+(median_x-mean_x)/4;
    // int edge_thres_y=mean_y+(median_y-mean_y)/4;
 
-    int edge_thres_x=0;//median_x/2;
-    int edge_thres_y=0;//median_y/2;
+    int edge_thres_x=median_x/2;
+    int edge_thres_y=median_y/2;
 
     //Calculculate current edge_histogram
-    calculate_edge_histogram(in,out,edge_histogram_x_p,edge_thres_x,image_width,image_height,'x');
-    calculate_edge_histogram(in,out,edge_histogram_y_p,edge_thres_y,image_width,image_height,'y');
+    calculate_edge_histogram(in,out,edge_histogram_x_p,edge_threshold,image_width,image_height,'x');
+    calculate_edge_histogram(in,out,edge_histogram_y_p,edge_threshold,image_width,image_height,'y');
 
 
 
@@ -225,7 +225,7 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
                 for(c = -1; c <=1; c++)
                 {
 
-                    idx_filter= image_width*(y)*2 + (x+c)*2;
+                    idx_filter= image_width*(y+c)*2 + (x)*2;
 
                     sobel += Sobel[c+1] * (int)(source[idx_filter+1]);
                 }

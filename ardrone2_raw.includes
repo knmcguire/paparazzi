@@ -412,6 +412,7 @@ sw/ext/libopencm3/include/libopencm3/sam/3n
 sw/ext/libopencm3/include/libopencm3/sam/3s
 sw/ext/libopencm3/include/libopencm3/sam/3u
 sw/ext/libopencm3/include/libopencm3/sam/3x
+sw/ext/libopencm3/include/libopencm3/sam/common
 sw/ext/libopencm3/include/libopencm3/stm32
 sw/ext/libopencm3/include/libopencm3/stm32/common
 sw/ext/libopencm3/include/libopencm3/stm32/f0
