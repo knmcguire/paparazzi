@@ -184,6 +184,14 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
                viewvideo.dev->h / viewvideo.downsize_factor,
                IMAGE_YUV422);
 
+
+  struct image_t img_copy;
+  image_create(&img_copy,
+               320,
+              240,
+               IMAGE_YUV422);
+
+
   struct edge_hist_t* edge_hist;
       edge_hist=(struct edge_hist_t*)calloc(MAX_HORIZON+1,sizeof(struct edge_hist_t));
 
@@ -266,6 +274,21 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
       image_free(&jpeg_hr);
       viewvideo.take_shot = FALSE;
     }
+    image_copy(&img,&img_copy);
+
+    int previous_frame_number;
+    previous_frame_number=calculate_edge_flow(&img_copy,&img_processed,displacement,&edge_flow,edge_hist,front,rear,10,50,0,img.w,img.h);
+
+   //visualize_divergence(&img_copy,&img_processed,displacement,edge_hist,front,rear,edge_flow.horizontal[0],edge_flow_horizontal[1],img.w,img.h,'e');
+
+    // Move the dynamic indices and make them circular
+    front++;
+    rear++;
+
+    if(front>MAX_HORIZON+1)
+        front=0;
+    if(rear>MAX_HORIZON+1)
+        rear=0;
 
    // image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
     /*//printf("%d\n",dt);
@@ -297,7 +320,7 @@ static void *viewvideo_thread(void *data __attribute__((unused)))
       //image_yuv422_downsample(&img, &img_small, viewvideo.downsize_factor);
       jpeg_encode_image(&img_small, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
     } else {
-      jpeg_encode_image(&img, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
+      jpeg_encode_image(&img_processed, &img_jpeg, VIEWVIDEO_QUALITY_FACTOR, VIEWVIDEO_USE_NETCAT);
     }
 
 #if VIEWVIDEO_USE_NETCAT

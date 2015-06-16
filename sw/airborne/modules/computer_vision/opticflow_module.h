@@ -39,7 +39,7 @@ extern struct opticflow_t opticflow;
 extern int edge_thres;
 extern int max_distance;
 extern int window_size;
-extern int edge_flow_switch;
+extern int measurement_noise;
 
 // Module functions
 extern void opticflow_module_init(void);

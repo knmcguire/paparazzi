@@ -19,7 +19,7 @@
     <subsystem name="motor_mixing"/>
     <subsystem name="actuators" type="ardrone2"/>
     <subsystem name="imu" type="ardrone2"/>
-    <subsystem name="gps" type="datalink"/>
+    <subsystem name="gps" type="ublox"/>
     <subsystem name="stabilization" type="int_quat"/>
     <subsystem name="ahrs" type="int_cmpl_quat"/>
     <subsystem name="ins" type="extended"/>
@@ -32,6 +32,10 @@
     <load name="cv_opticflow.xml">
     <define name="OPTICFLOW_DEBUG" value="FALSE"/>
     <define name="OPTICFLOW_SHOW_CORNERS" value="FALSE"/>
+    <define name="EDGE_FLOW" value="TRUE"/>
+    <define name="ADAPTIVE_THRES_EDGE" value="FALSE"/>
+    <define name="KALMAN_FILTER" value="TRUE"/>
+    <define name="MAX_HORIZON" value="10"/>
 </load>
   </modules>
 
@@ -73,9 +77,9 @@
 
    <section name="VISION" prefix="VISION_">
     <define name="HOVER" value="FALSE"/>
-    <define name="PHI_PGAIN" value="300"/>
+    <define name="PHI_PGAIN" value="70"/>
     <define name="PHI_IGAIN" value="5"/>
-    <define name="THETA_PGAIN" value="300"/>
+    <define name="THETA_PGAIN" value="70"/>
     <define name="THETA_IGAIN" value="5"/>
     <define name="DESIRED_VX" value="0"/>
     <define name="DESIRED_VY" value="0"/>

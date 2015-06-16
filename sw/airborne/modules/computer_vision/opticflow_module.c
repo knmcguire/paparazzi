@@ -36,11 +36,10 @@ struct displacement_t displacement;
 struct edge_flow_t edge_flow;
 struct edge_hist_t edge_hist;
 
-int edge_thres=0;
+int edge_thres=300;
 int max_distance=50;
 int window_size=10;
-int edge_flow_switch=1;
-
+int measurement_noise=50;
 //------------------------
 
 #include <stdio.h>
@@ -220,6 +219,7 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
   // Create a new JPEG image
   struct image_t img_jpeg;
   image_create(&img_jpeg, opticflow_dev->w, opticflow_dev->h, IMAGE_JPEG);
+
 #endif
 
 
@@ -251,7 +251,10 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
       displacement=(struct displacement_t*)malloc(sizeof(struct displacement_t));
 
       int rear=1;
-      int front=1;
+      int front=0;
+
+
+       float coveriance=1;
 
 
       //,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -276,8 +279,11 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
 #if EDGE_FLOW
     image_copy(&img,&img_copy);
-        int previous_frame_number;
-        previous_frame_number=calculate_edge_flow(&img_copy,&img_processed,displacement,&edge_flow,edge_hist,front,rear,window_size,max_distance,edge_thres,img.w,img.h);
+        int median_features;
+       median_features=calculate_edge_flow(&img_copy,&img_processed,displacement,&edge_flow,edge_hist,front,rear,window_size,max_distance,edge_thres,img.w,img.h);
+
+
+       //visualize_divergence(&img_copy,&img_processed,displacement,edge_hist,front,rear,edge_flow.horizontal[0],edge_flow_horizontal[1],img.w,img.h,'e');
 
         // Move the dynamic indices and make them circular
         front++;
@@ -291,13 +297,24 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
         temp_result.flow_float_x=(int16_t)edge_flow.horizontal[1];
         temp_result.flow_float_y=(int16_t)edge_flow.vertical[1];
+        temp_result.tracked_cnt=median_features;
 //temp_result.fps=0;
 
 #endif       //--------------------------------
 
     opticflow_calc_frame(&opticflow, &temp_state, &img, &temp_result);
    // printf("%f\n",img.ts);
+#if KALMAN_FILTER
+    float Q=1/(float)measurement_noise;
+    float R=1;
+    float new_est_x,new_est_y;
+    new_est_x=simpleKalmanFilter(&coveriance,opticflow_result.vel_x,temp_result.vel_x,Q,R);
+    new_est_y=simpleKalmanFilter(&coveriance,opticflow_result.vel_y,temp_result.vel_y,Q,R);
 
+    temp_result.vel_x=new_est_x;
+    temp_result.vel_y=new_est_y;
+
+#endif
     // Copy the result if finished
     pthread_mutex_lock(&opticflow_mutex);
     memcpy(&opticflow_result, &temp_result, sizeof(struct opticflow_result_t));
@@ -305,7 +322,7 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
     pthread_mutex_unlock(&opticflow_mutex);
 
 #if OPTICFLOW_DEBUG
-    jpeg_encode_image(&img, &img_jpeg, 70, FALSE);
+    jpeg_encode_image(&img_processed, &img_jpeg, 70, FALSE);
     rtp_frame_send(
       &opticflow_dev,           // UDP device
       &img_jpeg,
