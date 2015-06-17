@@ -286,7 +286,6 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
         result->vel_x=-100*state->agl*tan(result->flow_der_x*OPTICFLOW_FOV_W/(img->w))*result->fps;
         result->vel_y=100*state->agl*tan(result->flow_der_y*OPTICFLOW_FOV_H/(img->h))*result->fps;
 
-        printf("velocity: %f\n",result->vel_x);
        // result->vel_x = -result->flow_der_x * result->fps *state->agl*100/ opticflow->subpixel_factor * img->w / (OPTICFLOW_FX);
        // result->vel_y =  result->flow_der_y * result->fps  *state->agl*100/ opticflow->subpixel_factor * img->h / (OPTICFLOW_FY);
 #endif

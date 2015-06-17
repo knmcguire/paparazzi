@@ -16,6 +16,8 @@
       <subsystem name="radio_control" type="ppm"/>
     </target>
 
+    <define name="USE_SONAR" value="TRUE"/>
+
 	<!-- Subsystem section -->
     <subsystem name="motor_mixing"/>
     <subsystem name="actuators" type="ardrone2"/>
@@ -28,10 +30,13 @@
 
   <modules main_freq="512">
     <load name="send_imu_mag_current.xml"/>
-    <load name="follow.xml">
-      <define name="FOLLOW_AC_ID" value="101"/>
-      <define name="FOLLOW_WAYPOINT_ID" value="WP_p1"/>
-      <define name="FOLLOW_OFFSET_Z" value="2.0"/>
+    <load name="cv_opticflow.xml">
+    <define name="OPTICFLOW_DEBUG" value="FALSE"/>
+    <define name="OPTICFLOW_SHOW_CORNERS" value="FALSE"/>
+    <define name="EDGE_FLOW" value="FALSE"/>
+    <define name="ADAPTIVE_THRES_EDGE" value="FALSE"/>
+    <define name="KALMAN_FILTER" value="TRUE"/>
+    <define name="MAX_HORIZON" value="10"/>
     </load>
   </modules>
 
@@ -48,6 +53,13 @@
     <servo name="BOTTOM_RIGHT" no="2" min="0" neutral="1" max="500"/>
     <servo name="BOTTOM_LEFT" no="3" min="0" neutral="1" max="500"/>
   </servos>
+
+  <section name="INS" prefix="INS_">
+    <define name="SONAR_MAX_RANGE" value="2.2"/>
+    <define name="SONAR_UPDATE_ON_AGL" value="TRUE"/>
+  </section>
+
+
 
   <section name="MIXING" prefix="MOTOR_MIXING_">
     <define name="TRIM_ROLL" value="0"/>
