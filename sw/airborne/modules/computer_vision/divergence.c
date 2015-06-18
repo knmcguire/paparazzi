@@ -28,7 +28,7 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
 
     //determine previous frame number (adapt time
-  /*  int previous_frame_number[2];
+   int previous_frame_number[2];
 
     if(fabs(edge_flow->horizontal[1])<MAX_FLOW&&!isnan(edge_flow->horizontal[1])&&MAX_HORIZON!=1)
     {
@@ -42,7 +42,7 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
     }
     else
         previous_frame_number[1]=1;
-*/
+/*
      int previous_frame_number[2];
 
     if(fabs(edge_flow->horizontal[1])!=0&&1/fabs(edge_flow->horizontal[1])>MAX_HORIZON)
@@ -53,7 +53,7 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
     if(fabs(edge_flow->vertical[1])!=0&&1/fabs(edge_flow->vertical[1])>MAX_HORIZON)
         previous_frame_number[1]=MAX_HORIZON;
     else
-        previous_frame_number[1]=(int)(1/fabs(edge_flow->vertical[1]))+1;
+        previous_frame_number[1]=(int)(1/fabs(edge_flow->vertical[1]))+1;*/
 
     // the previous frame number relative to dynamic parameters
     int previous_frame_number_rel[2];
@@ -125,7 +125,7 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
     line_fit(displacement->vertical, &slope_y,&trans_y,image_height);
 #endif
 
-    if((median_x+median_y)/2>400){//To avoid detecting flow from the noisy bottom camera
+    //if((median_x+median_y)/2>400){//To avoid detecting flow from the noisy bottom camera
 
         //Correct Divergence slope and translation by the amount of frames skipped
         slope_x=slope_x/(float)previous_frame_number[0];
@@ -170,12 +170,12 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
         edge_flow->horizontal[0]=slope_x;
         edge_flow->vertical[0]=slope_y;
-    }else{
+    /*}else{
         edge_flow->horizontal[1]=0.0;
         edge_flow->vertical[1]=0.0;
         edge_flow->horizontal[0]=0;
         edge_flow->vertical[0]=0;
-    }
+    }*/
 
     visualize_divergence_debug(in,out,displacement,edge_histogram_x_p,prev_edge_histogram_x_p,front,rear,edge_flow->horizontal[0],edge_flow->horizontal[1],image_width,image_height,'l');
 

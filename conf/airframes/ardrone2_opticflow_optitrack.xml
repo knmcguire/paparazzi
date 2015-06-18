@@ -33,9 +33,9 @@
     <load name="cv_opticflow.xml">
     <define name="OPTICFLOW_DEBUG" value="FALSE"/>
     <define name="OPTICFLOW_SHOW_CORNERS" value="FALSE"/>
-    <define name="EDGE_FLOW" value="FALSE"/>
+    <define name="EDGE_FLOW" value="TRUE"/>
     <define name="ADAPTIVE_THRES_EDGE" value="FALSE"/>
-    <define name="KALMAN_FILTER" value="TRUE"/>
+    <define name="KALMAN_FILTER" value="FALSE"/>
     <define name="MAX_HORIZON" value="10"/>
     </load>
   </modules>
@@ -236,7 +236,7 @@
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
-    <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
+ <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
   </section>
 
   <section name="BAT">

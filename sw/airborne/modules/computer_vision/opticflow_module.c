@@ -298,6 +298,9 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
         temp_result.flow_float_x=(int16_t)edge_flow.horizontal[1];
         temp_result.flow_float_y=(int16_t)edge_flow.vertical[1];
         temp_result.tracked_cnt=median_features;
+
+        //printf("check opticflow_module end");
+
 //temp_result.fps=0;
 
 #endif       //--------------------------------
@@ -335,6 +338,8 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
     // Free the image
     v4l2_image_free(opticflow_dev, &img);
+
+
   }
 
 #if OPTICFLOW_DEBUG

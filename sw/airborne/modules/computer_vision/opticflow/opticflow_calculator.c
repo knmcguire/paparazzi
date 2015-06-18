@@ -199,7 +199,7 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
     result->flow_x=(int)result->flow_float_x;
     result->flow_y=(int)result->flow_float_y;
 
-
+ // printf("check opticflow_calculator");
 #else
 
 
@@ -283,8 +283,9 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
         opticflow->prev_theta = state->theta;
 
         // Velocity calculation
-        result->vel_x=-100*state->agl*tan(result->flow_der_x*OPTICFLOW_FOV_W/(img->w))*result->fps;
-        result->vel_y=100*state->agl*tan(result->flow_der_y*OPTICFLOW_FOV_H/(img->h))*result->fps;
+        result->vel_x=-100*state->agl*tan(result->flow_der_x/opticflow->subpixel_factor*OPTICFLOW_FOV_W/(img->w))*result->fps;
+        result->vel_y=100*state->agl*tan(result->flow_der_y/opticflow->subpixel_factor*OPTICFLOW_FOV_H/(img->h))*result->fps;
+
 
        // result->vel_x = -result->flow_der_x * result->fps *state->agl*100/ opticflow->subpixel_factor * img->w / (OPTICFLOW_FX);
        // result->vel_y =  result->flow_der_y * result->fps  *state->agl*100/ opticflow->subpixel_factor * img->h / (OPTICFLOW_FY);
