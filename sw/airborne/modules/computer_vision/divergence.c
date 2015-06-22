@@ -81,7 +81,7 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
     int mean_y=GetMean(prev_edge_histogram_y_p,image_height);
 
     int max_ind_x=getMaximum(prev_edge_histogram_x_p,image_width);
-    int max_ind_y=getMaximum(prev_edge_histogram_x_p,image_height);
+    int max_ind_y=getMaximum(prev_edge_histogram_y_p,image_height);
     int max_x=prev_edge_histogram_x_p[max_ind_x];
     int max_y=prev_edge_histogram_y_p[max_ind_y];
 

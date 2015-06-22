@@ -33,10 +33,15 @@
     <load name="cv_opticflow.xml">
     <define name="OPTICFLOW_DEBUG" value="FALSE"/>
     <define name="OPTICFLOW_SHOW_CORNERS" value="FALSE"/>
-    <define name="EDGE_FLOW" value="FALSE"/>
-    <define name="ADAPTIVE_THRES_EDGE" value="FALSE"/>
+    <define name="EDGE_FLOW" value="TRUE"/>
+    <define name="ADAPTIVE_THRES_EDGE" value="TRUE"/>
     <define name="KALMAN_FILTER" value="TRUE"/>
     <define name="MAX_HORIZON" value="10"/>
+    </load>
+    <load name="follow.xml">
+      <define name="FOLLOW_AC_ID" value="101"/>
+      <define name="FOLLOW_WAYPOINT_ID" value="WP_p1"/>
+      <define name="FOLLOW_OFFSET_Z" value="2.0"/>
     </load>
   </modules>
 
