@@ -30,7 +30,7 @@
     <load name="send_imu_mag_current.xml"/>
     <load name="logger_file.xml"/>
     <load name="cv_opticflow.xml">
-<define name="EDGE_FLOW" value="1"/>
+<define name="EDGE_FLOW" value="0"/>
 <define name="KALMAN_FILTER" value="0"/>
 </load>
   </modules>
