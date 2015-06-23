@@ -261,7 +261,8 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
       int front=0;
 
 
-       float coveriance=1;
+       float coveriance_x=1;
+       float coveriance_y=1;
 
 
       //,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -305,6 +306,7 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
         temp_result.flow_float_x=(int16_t)edge_flow.horizontal[1];
         temp_result.flow_float_y=(int16_t)edge_flow.vertical[1];
         temp_result.tracked_cnt=median_features;
+        temp_result.corner_cnt=median_features;
 
         //printf("check opticflow_module end");
 
@@ -315,11 +317,11 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
     opticflow_calc_frame(&opticflow, &temp_state, &img, &temp_result);
    // printf("%f\n",img.ts);
 #if KALMAN_FILTER
-    float Q=1/(float)measurement_noise;
-    float R=1;
+    float Q=1.0/(float)measurement_noise;
+    float R=1.0;
     float new_est_x,new_est_y;
-    new_est_x=simpleKalmanFilter(&coveriance,opticflow_result.vel_x,temp_result.vel_x,Q,R);
-    new_est_y=simpleKalmanFilter(&coveriance,opticflow_result.vel_y,temp_result.vel_y,Q,R);
+    new_est_x=simpleKalmanFilter(&coveriance_x,opticflow_result.vel_x,temp_result.vel_x,Q,R);
+    new_est_y=simpleKalmanFilter(&coveriance_y,opticflow_result.vel_y,temp_result.vel_y,Q,R);
 
     temp_result.vel_x=new_est_x;
     temp_result.vel_y=new_est_y;

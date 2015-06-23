@@ -29,7 +29,10 @@
     <load name="gps_ubx_ucenter.xml"/>
     <load name="send_imu_mag_current.xml"/>
     <load name="logger_file.xml"/>
-    <!--load name="video_rtp_stream.xml"/-->
+    <load name="video_rtp_stream.xml">
+<configure name="VIEWVIDEO_DEVICE" value="/dev/video2"/>
+
+</load>
   </modules>
 
   <commands>
@@ -87,8 +90,8 @@
     <define name="MAG_Y_CURRENT_COEF" value="0.0"/>
     <define name="MAG_Z_CURRENT_COEF" value="0.0"/>
 
-    <define name="BODY_TO_IMU_PHI" value="0." unit="deg"/>
-    <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
+    <define name="BODY_TO_IMU_PHI" value="-4." unit="deg"/>
+    <define name="BODY_TO_IMU_THETA" value="-3." unit="deg"/>
     <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
   </section>
 

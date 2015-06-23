@@ -700,8 +700,6 @@ int getMinimumMiddle(int * flow_error, int  max_ind)
 
 }
 
-
-
 int getMaximum(int a[], int n) {
     int c, max, index;
 
@@ -829,37 +827,5 @@ float simpleKalmanFilter(float* cov,float previous_est, float current_meas,float
     return new_est;
 }
 
-/*void kalmanFilter(float current_state,float previous_state,float previous_P,float fps,float new_state)
-{
-    w=1;
-    v=1;
-    float predict_state[2];
-    float predict_P[2][2];
-    float phi={{1,1},{0,1}}; //processmodel
-    float phi_t={{1,1},{0,1}}; //processmodel transposed
-    float H={{0,0},{1,0}}; //Observation model
-    float R={{w,0},{0,w}}; //Observation Noise
-    float Q={{v,0},{0,v}};  //Process Noise
-    float K;
 
-    //Predicted state
-    for(int x=0;x<2;x++)
-        for(int y=0;y<2;y++)
-            predict_state[x]+=phi[x][y]*previous_state[x];
-
-
-    //error covariance
-    for(int x=0;x<2;x++)
-        for(int y=0;y<2;y++)
-            predict_P[x]+=phi[x][y]*previous_P[x]*phi_t[x][y]+Q[x][y];
-
-    //Kalman Gain
-
-    for(int x=0;x<2;x++)
-        for(int y=0;y<2;y++)
-           K[x]+=predict_P[x]*
-
-
-
-}*/
 

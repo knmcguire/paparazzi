@@ -35,6 +35,11 @@
 // Own Header
 #include "opticflow_calculator.h"
 
+//-----------------------------EDGEFLOW
+
+#include "divergence.h"
+//----------------------------------
+
 // Computer Vision
 #include "lib/vision/image.h"
 #include "lib/vision/lucas_kanade.h"
@@ -102,6 +107,12 @@ PRINT_CONFIG_VAR(OPTICFLOW_FAST9_THRESHOLD)
 #endif
 PRINT_CONFIG_VAR(OPTICFLOW_FAST9_MIN_DISTANCE)
 
+
+#ifndef EDGE_FLOW_SWITCH
+#define EDGE_FLOW_SWITCH 1
+#endif
+PRINT_CONFIG_VAR(EDGE_FLOW_SWITCH)
+
 /* Functions only used here */
 static uint32_t timeval_diff(struct timeval *starttime, struct timeval *finishtime);
 static int cmp_flow(const void *a, const void *b);
@@ -114,25 +125,25 @@ static int cmp_flow(const void *a, const void *b);
  */
 void opticflow_calc_init(struct opticflow_t *opticflow, uint16_t w, uint16_t h)
 {
-  /* Create the image buffers */
-  image_create(&opticflow->img_gray, w, h, IMAGE_GRAYSCALE);
-  image_create(&opticflow->prev_img_gray, w, h, IMAGE_GRAYSCALE);
+    /* Create the image buffers */
+    image_create(&opticflow->img_gray, w, h, IMAGE_GRAYSCALE);
+    image_create(&opticflow->prev_img_gray, w, h, IMAGE_GRAYSCALE);
 
-  /* Set the previous values */
-  opticflow->got_first_img = FALSE;
-  opticflow->prev_phi = 0.0;
-  opticflow->prev_theta = 0.0;
+    /* Set the previous values */
+    opticflow->got_first_img = FALSE;
+    opticflow->prev_phi = 0.0;
+    opticflow->prev_theta = 0.0;
 
-  /* Set the default values */
-  opticflow->max_track_corners = OPTICFLOW_MAX_TRACK_CORNERS;
-  opticflow->window_size = OPTICFLOW_WINDOW_SIZE;
-  opticflow->subpixel_factor = OPTICFLOW_SUBPIXEL_FACTOR;
-  opticflow->max_iterations = OPTICFLOW_MAX_ITERATIONS;
-  opticflow->threshold_vec = OPTICFLOW_THRESHOLD_VEC;
+    /* Set the default values */
+    opticflow->max_track_corners = OPTICFLOW_MAX_TRACK_CORNERS;
+    opticflow->window_size = OPTICFLOW_WINDOW_SIZE;
+    opticflow->subpixel_factor = OPTICFLOW_SUBPIXEL_FACTOR;
+    opticflow->max_iterations = OPTICFLOW_MAX_ITERATIONS;
+    opticflow->threshold_vec = OPTICFLOW_THRESHOLD_VEC;
 
-  opticflow->fast9_adaptive = OPTICFLOW_FAST9_ADAPTIVE;
-  opticflow->fast9_threshold = OPTICFLOW_FAST9_THRESHOLD;
-  opticflow->fast9_min_distance = OPTICFLOW_FAST9_MIN_DISTANCE;
+    opticflow->fast9_adaptive = OPTICFLOW_FAST9_ADAPTIVE;
+    opticflow->fast9_threshold = OPTICFLOW_FAST9_THRESHOLD;
+    opticflow->fast9_min_distance = OPTICFLOW_FAST9_MIN_DISTANCE;
 }
 
 /**
@@ -144,103 +155,149 @@ void opticflow_calc_init(struct opticflow_t *opticflow, uint16_t w, uint16_t h)
  */
 void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_t *state, struct image_t *img, struct opticflow_result_t *result)
 {
-  // Update FPS for information
-  result->fps = 1 / (timeval_diff(&opticflow->prev_timestamp, &img->ts) / 1000.);
-  memcpy(&opticflow->prev_timestamp, &img->ts, sizeof(struct timeval));
+    // Update FPS for information
+    result->fps = 1 / (timeval_diff(&opticflow->prev_timestamp, &img->ts) / 1000.);
+    memcpy(&opticflow->prev_timestamp, &img->ts, sizeof(struct timeval));
 
-  // Convert image to grayscale
-  image_to_grayscale(img, &opticflow->img_gray);
+    // Convert image to grayscale
+    image_to_grayscale(img, &opticflow->img_gray);
 
-  // Copy to previous image if not set
-  if (!opticflow->got_first_img) {
-    image_copy(&opticflow->img_gray, &opticflow->prev_img_gray);
-    opticflow->got_first_img = TRUE;
-  }
-
-  // *************************************************************************************
-  // Corner detection
-  // *************************************************************************************
-
-  // FAST corner detection (TODO: non fixed threashold)
-  struct point_t *corners = fast9_detect(img, opticflow->fast9_threshold, opticflow->fast9_min_distance,
-                                         20, 20, &result->corner_cnt);
-
-  // Adaptive threshold
-  if (opticflow->fast9_adaptive) {
-
-    // Decrease and increase the threshold based on previous values
-    if (result->corner_cnt < 40 && opticflow->fast9_threshold > 5) {
-      opticflow->fast9_threshold--;
-    } else if (result->corner_cnt > 50 && opticflow->fast9_threshold < 60) {
-      opticflow->fast9_threshold++;
+    // Copy to previous image if not set
+    if (!opticflow->got_first_img) {
+        image_copy(&opticflow->img_gray, &opticflow->prev_img_gray);
+        opticflow->got_first_img = TRUE;
     }
-  }
+
+    //  printf("%f %f\n",&opticflow->prev_timestamp, &result->fps);
+
+
+    //------------------------------EDGEFLOW
+
+    //printf("sonar%f\n ",state->agl);
+
+#if EDGE_FLOW
+    struct point_t *corners;
+    struct flow_t *vectors;
+    // Flow Derotation
+    float diff_flow_x =-(state->phi - opticflow->prev_phi) * img->w / OPTICFLOW_FOV_W;
+    float diff_flow_y =-(state->theta - opticflow->prev_theta) * img->h / OPTICFLOW_FOV_H;
+    result->flow_float_der_x = result->flow_float_x - diff_flow_x ;
+    result->flow_float_der_y = result->flow_float_y - diff_flow_y;
+    opticflow->prev_phi = state->phi;
+    opticflow->prev_theta = state->theta;
+
+    //printf(" %f\n",(state->theta - opticflow->prev_theta));
+
+    //printf("diff angle: %f\n",diff_flow_x);
+    //result->vel_x = result->flow_float_der_x * result->fps *state->agl*100  * img->w / (OPTICFLOW_FX/10);
+    //result->vel_y = - result->flow_float_der_y * result->fps  *state->agl*100* img->h / (OPTICFLOW_FY/10);
+    result->vel_x=100*state->agl*tan(result->flow_float_der_x*OPTICFLOW_FOV_W/img->w)*result->fps;
+    result->vel_y=-100*state->agl*tan(result->flow_float_der_y*OPTICFLOW_FOV_H/(img->h))*result->fps;
+
+    result->flow_der_x=(int)result->flow_float_der_x;
+    result->flow_der_y=(int)result->flow_float_der_y;
+    result->flow_x=(int)result->flow_float_x;
+    result->flow_y=(int)result->flow_float_y;
+
+ // printf("check opticflow_calculator");
+#else
+
+
+    // *************************************************************************************
+    // Corner detection
+    // *************************************************************************************
+
+    // FAST corner detection (TODO: non fixed threashold)
+    struct point_t *corners = fast9_detect(img, opticflow->fast9_threshold, opticflow->fast9_min_distance,
+                                           20, 20, &result->corner_cnt);
+
+    // Adaptive threshold
+    if (opticflow->fast9_adaptive) {
+
+        // Decrease and increase the threshold based on previous values
+        if (result->corner_cnt < 40 && opticflow->fast9_threshold > 5) {
+            opticflow->fast9_threshold--;
+        } else if (result->corner_cnt > 50 && opticflow->fast9_threshold < 60) {
+            opticflow->fast9_threshold++;
+        }
+    }
 
 #if OPTICFLOW_DEBUG && OPTICFLOW_SHOW_CORNERS
-  image_show_points(img, corners, result->corner_cnt);
+    image_show_points(img, corners, result->corner_cnt);
 #endif
 
-  // Check if we found some corners to track
-  if (result->corner_cnt < 1) {
-    free(corners);
-    image_copy(&opticflow->img_gray, &opticflow->prev_img_gray);
-    return;
-  }
+    // Check if we found some corners to track
+    if (result->corner_cnt < 1) {
+        free(corners);
+        image_copy(&opticflow->img_gray, &opticflow->prev_img_gray);
+        return;
+    }
 
-  // *************************************************************************************
-  // Corner Tracking
-  // *************************************************************************************
+    // *************************************************************************************
+    // Corner Tracking
+    // *************************************************************************************
 
-  // Execute a Lucas Kanade optical flow
-  result->tracked_cnt = result->corner_cnt;
-  struct flow_t *vectors = opticFlowLK(&opticflow->img_gray, &opticflow->prev_img_gray, corners, &result->tracked_cnt,
-                                       opticflow->window_size / 2, opticflow->subpixel_factor, opticflow->max_iterations,
-                                       opticflow->threshold_vec, opticflow->max_track_corners);
+    // Execute a Lucas Kanade optical flow
+    result->tracked_cnt = result->corner_cnt;
+    struct flow_t *vectors = opticFlowLK(&opticflow->img_gray, &opticflow->prev_img_gray, corners, &result->tracked_cnt,
+                                         opticflow->window_size / 2, opticflow->subpixel_factor, opticflow->max_iterations,
+                                         opticflow->threshold_vec, opticflow->max_track_corners);
 
 #if OPTICFLOW_DEBUG && OPTICFLOW_SHOW_FLOW
-  image_show_flow(img, vectors, result->tracked_cnt, opticflow->subpixel_factor);
+    image_show_flow(img, vectors, result->tracked_cnt, opticflow->subpixel_factor);
+#endif
+    //if (result->fps>20){
+
+        // Get the median flow
+        qsort(vectors, result->tracked_cnt, sizeof(struct flow_t), cmp_flow);
+        if (result->tracked_cnt == 0) {
+            // We got no flow
+            result->flow_x = 0;
+            result->flow_y = 0;
+        } else if (result->tracked_cnt > 3) {
+            // Take the average of the 3 median points
+            result->flow_x = vectors[result->tracked_cnt / 2 - 1].flow_x;
+            result->flow_y = vectors[result->tracked_cnt / 2 - 1].flow_y;
+            result->flow_x += vectors[result->tracked_cnt / 2].flow_x;
+            result->flow_y += vectors[result->tracked_cnt / 2].flow_y;
+            result->flow_x += vectors[result->tracked_cnt / 2 + 1].flow_x;
+            result->flow_y += vectors[result->tracked_cnt / 2 + 1].flow_y;
+            result->flow_x /= 3;
+            result->flow_y /= 3;
+        } else {
+            // Take the median point
+            result->flow_x = vectors[result->tracked_cnt / 2].flow_x;
+            result->flow_y = vectors[result->tracked_cnt / 2].flow_y;
+        }
+
+   // }
+
+   // if (result->fps>20){
+
+        // Flow Derotation
+        float diff_flow_x = (state->phi - opticflow->prev_phi) * img->w / OPTICFLOW_FOV_W;
+        float diff_flow_y = (state->theta - opticflow->prev_theta) * img->h / OPTICFLOW_FOV_H;
+        result->flow_der_x = result->flow_x - diff_flow_x * opticflow->subpixel_factor;
+        result->flow_der_y = result->flow_y - diff_flow_y * opticflow->subpixel_factor;
+        opticflow->prev_phi = state->phi;
+        opticflow->prev_theta = state->theta;
+
+        // Velocity calculation
+        result->vel_x=-100*state->agl*tan(result->flow_der_x/opticflow->subpixel_factor*OPTICFLOW_FOV_W/(img->w))*result->fps;
+        result->vel_y=100*state->agl*tan(result->flow_der_y/opticflow->subpixel_factor*OPTICFLOW_FOV_H/(img->h))*result->fps;
+
+
+       // result->vel_x = -result->flow_der_x * result->fps *state->agl*100/ opticflow->subpixel_factor * img->w / (OPTICFLOW_FX);
+       // result->vel_y =  result->flow_der_y * result->fps  *state->agl*100/ opticflow->subpixel_factor * img->h / (OPTICFLOW_FY);
 #endif
 
-  // Get the median flow
-  qsort(vectors, result->tracked_cnt, sizeof(struct flow_t), cmp_flow);
-  if (result->tracked_cnt == 0) {
-    // We got no flow
-    result->flow_x = 0;
-    result->flow_y = 0;
-  } else if (result->tracked_cnt > 3) {
-    // Take the average of the 3 median points
-    result->flow_x = vectors[result->tracked_cnt / 2 - 1].flow_x;
-    result->flow_y = vectors[result->tracked_cnt / 2 - 1].flow_y;
-    result->flow_x += vectors[result->tracked_cnt / 2].flow_x;
-    result->flow_y += vectors[result->tracked_cnt / 2].flow_y;
-    result->flow_x += vectors[result->tracked_cnt / 2 + 1].flow_x;
-    result->flow_y += vectors[result->tracked_cnt / 2 + 1].flow_y;
-    result->flow_x /= 3;
-    result->flow_y /= 3;
-  } else {
-    // Take the median point
-    result->flow_x = vectors[result->tracked_cnt / 2].flow_x;
-    result->flow_y = vectors[result->tracked_cnt / 2].flow_y;
-  }
-
-  // Flow Derotation
-  float diff_flow_x = (state->phi - opticflow->prev_phi) * img->w / OPTICFLOW_FOV_W;
-  float diff_flow_y = (state->theta - opticflow->prev_theta) * img->h / OPTICFLOW_FOV_H;
-  result->flow_der_x = result->flow_x - diff_flow_x * opticflow->subpixel_factor;
-  result->flow_der_y = result->flow_y - diff_flow_y * opticflow->subpixel_factor;
-  opticflow->prev_phi = state->phi;
-  opticflow->prev_theta = state->theta;
-
-  // Velocity calculation
-  result->vel_x = -result->flow_der_x * result->fps * state->agl/ opticflow->subpixel_factor * img->w / OPTICFLOW_FX;
-  result->vel_y =  result->flow_der_y * result->fps * state->agl/ opticflow->subpixel_factor * img->h / OPTICFLOW_FY;
-
-  // *************************************************************************************
-  // Next Loop Preparation
-  // *************************************************************************************
-  free(corners);
-  free(vectors);
-  image_switch(&opticflow->img_gray, &opticflow->prev_img_gray);
+        // }
+    // *************************************************************************************
+    // Next Loop Preparation
+    // *************************************************************************************
+    free(corners);
+    free(vectors);
+    image_switch(&opticflow->img_gray, &opticflow->prev_img_gray);
 }
 
 /**
@@ -251,10 +308,10 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
  */
 static uint32_t timeval_diff(struct timeval *starttime, struct timeval *finishtime)
 {
-  uint32_t msec;
-  msec = (finishtime->tv_sec - starttime->tv_sec) * 1000;
-  msec += (finishtime->tv_usec - starttime->tv_usec) / 1000;
-  return msec;
+    uint32_t msec;
+    msec = (finishtime->tv_sec - starttime->tv_sec) * 1000;
+    msec += (finishtime->tv_usec - starttime->tv_usec) / 1000;
+    return msec;
 }
 
 /**
@@ -266,7 +323,7 @@ static uint32_t timeval_diff(struct timeval *starttime, struct timeval *finishti
  */
 static int cmp_flow(const void *a, const void *b)
 {
-  const struct flow_t *a_p = (const struct flow_t *)a;
-  const struct flow_t *b_p = (const struct flow_t *)b;
-  return (a_p->flow_x * a_p->flow_x + a_p->flow_y * a_p->flow_y) - (b_p->flow_x * b_p->flow_x + b_p->flow_y * b_p->flow_y);
+    const struct flow_t *a_p = (const struct flow_t *)a;
+    const struct flow_t *b_p = (const struct flow_t *)b;
+    return (a_p->flow_x * a_p->flow_x + a_p->flow_y * a_p->flow_y) - (b_p->flow_x * b_p->flow_x + b_p->flow_y * b_p->flow_y);
 }
