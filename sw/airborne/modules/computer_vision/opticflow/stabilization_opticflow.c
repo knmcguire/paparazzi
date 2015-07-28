@@ -35,6 +35,7 @@
 #include "firmwares/rotorcraft/guidance/guidance_v.h"
 #include "autopilot.h"
 #include "subsystems/datalink/downlink.h"
+#include "math/pprz_algebra_int.h"
 
 #define CMD_OF_SAT  1500 // 40 deg = 2859.1851
 
@@ -147,10 +148,19 @@ void stabilization_opticflow_update(struct opticflow_result_t *result)
   opticflow_stab.err_vy_int += err_vy / 100;
 
   /* Calculate the commands */
-  opticflow_stab.cmd.phi   = opticflow_stab.phi_pgain * err_vx / 100
+  /*opticflow_stab.cmd.phi   = opticflow_stab.phi_pgain * err_vx / 100
                              + opticflow_stab.phi_igain * opticflow_stab.err_vx_int;
   opticflow_stab.cmd.theta = -(opticflow_stab.theta_pgain * err_vy / 100
-                               + opticflow_stab.theta_igain * opticflow_stab.err_vy_int);
+                               + opticflow_stab.theta_igain * opticflow_stab.err_vy_int);*/
+  float cmd_phi;
+    float cmd_theta;
+    cmd_phi=((float)opticflow_stab.phi_pgain/1000) * err_vx / 100
+            + ((float)opticflow_stab.phi_igain/1000) * opticflow_stab.err_vx_int;
+    cmd_theta=-(((float)opticflow_stab.theta_pgain/1000) * err_vy / 100
+                      + ((float)opticflow_stab.theta_igain/1000) * opticflow_stab.err_vy_int);
+
+    opticflow_stab.cmd.phi   = ANGLE_BFP_OF_REAL(cmd_phi);
+    opticflow_stab.cmd.theta = ANGLE_BFP_OF_REAL(cmd_theta);
 
   /* Bound the roll and pitch commands */
   BoundAbs(opticflow_stab.cmd.phi, CMD_OF_SAT);

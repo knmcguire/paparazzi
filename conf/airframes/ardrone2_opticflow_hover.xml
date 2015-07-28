@@ -30,9 +30,9 @@
     <load name="send_imu_mag_current.xml"/>
     <load name="logger_file.xml"/>
     <load name="cv_opticflow.xml">
-    <define name="EDGE_FLOW" value="TRUE"/>
+    <define name="EDGE_FLOW" value="FALSE"/>
     <define name="ADAPTIVE_THRES_EDGE" value="FALSE"/>
-    <define name="KALMAN_FILTER" value="TRUE"/>
+    <define name="KALMAN_FILTER" value="FALSE"/>
 </load>
   </modules>
 
@@ -75,9 +75,9 @@
    <section name="VISION" prefix="VISION_">
     <define name="HOVER" value="FALSE"/>
     <define name="PHI_PGAIN" value="300"/>
-    <define name="PHI_IGAIN" value="5"/>
+    <define name="PHI_IGAIN" value="0"/>
     <define name="THETA_PGAIN" value="300"/>
-    <define name="THETA_IGAIN" value="5"/>
+    <define name="THETA_IGAIN" value="0"/>
     <define name="DESIRED_VX" value="0"/>
     <define name="DESIRED_VY" value="0"/>
    </section>
