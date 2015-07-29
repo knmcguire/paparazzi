@@ -37,7 +37,7 @@
 #include "subsystems/datalink/downlink.h"
 #include "math/pprz_algebra_int.h"
 
-#define CMD_OF_SAT  1500 // 40 deg = 2859.1851
+#define CMD_OF_SAT  750 // 40 deg = 2859.1851
 
 #ifndef VISION_PHI_PGAIN
 #define VISION_PHI_PGAIN 400
