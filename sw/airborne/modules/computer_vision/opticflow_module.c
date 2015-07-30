@@ -37,7 +37,7 @@ struct edge_flow_t edge_flow;
 struct edge_hist_t edge_hist;
 
 int edge_thres=100;
-int max_distance=50;
+int max_distance=10;
 int window_size=10;
 int measurement_noise=50;
 //------------------------
