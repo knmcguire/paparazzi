@@ -37,7 +37,10 @@
 #include "subsystems/datalink/downlink.h"
 #include "math/pprz_algebra_int.h"
 
+
+//#ifndef CMD_OF_SAT
 #define CMD_OF_SAT  1500 // 40 deg = 2859.1851
+//#endif
 
 #ifndef VISION_PHI_PGAIN
 #define VISION_PHI_PGAIN 400
@@ -117,6 +120,7 @@ void guidance_h_module_read_rc(void)
  */
 void guidance_h_module_run(bool_t in_flight)
 {
+
   /* Update the setpoint */
   stabilization_attitude_set_rpy_setpoint_i(&opticflow_stab.cmd);
 

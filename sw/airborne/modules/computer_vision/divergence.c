@@ -191,7 +191,7 @@ int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacem
 
 
 
-calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edge_histogram, int thres,int image_width,int image_height,char direction)
+int calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edge_histogram, int thres,int image_width,int image_height,char direction)
 {
 
 
@@ -199,7 +199,7 @@ calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edge_his
     int Sobel[3] = {-1.0, 0, 1.0};
     int y,x;
     int edge_histogram_temp;
-    int  c,r;
+    int  c;
     int idx;
     int idx_filter;
     uint8_t *source = (uint8_t *)in->buf;
@@ -282,6 +282,8 @@ calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edge_his
     else
         printf("direction is wrong!!\n");
 
+    return 0;
+
 }
 
 int calculate_displacement(int * edge_histogram,int * edge_histogram_prev,int * displacement,int prev_frame_number,int windowsize,int max_distance,int size)
@@ -292,9 +294,7 @@ int calculate_displacement(int * edge_histogram,int * edge_histogram_prev,int * 
     int x;
     int W=windowsize;
     int D=max_distance;
-    int d;
     int SAD_temp[2*D];
-    int i;
     int  min_index;
     int sum_dis;
     sum_dis=0;
@@ -305,11 +305,10 @@ int calculate_displacement(int * edge_histogram,int * edge_histogram_prev,int * 
     {
 
         //Sad_temp to 0;
-        //  printf("%d ",edge_histogram[x]);
 
         if(x>D+W&&x<size-D-W)
         {
-            \
+
             for(c=-D;c<D;c++)
             {
                 SAD_temp[c+D]=0;
@@ -344,7 +343,7 @@ void line_fit(int* displacement, float* Slope, float* Yint,int size)
     int x;
 
     int Count=size-40;
-    int SumY,SumX,SumX2,SumXY;
+    int SumY=0; int SumX=0; int SumX2=0; int SumXY=0;
     int XMean,YMean;
     int k;
     int count_disp;
@@ -373,8 +372,6 @@ void line_fit(int* displacement, float* Slope, float* Yint,int size)
 
     *Slope=Slope_temp;
     *Yint=Yint_temp;
-    //printf("%f %f\n", Slope, Yint);
-
 
 }
 
@@ -390,7 +387,6 @@ void line_fit_RANSAC( int* displacement, float* Slope, float* Yint,int size)
     // flow = a * x + b
     float a[ransac_iter];
     float b[ransac_iter];
-    float a_temp,b_temp;
     int errors[ransac_iter];
 
     int X[size];
@@ -463,18 +459,12 @@ void line_fit_RANSAC( int* displacement, float* Slope, float* Yint,int size)
 
 void visualize_divergence(struct image_t* in,struct image_t* out,struct displacement_t* displacement,struct edge_hist_t* edge_hist,int front,int rear,float Slope, float Yint,uint16_t image_width, uint16_t image_height,char plot_value)
 {
-    uint32_t y,x;
-
-
-
+    uint32_t x;
     image_copy(in,out);
 
     struct point_t  linedraw;
     struct point_t linedraw_prev;
 
-
-    // uint32_t* edge_histogram_hor= edge_hist[0].horizontal;
-    //uint32_t* edge_histogram_prev_hor=edge_hist[1].horizontal;
 
     for( x = 0; x < image_width-1; x++)
     {
@@ -529,18 +519,11 @@ void visualize_divergence(struct image_t* in,struct image_t* out,struct displace
 
 void visualize_divergence_debug(struct image_t* in,struct image_t* out,struct displacement_t* displacement,int * edge_histogram,int * edge_histogram_prev,int front,int rear,float Slope, float Yint,uint16_t image_width, uint16_t image_height,char plot_value)
 {
-    uint32_t y,x;
-
-
-
+    uint32_t x;
     image_copy(in,out);
 
     struct point_t  linedraw;
     struct point_t linedraw_prev;
-
-
-    // uint32_t* edge_histogram_hor= edge_hist[0].horizontal;
-    //uint32_t* edge_histogram_prev_hor=edge_hist[1].horizontal;
 
     for( x = 0; x < image_width-1; x++)
     {
