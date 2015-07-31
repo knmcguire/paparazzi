@@ -174,3 +174,12 @@ tests/results/*
 
 *.dSYM
 
+#QT creator files
+*.creator
+*.files
+*.includes
+*.config
+
+#vision files
+sw/ext/ardrone2_vision/*
+
