@@ -51,13 +51,13 @@
 
 // The video device
 #ifndef VIEWVIDEO_DEVICE
-#define VIEWVIDEO_DEVICE /dev/video1
+#define VIEWVIDEO_DEVICE /dev/video2
 #endif
 PRINT_CONFIG_VAR(VIEWVIDEO_DEVICE)
 
 // The video device size (width, height)
 #ifndef VIEWVIDEO_DEVICE_SIZE
-#define VIEWVIDEO_DEVICE_SIZE 1280,720
+#define VIEWVIDEO_DEVICE_SIZE 320, 240//1280,720
 #endif
 #define __SIZE_HELPER(x, y) #x", "#y
 #define _SIZE_HELPER(x) __SIZE_HELPER(x)
