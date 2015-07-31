@@ -46,7 +46,6 @@ int measurement_noise=50;
 #include <pthread.h>
 #include "state.h"
 #include "subsystems/abi.h"
-#include "subsystems/electrical.h"
 
 #include "lib/v4l/v4l2.h"
 #include "lib/encoding/jpeg.h"
@@ -227,7 +226,6 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
   // Create a new JPEG image
   struct image_t img_jpeg;
   image_create(&img_jpeg, opticflow_dev->w, opticflow_dev->h, IMAGE_JPEG);
-
 #endif
 
 
@@ -316,7 +314,7 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 #endif       //--------------------------------
 
     opticflow_calc_frame(&opticflow, &temp_state, &img, &temp_result);
-   // printf("%f\n",img.ts);
+
 #if KALMAN_FILTER
     float Q=1.0/(float)measurement_noise;
     float R=1.0;
@@ -335,9 +333,9 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
     pthread_mutex_unlock(&opticflow_mutex);
 
 #if OPTICFLOW_DEBUG
-    jpeg_encode_image(&img_processed, &img_jpeg, 70, FALSE);
+    jpeg_encode_image(&img, &img_jpeg, 70, FALSE);
     rtp_frame_send(
-      &opticflow_dev,           // UDP device
+      &VIEWVIDEO_DEV,           // UDP device
       &img_jpeg,
       0,                        // Format 422
       70, // Jpeg-Quality
@@ -348,8 +346,6 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
     // Free the image
     v4l2_image_free(opticflow_dev, &img);
-
-
   }
 
 #if OPTICFLOW_DEBUG

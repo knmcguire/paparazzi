@@ -35,7 +35,7 @@
     <load name="send_imu_mag_current.xml"/>
     <load name="logger_file.xml"/>
     <load name="cv_opticflow.xml">
-   	<define name="EDGE_FLOW" value="FALSE"/>
+   	<define name="EDGE_FLOW" value="TRUE"/>
     	<define name="ADAPTIVE_THRES_EDGE" value="FALSE"/>
     	<define name="KALMAN_FILTER" value="TRUE"/>
    </load>
