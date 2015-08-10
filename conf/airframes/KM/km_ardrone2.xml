@@ -20,10 +20,10 @@
     <subsystem name="actuators" type="ardrone2"/>
     <subsystem name="imu" type="ardrone2"/>
     <!-- gps: "ublox" or change to "sirf" for usage with parrot flight recorder -->
-    <subsystem name="gps" type="ublox"/>
+    <subsystem name="gps" type="datalink"/>
     <subsystem name="stabilization" type="indi"/>
     <subsystem name="ahrs" type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="TRUE"/>
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
       <define name="AHRS_USE_GPS_HEADING" value="FALSE"/>
     </subsystem>
     <subsystem name="ins" type="extended"/>
@@ -99,8 +99,8 @@
     <define name="MAG_Y_CURRENT_COEF" value="0.0"/>
     <define name="MAG_Z_CURRENT_COEF" value="0.0"/>
 
-    <define name="BODY_TO_IMU_PHI" value="-3." unit="deg"/>
-    <define name="BODY_TO_IMU_THETA" value="-2." unit="deg"/>
+    <define name="BODY_TO_IMU_PHI" value="-1." unit="deg"/>
+    <define name="BODY_TO_IMU_THETA" value="-5." unit="deg"/>
     <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
   </section>
 
@@ -116,7 +116,7 @@
   </section>
 
   <section name="INS" prefix="INS_">
-    <define name="SONAR_MAX_RANGE" value="3.2"/>
+    <define name="SONAR_MAX_RANGE" value="4.0"/>
     <define name="SONAR_UPDATE_ON_AGL" value="TRUE"/>
   </section>
 
@@ -234,7 +234,7 @@
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_MODULE"/>
     <define name="MODE_AUTO2" value="AP_MODE_MODULE"/>
-<define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
+<define name="NO_RC_THRUST_LIMIT" value="FALSE"/>
   </section>
 
   <section name="BAT">
