@@ -35,6 +35,7 @@
 #include "firmwares/rotorcraft/guidance/guidance_v.h"
 #include "autopilot.h"
 #include "subsystems/datalink/downlink.h"
+#include "math/pprz_algebra_int.h"
 #include "subsystems/electrical.h"
 #include "std.h"
 
@@ -121,7 +122,7 @@ void guidance_h_module_read_rc(void)
  */
 void guidance_h_module_run(bool_t in_flight)
 {
-  int vsupply_scaled=electrical.vsupply*10;
+
 
 
   /* Update the setpoint */
