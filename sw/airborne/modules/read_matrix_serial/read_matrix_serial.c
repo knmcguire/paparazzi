@@ -69,6 +69,8 @@ uint8_t *serialResponse;
 int writeLocationInput=0;
 uint8_t SendREADimageBuffer[36];
 
+volatile uint8_t frame_processed=0;
+
 struct SerialPort *READING_port;
 int messageArrayLocation=0;
 int widthToSend;
@@ -313,6 +315,8 @@ void serial_update(void) {
 #endif
 		if(isImageReady(lastRecordedEnd, lastRecordedStart, previousStart)>0)
 		{
+
+
 #if PRINT_STUFF
 			printf("Searhing properties. LastRecorded start: %d lastRecordedEnd: %d previousStart: %d \n",lastRecordedStart,lastRecordedEnd, previousStart);
 #endif
@@ -366,7 +370,8 @@ void serial_update(void) {
 				}
 
 				printArray(READimageBuffer,imageProperties.height*imageProperties.lineLength,imageProperties.lineLength);
-			}
+                frame_processed=1;
+            }
 
 			// Now move everything after the end of the buffer to the start of the buffer
 			int locationNewImage=0;
