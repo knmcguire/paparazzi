@@ -213,28 +213,26 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
         // Try to fetch an image
 
 #if STEREOCAM_ATTACH
-        //printf("frame processed optic flow = %d\n", frame_processed);
-        //pthread_mutex_lock(&opticflow_mutex);
+
         while(frame_processed==0){};
 
 
-
-            //pthread_mutex_unlock(&opticflow_mutex);
-
+        // Copy the state
+        pthread_mutex_lock(&opticflow_mutex);
+        struct opticflow_state_t temp_state;
+        memcpy(&temp_state, &opticflow_state, sizeof(struct opticflow_state_t));
+        pthread_mutex_unlock(&opticflow_mutex);
 
         frame_processed=0;
-
-
-
-
-
-
 
         float trans_x=((float)READimageBuffer[1]-100)/100;
         float trans_y=((float)READimageBuffer[3]-100)/100;
         float slope_x=((float)READimageBuffer[0]-100)/1000;
         float slope_y=((float)READimageBuffer[2]-100)/1000;
         float height=(float)READimageBuffer[4];
+
+        opticflow_result.flow_x=trans_x;
+        opticflow_result.flow_y=trans_y;
 
         float distance_pinhole=0.03;
         float radperpx=(57.4*M_PI/180)/128;
@@ -244,20 +242,29 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
         if(isnan(height_meters)||isinf(height_meters))
             height_meters=0.5;
 
+
+
+        // Flow Derotation
+        float diff_flow_x = (opticflow_state.phi - opticflow.prev_phi) * 128/ 57;
+        float diff_flow_y = (opticflow_state.theta - opticflow.prev_theta) * 96 / 45;
+        opticflow_result.flow_der_x = opticflow_result.flow_x - diff_flow_x;
+        opticflow_result.flow_der_y = opticflow_result.flow_y - diff_flow_y;
+        opticflow.prev_phi = opticflow_state.phi;
+        opticflow.prev_theta = opticflow_state.theta;
+
         radperpx=(57.4*M_PI/180)/128;
-        angle_disp=trans_x*radperpx;
+        angle_disp=opticflow_result.flow_der_x*radperpx;
         float velocity_x=height_meters*tan(angle_disp)*25;
 
         radperpx=(45*M_PI/180)/96;
-        angle_disp=trans_y*radperpx;
+        angle_disp=opticflow_result.flow_der_y*radperpx;
         float velocity_y=height_meters*tan(angle_disp)*25;
 
 
         // printf("velocities: %f, %f m/s\n",velocity_x,velocity_y);
 
         pthread_mutex_lock(&opticflow_mutex);
-        opticflow_result.flow_x=trans_x;
-        opticflow_result.flow_y=trans_y;
+
         opticflow_result.vel_x=-velocity_x*100;
         opticflow_result.vel_y=velocity_y*100;
         opticflow_result.tracked_cnt=100;
