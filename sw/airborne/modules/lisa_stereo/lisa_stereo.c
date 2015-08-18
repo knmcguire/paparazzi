@@ -153,7 +153,7 @@ static uint8_t handleStereoPackage(void) {
           }
           i = (i + 1) % BUF_SIZE;
         } // continue search for new line
-        extract_loc = (extract_loc + 4) % BUF_SIZE; // step over end of image
+        extract_loc = (extract_loc + 1) % BUF_SIZE; // step over end of image
         return 1; // full message read
       }
       extract_loc = (extract_loc + 1) % BUF_SIZE;
@@ -180,7 +180,7 @@ extern void lisa_stereo_stop(void) {
 }
 
 extern void lisa_stereo_periodic(void) {
-  if( handleStereoPackage() )
+  while( handleStereoPackage() )
   {
     //send_data = (send_data +1) % 5;
     //if (send_data == 0)
