@@ -15,6 +15,7 @@
       <message name="ROTORCRAFT_NAV_STATUS"  period="2.6"/>
       <message name="WP_MOVED"               period="2.3"/>
       <message name="GPS"		     period="1.0"/>
+      <message name="OPTIC_FLOW_EST"         period="0.25"/>
       <!--message name="STEREO_IMG"             period="0.25"/-->
     </mode>
 

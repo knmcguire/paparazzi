@@ -26,6 +26,13 @@
 
 #ifndef LISA_STEREO_H_
 #define LISA_STEREO_H_
+#include <stdlib.h>
+#include "mcu_periph/uart.h"
+
+
+extern uint8_t msg_buf[];    // buffer used to contain image without line endings
+extern uint8_t *img_buf;
+
 
 extern void lisa_stereo_start(void);
 extern void lisa_stereo_stop(void);

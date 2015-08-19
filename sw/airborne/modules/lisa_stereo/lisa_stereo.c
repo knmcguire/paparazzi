@@ -66,7 +66,7 @@ ImageProperties imageProperties;
 
 #define MSG_BUF_SIZE 128    // size of image buffer
 uint8_t msg_buf[MSG_BUF_SIZE];    // buffer used to contain image without line endings
-
+uint8_t *img_buf;
 #define BUF_SIZE 1024    // size of circular buffer
 uint8_t ser_read_buf[BUF_SIZE];     // circular buffer for incoming data
 uint32_t insert_loc, extract_loc, img_start;   // place holders for buffer read and write
@@ -172,6 +172,8 @@ extern void lisa_stereo_start(void){
 
   send_data = 0;
 
+ //memset(img_buf,'0',MSG_BUF_SIZE);
+
   // initiate uart
  // UART1Init();
 }
@@ -187,7 +189,9 @@ extern void lisa_stereo_periodic(void) {
       //DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, 1, image_buf);
       //image_buf[0] = 1;
   }
+
+ // memcpy(img_buf,&msg_buf,128*sizeof(uint8_t));
   send_data = (send_data + 1) % 128;
-    if (send_data == 0)
-  		DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &insert_loc, &extract_loc, &img_start, &imageProperties.width, imageProperties.width, msg_buf);
+    if (send_data == 0){}
+    //   DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &insert_loc, &extract_loc, &img_start, &imageProperties.width, imageProperties.width, msg_buf);
 }

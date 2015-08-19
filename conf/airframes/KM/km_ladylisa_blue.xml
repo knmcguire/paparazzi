@@ -211,6 +211,7 @@
    <!--<load name="gps_ubx_ucenter.xml"/>-->
    <load name="send_imu_mag_current.xml"/>
    <load name="lisa_stereo.xml"/>
+   <load name="lisa_stabilization_opticflow.xml"/>
    </modules>
 
   <firmware name="rotorcraft">
