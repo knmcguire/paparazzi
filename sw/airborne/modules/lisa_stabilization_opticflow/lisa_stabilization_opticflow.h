@@ -18,7 +18,6 @@
 #include "math/pprz_algebra_int.h"
 
 
-
 struct opticflow_result_t {
   float fps;              ///< Frames per second of the optical flow calculation
   uint16_t corner_cnt;    ///< The amount of coners found by FAST9
@@ -49,6 +48,7 @@ extern void lisa_stab_of_start(void);
 extern void lisa_stab_of_periodic(void);
 extern void send_edge_flow_velocity(void);
 void velocity_calculate(struct opticflow_result_t *opticflow_result);
+float simpleKalmanFilter(float* cov,float previous_est, float current_meas,float Q,float R);
 
 
 // Implement own Horizontal loops

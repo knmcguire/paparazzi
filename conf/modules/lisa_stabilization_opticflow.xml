@@ -3,7 +3,26 @@
 <module name="lisa_stabilization_opticflow" dir="lisa_stabilization_opticflow">
   <doc>
     <description>Guidance stabilization based on optical flow detected with a downfacing stereocam on a Lisa s nanoquad</description>
+    <section name="VISION" prefix="VISION_">
+      <define name="PHI_PGAIN" value="400" description="Optic flow proportional gain on the roll velocity error"/>
+      <define name="PHI_IGAIN" value="0" description="Optic flow integrated gain on the summed roll velocity error"/>
+      <define name="THETA_PGAIN" value="400" description="Optic flow proportional gain on the pitch velocity error"/>
+      <define name="THETA_IGAIN" value="0" description="Optic flow integrated gain on the summed pitch velocity error"/>
+      <!--define name="DESIRED_VX" value="0" description="The desired velocity in the body frame x direction"/>
+      <define name="DESIRED_VY" value="0" description="The desired velocity in the body frame y direction"/-->
+    </section>
   </doc>
+
+  <settings>
+     <dl_settings NAME="Edgeflow stabilization">
+       <dl_settings name="stereo_stab">
+          <dl_setting var="phi_gain_p" module="lisa_stabilization_opticflow/lisa_stabilization_opticflow" min="0" step="1" max="2000" param="VISION_PHI_PGAIN"/>
+          <dl_setting var="phi_gain_i" module="lisa_stabilization_opticflow/lisa_stabilization_opticflow" min="0" step="1" max="500" param="VISION_PHI_IGAIN"/>
+          <dl_setting var="theta_gain_p" module="lisa_stabilization_opticflow/lisa_stabilization_opticflow" min="0" step="1" max="2000" param="VISION_THETA_PGAIN"/>
+          <dl_setting var="theta_gain_i" module="lisa_stabilization_opticflow/lisa_stabilization_opticflow" min="0" step="1" max="500" param="VISION_THETA_IGAIN"/>
+       </dl_settings>
+     </dl_settings>
+  </settings>
   <header>
     <file name="lisa_stabilization_opticflow.h"/>
   </header>
@@ -12,6 +31,10 @@
   <!--datalink message="msg_vel_of" fun="EDGE_FLOW_VELOCITY"/-->
   <makefile>
     <file name="lisa_stabilization_opticflow.c"/>
+    <raw>
+      ap.CFLAGS += -DGUIDANCE_V_MODE_MODULE_SETTING=GUIDANCE_V_MODE_HOVER
+      ap.CFLAGS += -DGUIDANCE_H_MODE_MODULE_SETTING=GUIDANCE_H_MODE_MODULE
+    </raw>
   </makefile>
 </module>
 

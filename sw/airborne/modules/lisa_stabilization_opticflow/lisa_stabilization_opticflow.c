@@ -75,6 +75,8 @@ int phi_gain_i=VISION_PHI_IGAIN;
 int theta_gain_p=VISION_THETA_PGAIN;
 int theta_gain_i=VISION_THETA_IGAIN;
 
+float coveriance_x;
+float coveriance_y;
 
 uint8_t send_data_2;
 
@@ -120,10 +122,27 @@ void lisa_stab_of_init(void)
 
     // register_periodic_telemetry(DefaultPeriodic, "OPTIC_FLOW_EST", opticflow_telem_send);
 
+    coveriance_x=0;
+    coveriance_y=0;
+
     send_data_2=0;
 }
 void lisa_stab_of_start(void)
 {
+}
+
+
+float simpleKalmanFilter(float* cov,float previous_est, float current_meas,float Q,float R)
+{
+
+    float predict_state=previous_est;
+    float predict_cov=*cov+Q;
+    float K=predict_cov*(1/(*cov+R));
+
+    float new_est=predict_state+K*(current_meas-previous_est);
+    *cov=(1-K)*predict_cov;
+
+    return new_est;
 }
 
 void lisa_stab_of_periodic(void)
@@ -153,7 +172,23 @@ void lisa_stab_of_periodic(void)
     angle_disp=trans_y*radperpx;
     velocity_y=-height_meters*tan(angle_disp)*FPS;
 
+    opticflow_result.flow_x=trans_x;
+    opticflow_result.flow_y=trans_y;
+    float prev_vel_x=opticflow_result.vel_x;
+    float prev_vel_y=opticflow_result.vel_y;
+    opticflow_result.vel_x=velocity_x;
+    opticflow_result.vel_y=velocity_y;
 
+    //kalman filter
+
+    float Q=0.001;
+    float R=1.0;
+    float new_est_x,new_est_y;
+    new_est_x=simpleKalmanFilter(&coveriance_x,prev_vel_x,opticflow_result.vel_x,Q,R);
+    new_est_y=simpleKalmanFilter(&coveriance_y,prev_vel_y,opticflow_result.vel_y,Q,R);
+
+    opticflow_result.vel_x=new_est_x;
+    opticflow_result.vel_y=new_est_y;
     //check if autopilot is in AP
     if (autopilot_mode != AP_MODE_MODULE) {
         err_vx_int=0;
@@ -183,10 +218,7 @@ void lisa_stab_of_periodic(void)
 
     }
 //storing in optical flow structure
-    opticflow_result.flow_x=trans_x;
-    opticflow_result.flow_y=trans_y;
-    opticflow_result.vel_x=velocity_x;
-    opticflow_result.vel_y=velocity_y;
+
     opticflow_result.tracked_cnt=100;
     opticflow_result.corner_cnt=100;
 
@@ -196,7 +228,7 @@ void lisa_stab_of_periodic(void)
     cmd.theta=cmd_theta;
 
     //send messages with 4 hz
-    send_data_2 = (send_data_2 + 1) % 128;
+    send_data_2 = (send_data_2 + 1) % 512;
     if (send_data_2 == 0)
     {
 

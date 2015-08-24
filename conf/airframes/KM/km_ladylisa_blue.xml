@@ -185,7 +185,13 @@
    <define name="HOVER_KP" value="276"/>
    <define name="HOVER_KD" value="455"/>
    <define name="HOVER_KI" value="100"/>
-   <define name="GUIDANCE_V_NOMINAL_HOVER_THROTTLE" value="0.5"/>
+   <define name="NOMINAL_HOVER_THROTTLE" value="0.9"/>
+    <!-- optional parameters -->
+    <define name="ADAPT_THROTTLE_ENABLED" value="TRUE"/>
+    <define name="REF_MIN_ZD" value="-3.0" unit="m/s"/>
+    <define name="REF_MAX_ZD" value="3.0" unit="m/s"/>
+    <define name="MAX_RC_CLIMB_SPEED" value="-3.0" unit="m/s"/>
+    <define name="MAX_RC_DESCENT_SPEED" value="3.0" unit="m/s"/>
   </section>
 
   <section name="AHRS" prefix="AHRS_">
@@ -199,6 +205,15 @@
    <define name="PGAIN" value="39"/>
    <define name="DGAIN" value="50"/>
    <define name="IGAIN" value="19"/>
+
+    <define name="MAX_BANK" value="20" unit="deg"/>
+    <define name="USE_SPEED_REF" value="TRUE"/>
+    <define name="REF_MAX_SPEED" value="5.0" unit="m/s"/>
+    <define name="REF_MAX_ACCEL" value="5.66" unit="m/s2"/>
+    <define name="REF_OMEGA" value="67" unit="deg"/>
+    <define name="REF_ZETA" value="0.85"/>
+    <define name="REF_TAU" value="0.5"/>
+    <define name="APPROX_FORCE_BY_THRUST" value="FALSE"/>
  </section>
 
  <section name="SIMULATOR" prefix="NPS_">
@@ -222,7 +237,7 @@
       <configure name="RADIO_CONTROL_LED" value="none"/>
       <define name="USE_PERSISTENT_SETTINGS" value="TRUE"/>
       <configure name="USE_MAGNETOMETER" value="1"/>
-      <define name="USE_BAROMETER" value="TRUE"/>
+      <define name="USE_BAROMETER" value="1"/>
     </target>
 
     <target name="nps" board="pc">
