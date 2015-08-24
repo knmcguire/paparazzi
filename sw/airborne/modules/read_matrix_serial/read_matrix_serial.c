@@ -44,7 +44,7 @@ float ref_roll;
 
 speed_t usbInputSpeed = B1000000;
 
-#define PRINT_STUFF 1
+#define PRINT_STUFF 0
 
 uint8_t singleImageColumnCount=6;
 uint8_t camerasCount=6;
