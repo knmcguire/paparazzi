@@ -176,6 +176,7 @@ void guidance_h_module_read_rc(void)
 			control_check_pitch=0;
 		}
 //#endif
+
 }
 
 
@@ -187,7 +188,6 @@ void guidance_h_module_read_rc(void)
  */
 void guidance_h_module_run(bool_t in_flight)
 {
-	guidance_h_module_read_rc();
 	/* Update the setpoint */
 	stabilization_attitude_set_rpy_setpoint_i(&opticflow_stab.cmd);
 
@@ -219,8 +219,8 @@ void stabilization_opticflow_update(struct opticflow_result_t *result)
 	opticflow_stab.err_vy_int += err_vy / 100;
 
 	/* Calculate the commands */
-	opticflow_stab.cmd.phi   = opticflow_stab.phi_pgain * err_vx / 100
-			+ opticflow_stab.phi_igain * opticflow_stab.err_vx_int;
+	opticflow_stab.cmd.phi   = (opticflow_stab.phi_pgain * err_vx / 100
+			+ opticflow_stab.phi_igain * opticflow_stab.err_vx_int);
 	opticflow_stab.cmd.theta = -(opticflow_stab.theta_pgain * err_vy / 100
 			+ opticflow_stab.theta_igain * opticflow_stab.err_vy_int);
 

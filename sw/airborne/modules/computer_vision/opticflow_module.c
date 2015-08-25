@@ -96,7 +96,7 @@ static void opticflow_telem_send(struct transport_tx *trans, struct link_device 
                                  &opticflow_result.flow_y, &opticflow_result.flow_der_x,
                                  &opticflow_result.flow_der_y, &opticflow_result.vel_x,
                                  &opticflow_result.vel_y, &opticflow_result.div_size,
-                                 &opticflow_stab.cmd.phi, &opticflow_stab.cmd.theta);
+                                 &opticflow_stab.desired_vx, &opticflow_stab.desired_vy);
     pthread_mutex_unlock(&opticflow_mutex);
 }
 #endif
@@ -208,6 +208,10 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
     image_create(&img_jpeg, opticflow_dev->w, opticflow_dev->h, IMAGE_JPEG);
 #endif
 
+
+    float coveriance_x=0;
+    float coveriance_y=0;
+
     /* Main loop of the optical flow calculation */
     while (TRUE) {
         // Try to fetch an image
@@ -225,8 +229,8 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
         frame_processed=0;
 
-        float trans_x=((float)READimageBuffer[1]-100)/100;
-        float trans_y=((float)READimageBuffer[3]-100)/100;
+        float trans_x=((float)READimageBuffer[1]-100);
+        float trans_y=-((float)READimageBuffer[3]-100);
         float slope_x=((float)READimageBuffer[0]-100)/1000;
         float slope_y=((float)READimageBuffer[2]-100)/1000;
         float height=(float)READimageBuffer[4];
@@ -252,21 +256,30 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
         opticflow.prev_phi = opticflow_state.phi;
         opticflow.prev_theta = opticflow_state.theta;
 
+
         radperpx=(57.4*M_PI/180)/128;
-        angle_disp=opticflow_result.flow_der_x*radperpx;
+        angle_disp=opticflow_result.flow_x*radperpx;
         float velocity_x=height_meters*tan(angle_disp)*25;
 
         radperpx=(45*M_PI/180)/96;
-        angle_disp=opticflow_result.flow_der_y*radperpx;
+        angle_disp=opticflow_result.flow_y*radperpx;
         float velocity_y=height_meters*tan(angle_disp)*25;
+
+        //kalman filter
+        float Q=0.5;
+        float R=1.0;
+        float new_est_x,new_est_y;
+        new_est_x=simpleKalmanFilter(&coveriance_x,opticflow_result.vel_x,velocity_x,Q,R);
+        new_est_y=simpleKalmanFilter(&coveriance_y,opticflow_result.vel_y,velocity_y,Q,R);
+
+       // printf("covariance: %f\n", new_est_x);
 
 
         // printf("velocities: %f, %f m/s\n",velocity_x,velocity_y);
 
         pthread_mutex_lock(&opticflow_mutex);
-
-        opticflow_result.vel_x=-velocity_x*100;
-        opticflow_result.vel_y=velocity_y*100;
+        opticflow_result.vel_x=new_est_x;
+        opticflow_result.vel_y=new_est_y;
         opticflow_result.tracked_cnt=100;
         opticflow_result.corner_cnt=100;
         opticflow_result.fps=25;
@@ -331,3 +344,17 @@ static void opticflow_agl_cb(uint8_t sender_id __attribute__((unused)), float di
         opticflow_state.agl = distance;
     }
 }
+
+float simpleKalmanFilter(float* cov,float previous_est, float current_meas,float Q,float R)
+{
+
+    float predict_state=previous_est;
+    float predict_cov=*cov+Q;
+    float K=predict_cov*(1/(*cov+R));
+
+    float new_est=predict_state+K*(current_meas-previous_est);
+    *cov=(1-K)*predict_cov;
+
+    return new_est;
+}
+

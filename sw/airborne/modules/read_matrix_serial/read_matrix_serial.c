@@ -42,7 +42,7 @@
 float ref_pitch;
 float ref_roll;
 
-speed_t usbInputSpeed = B1000000;
+speed_t usbInputSpeed = B921600;
 
 #define PRINT_STUFF 0
 

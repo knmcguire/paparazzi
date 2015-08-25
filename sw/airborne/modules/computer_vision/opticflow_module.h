@@ -41,4 +41,6 @@ extern void opticflow_module_run(void);
 extern void opticflow_module_start(void);
 extern void opticflow_module_stop(void);
 
+
+float simpleKalmanFilter(float* cov,float previous_est, float current_meas,float Q,float R);
 #endif /* OPTICFLOW_MODULE_H */
