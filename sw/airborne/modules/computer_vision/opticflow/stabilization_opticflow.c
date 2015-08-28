@@ -157,16 +157,16 @@ void guidance_h_module_read_rc(void)
 		float control_pitch= radio_control.values[RADIO_PITCH]*0.2f;
 		if(control_pitch<0&&control_check_pitch!=1)
 		{
-			opticflow_stab.phi_igain=opticflow_stab.phi_igain+1;
-			opticflow_stab.theta_igain=opticflow_stab.theta_igain+1;
+			opticflow_stab.phi_igain=opticflow_stab.phi_igain+10;
+			opticflow_stab.theta_igain=opticflow_stab.theta_igain+10;
 			control_check_pitch=1;
 		}
 		else
 		{
 			if(control_pitch>0&&control_check_pitch!=1)
 			{
-				opticflow_stab.phi_igain=opticflow_stab.phi_igain-1;
-				opticflow_stab.theta_igain=opticflow_stab.theta_igain-1;
+				opticflow_stab.phi_igain=opticflow_stab.phi_igain-10;
+				opticflow_stab.theta_igain=opticflow_stab.theta_igain-10;
 				control_check_pitch=1;
 			}
 			else{}
@@ -215,8 +215,8 @@ void stabilization_opticflow_update(struct opticflow_result_t *result)
 	}
 
 	/* Calculate the integrated errors (TODO: bound??) */
-	opticflow_stab.err_vx_int += err_vx / 100;
-	opticflow_stab.err_vy_int += err_vy / 100;
+	opticflow_stab.err_vx_int += err_vx /512/ 100;
+	opticflow_stab.err_vy_int += err_vy /512/ 100;
 
 	/* Calculate the commands */
 	opticflow_stab.cmd.phi   = (opticflow_stab.phi_pgain * err_vx / 100

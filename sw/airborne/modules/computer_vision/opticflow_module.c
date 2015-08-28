@@ -258,22 +258,27 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
 
         radperpx=(57.4*M_PI/180)/128;
-        angle_disp=opticflow_result.flow_x*radperpx;
+        angle_disp=opticflow_result.flow_der_x*radperpx;
         float velocity_x=height_meters*tan(angle_disp)*25;
 
+        if(abs(velocity_x>30))
+        		velocity_x=0;//30*velocity_x/abs(velocity_x);
+
         radperpx=(45*M_PI/180)/96;
-        angle_disp=opticflow_result.flow_y*radperpx;
+        angle_disp=opticflow_result.flow_der_y*radperpx;
         float velocity_y=height_meters*tan(angle_disp)*25;
 
+        if(abs(velocity_x>30))
+        		velocity_y=0;//;30*velocity_y/(abs(velocity_y));
+
         //kalman filter
-        float Q=0.5;
+        float Q=0.1;
         float R=1.0;
         float new_est_x,new_est_y;
         new_est_x=simpleKalmanFilter(&coveriance_x,opticflow_result.vel_x,velocity_x,Q,R);
         new_est_y=simpleKalmanFilter(&coveriance_y,opticflow_result.vel_y,velocity_y,Q,R);
 
        // printf("covariance: %f\n", new_est_x);
-
 
         // printf("velocities: %f, %f m/s\n",velocity_x,velocity_y);
 
