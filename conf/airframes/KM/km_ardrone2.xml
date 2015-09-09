@@ -37,6 +37,7 @@
       <define name="STEREOCAM_ATTACH" value="TRUE"/>
    </load>
     <load name="read_matrix_serial.xml"/>
+    <!--load name="logger_file.xml"/-->
   </modules>
 
   <commands>
@@ -100,8 +101,8 @@
     <define name="MAG_Y_CURRENT_COEF" value="0.0"/>
     <define name="MAG_Z_CURRENT_COEF" value="0.0"/>
 
-    <define name="BODY_TO_IMU_PHI" value="-4." unit="deg"/>
-    <define name="BODY_TO_IMU_THETA" value="-4." unit="deg"/>
+    <define name="BODY_TO_IMU_PHI" value="-3.5" unit="deg"/>
+    <define name="BODY_TO_IMU_THETA" value="-3." unit="deg"/>
     <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
   </section>
 

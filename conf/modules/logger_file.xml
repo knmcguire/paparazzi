@@ -6,7 +6,7 @@
       Logs to a csv file.
       (only for linux)
     </description>
-    <define name="FILE_LOGGER_PATH" value="/data/video/usb" description="path where csv file is saved."/>
+    <define name="FILE_LOGGER_PATH" value="/data/video/usb0" description="path where csv file is saved."/>
   </doc>
   <header>
 	<file name="file_logger.h" />

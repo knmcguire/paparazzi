@@ -26,6 +26,18 @@
       <message name="AIR_DATA"               period="1.3"/>
       <message name="SURVEY"                 period="2.5"/>
       <message name="OPTIC_FLOW_EST"         period="0.25"/>
+      <message name="OPT_FLOW_EST_2"         period="0.25"/>
+    </mode>
+
+    <mode name="compressed" key_press="c">
+      <message name="AUTOPILOT_VERSION"      period="11.1"/>
+      <message name="DL_VALUE"               period="1.1"/>
+      <message name="ROTORCRAFT_STATUS"      period="1.2"/>
+      <message name="ROTORCRAFT_FP"          period="0.26"/>
+      <message name="GPS_INT"                period=".12"/>
+      <message name="INS"                    period=".09"/>
+      <message name="OPTIC_FLOW_EST"         period="0.11"/>
+      <message name="OPT_FLOW_EST_2"         period="1.1"/>
     </mode>
 
     <mode name="ppm">
