@@ -290,8 +290,9 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 		float Q=0.2;
 		float R=1.0;
 		float new_est_x,new_est_y;
-		new_est_x=simpleKalmanFilter(&coveriance_x,opticflow_result.vel_x,velocity_x,0.05,R);
-		new_est_y=simpleKalmanFilter(&coveriance_y,opticflow_result.vel_y,velocity_y,0.05,R);
+		new_est_x=simpleKalmanFilter(&coveriance_x,opticflow_result.vel_x,velocity_x,0.5,R);
+		new_est_y=simpleKalmanFilter(&coveriance_y,opticflow_result.vel_y,velocity_y,0.5,R);
+
 
 
 
@@ -302,6 +303,8 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 		pthread_mutex_lock(&opticflow_mutex);
 		opticflow_result.vel_x=new_est_x;
 		opticflow_result.vel_y=new_est_y;
+		//opticflow_result.vel_x=velocity_x;
+		//opticflow_result.vel_y=velocity_y;
 		opticflow_result.tracked_cnt=100;
 		opticflow_result.corner_cnt=100;
 		opticflow_result.fps=25;
