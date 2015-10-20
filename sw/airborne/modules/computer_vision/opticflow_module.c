@@ -28,6 +28,20 @@
 
 #include "opticflow_module.h"
 
+
+//--------------EDGEFLOW
+#include "divergence.h"
+
+struct displacement_t displacement;
+struct edge_flow_t edge_flow;
+struct edge_hist_t edge_hist;
+
+int edge_thres=100;
+int max_distance=10;
+int window_size=10;
+int measurement_noise=50;
+//------------------------
+
 #include <stdio.h>
 #include <pthread.h>
 #include "state.h"
@@ -223,6 +237,45 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
   image_create(&img_jpeg, opticflow_dev->w, opticflow_dev->h, IMAGE_JPEG);
 #endif
 
+
+  //-----------------------EDGEFLOW
+  struct image_t img_processed;
+  image_create(&img_processed,
+               320,
+              240,
+               IMAGE_YUV422);
+  struct image_t img_copy;
+  image_create(&img_copy,
+               320,
+              240,
+               IMAGE_YUV422);
+
+
+  struct edge_hist_t* edge_hist;
+      edge_hist=(struct edge_hist_t*)calloc(MAX_HORIZON+1,sizeof(struct edge_hist_t));
+
+      struct edge_flow_t edge_flow;
+      edge_flow.horizontal[0]=0.0;
+      edge_flow.horizontal[1]=0.0;
+      edge_flow.vertical[0]=0.0;
+      edge_flow.vertical[1]=0.0;
+
+
+      //Define arrays and pointers for edge histogram and displacements
+      struct displacement_t* displacement;
+      displacement=(struct displacement_t*)malloc(sizeof(struct displacement_t));
+
+      int rear=1;
+      int front=0;
+
+
+       float coveriance_x=1;
+       float coveriance_y=1;
+
+
+      //,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
   /* Main loop of the optical flow calculation */
   while (TRUE) {
     // Try to fetch an image
@@ -237,6 +290,38 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
     // Do the optical flow calculation
     struct opticflow_result_t temp_result;
+
+    //---------------------------EDGEFLOW
+
+#if EDGE_FLOW
+    image_copy(&img,&img_copy);
+        int median_features;
+       median_features=calculate_edge_flow(&img_copy,&img_processed,displacement,&edge_flow,edge_hist,front,rear,window_size,max_distance,edge_thres,img.w,img.h);
+
+
+       //visualize_divergence(&img_copy,&img_processed,displacement,edge_hist,front,rear,edge_flow.horizontal[0],edge_flow_horizontal[1],img.w,img.h,'e');
+
+        // Move the dynamic indices and make them circular
+        front++;
+        rear++;
+
+        if(front>MAX_HORIZON+1)
+            front=0;
+        if(rear>MAX_HORIZON+1)
+            rear=0;
+
+
+        temp_result.flow_float_x=(int16_t)edge_flow.horizontal[1];
+        temp_result.flow_float_y=(int16_t)edge_flow.vertical[1];
+        temp_result.tracked_cnt=median_features;
+        temp_result.corner_cnt=median_features;
+
+        //printf("check opticflow_module end");
+
+//temp_result.fps=0;
+
+#endif       //--------------------------------
+
     opticflow_calc_frame(&opticflow, &temp_state, &img, &temp_result);
 
     // Copy the result if finished
