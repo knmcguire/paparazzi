@@ -35,6 +35,12 @@
 // Own Header
 #include "opticflow_calculator.h"
 
+
+//-----------------------------EDGEFLOW
+
+#include "divergence.h"
+//----------------------------------
+
 // Computer Vision
 #include "lib/vision/image.h"
 #include "lib/vision/lucas_kanade.h"
@@ -173,6 +179,63 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
     opticflow->got_first_img = TRUE;
   }
 
+   //------------------------------EDGEFLOW
+
+#if EDGE_FLOW
+    struct point_t *corners;
+    struct flow_t *vectors;
+    // Flow Derotation
+    float diff_flow_x =-(state->phi - opticflow->prev_phi) * img->w / OPTICFLOW_FOV_W;
+     float diff_flow_y =-(state->theta - opticflow->prev_theta) * img->h / OPTICFLOW_FOV_H;
+     result->flow_float_der_x = result->flow_float_x - diff_flow_x ;
+     result->flow_float_der_y = result->flow_float_y - diff_flow_y;
+     opticflow->prev_phi = state->phi;
+     opticflow->prev_theta = state->theta;
+
+
+     result->vel_x = result->flow_der_x * result->fps * state->agl* img->w / OPTICFLOW_FX;
+     result->vel_y = - result->flow_der_y * result->fps * state->agl* img->h / OPTICFLOW_FY;
+
+      result->flow_der_x=(int)result->flow_float_der_x;
+      result->flow_der_y=(int)result->flow_float_der_y;
+      result->flow_x=(int)result->flow_float_x;
+      result->flow_y=(int)result->flow_float_y;
+   /* float dtheta=state->theta - opticflow->prev_theta;
+    float dphi=state->phi - opticflow->prev_phi;
+    float dpsi=0.0;
+    float psi=0.0;
+
+   //float omegat_x=dphi*cos(state->theta);
+   //float omegat_y=dtheta*cos(psi);
+
+    float diff_flow_x =-(state->phi - opticflow->prev_phi) * img->w / OPTICFLOW_FOV_W;
+    float diff_flow_y =-(state->theta - opticflow->prev_theta) * img->h / OPTICFLOW_FOV_H;
+     /*float diff_flow_x =-(omegat_y) * img->w / OPTICFLOW_FOV_W;
+     float diff_flow_y =-(omegat_x) * img->h / OPTICFLOW_FOV_H;
+    result->flow_float_der_x = result->flow_float_x - diff_flow_x ;
+    result->flow_float_der_y = result->flow_float_y - diff_flow_y;
+    opticflow->prev_phi = state->phi;
+    opticflow->prev_theta = state->theta;
+
+
+
+    //result->vel_x=100*state->agl*tan(result->flow_float_der_x*OPTICFLOW_FOV_W/img->w)*result->fps;
+    //result->vel_y=-100*state->agl*tan(result->flow_float_der_y*OPTICFLOW_FOV_H/(img->h))*result->fps;
+
+    //float vel_x_der,vel_y_der;
+    //vel_x_der = result->flow_der_x * result->fps * state->agl* img->w / OPTICFLOW_FX/cos(state->phi);
+    //vel_y_der = -result->flow_der_y * result->fps * state->agl* img->h / OPTICFLOW_FY/cos(state->theta);
+    result->vel_x = result->flow_der_x * result->fps * state->agl * img->w / OPTICFLOW_FX;
+    result->vel_y = -result->flow_der_y * result->fps * state->agl * img->h / OPTICFLOW_FY;
+
+    result->flow_der_x=(int)result->flow_float_der_x;
+    result->flow_der_y=(int)result->flow_float_der_y;
+    result->flow_x=(int)result->flow_float_x;
+    result->flow_y=(int)result->flow_float_y;*/
+
+#else
+
+
   // *************************************************************************************
   // Corner detection
   // *************************************************************************************
@@ -278,6 +341,9 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
   // Velocity calculation
   result->vel_x = -result->flow_der_x * result->fps * state->agl / opticflow->subpixel_factor * img->w / OPTICFLOW_FX;
   result->vel_y =  result->flow_der_y * result->fps * state->agl / opticflow->subpixel_factor * img->h / OPTICFLOW_FY;
+
+#endif
+
 
   // *************************************************************************************
   // Next Loop Preparation

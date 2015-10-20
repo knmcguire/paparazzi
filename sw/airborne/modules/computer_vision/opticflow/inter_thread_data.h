@@ -39,6 +39,10 @@ struct opticflow_result_t {
   int16_t flow_y;         ///< Flow in y direction from the camera (in subpixels)
   int16_t flow_der_x;     ///< The derotated flow calculation in the x direction (in subpixels)
   int16_t flow_der_y;     ///< The derotated flow calculation in the y direction (in subpixels)
+  float flow_float_x;
+  float flow_float_y;
+  float flow_float_der_x;
+  float flow_float_der_y;
 
   float vel_x;            ///< The velocity in the x direction
   float vel_y;            ///< The velocity in the y direction
