@@ -11,6 +11,8 @@
   <header>
 	<file name="file_logger.h" />
   </header>
+    <init fun="file_logger_init()"/>
+  
   <periodic fun="file_logger_periodic()" start="file_logger_start()"
 		    stop="file_logger_stop()" autorun="FALSE" />
   <makefile>

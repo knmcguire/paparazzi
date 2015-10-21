@@ -33,6 +33,8 @@
 #include "firmwares/rotorcraft/stabilization.h"
 #include "state.h"
 
+#include "subsystems/abi.h"
+
 /** Set the default File logger path to the USB drive */
 #ifndef FILE_LOGGER_PATH
 #define FILE_LOGGER_PATH /data/video/usb
@@ -41,11 +43,30 @@
 /** The file pointer */
 static FILE *file_logger = NULL;
 
+abi_event ev;
+
+int16_t flow_x;
+int16_t flow_y;
+uint32_t now_ts;
+void data_cb(uint8_t sender_id,const uint32_t now_ts_abi,const int16_t *flow_x_abi, const int16_t *flow_y_abi, const int16_t *flow_x_der_abi, const int16_t *flow_y_der_abi, const uint8_t quality, const float height) {
+ // do something here
+	flow_x=flow_x_abi;
+	flow_y=flow_y_abi;
+	now_ts=now_ts_abi;
+}
+void file_logger_init(void)
+{
+	  AbiBindMsgOPTICAL_FLOW(ABI_BROADCAST, &ev, data_cb);
+
+}
+
+
 /** Start the file logger and open a new file */
 void file_logger_start(void)
 {
   uint32_t counter = 0;
   char filename[512];
+
 
   // Check for available files
   sprintf(filename, "%s/%05d.csv", STRINGIFY(FILE_LOGGER_PATH), counter);
@@ -61,7 +82,8 @@ void file_logger_start(void)
   if (file_logger != NULL) {
     fprintf(
       file_logger,
-      "counter,gyro_unscaled_p,gyro_unscaled_q,gyro_unscaled_r,accel_unscaled_x,accel_unscaled_y,accel_unscaled_z,mag_unscaled_x,mag_unscaled_y,mag_unscaled_z,COMMAND_THRUST,COMMAND_ROLL,COMMAND_PITCH,COMMAND_YAW,qi,qx,qy,qz\n"
+      "counter, now_ts, flow_x,flow_y,gyro_unscaled_p,gyro_unscaled_q,gyro_unscaled_r,accel_unscaled_x,accel_unscaled_y,accel_unscaled_z,mag_unscaled_x,"
+      "mag_unscaled_y,mag_unscaled_z,COMMAND_THRUST,COMMAND_ROLL,COMMAND_PITCH,COMMAND_YAW,qi,qx,qy,qz\n"
     );
   }
 }
@@ -84,8 +106,11 @@ void file_logger_periodic(void)
   static uint32_t counter;
   struct Int32Quat *quat = stateGetNedToBodyQuat_i();
 
-  fprintf(file_logger, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+  fprintf(file_logger, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
           counter,
+          now_ts,
+          flow_x,
+          flow_y,
           imu.gyro_unscaled.p,
           imu.gyro_unscaled.q,
           imu.gyro_unscaled.r,
