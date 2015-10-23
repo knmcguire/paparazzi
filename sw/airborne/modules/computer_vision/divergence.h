@@ -24,36 +24,53 @@
 #ifndef MAX_HORIZON
 #define MAX_HORIZON 10
 #endif
+#define DISP_RANGE_MAX 20
 
-struct edge_hist_t{
-	int  horizontal[IMAGE_WIDTH];
-    int  vertical[IMAGE_HEIGHT];
+struct edge_hist_t {
+  int32_t horizontal[IMAGE_WIDTH];
+  int32_t vertical[IMAGE_HEIGHT];
 };
 
-struct edge_flow_t{
-	float horizontal[2];
-	float vertical[2];
+struct edge_flow_t {
+  int32_t horizontal_flow;
+  int32_t horizontal_div;
+  int32_t vertical_flow;
+  int32_t vertical_div;
 };
 
-struct displacement_t{
-	int  horizontal[IMAGE_WIDTH];
-	int  vertical[IMAGE_HEIGHT];
+struct displacement_t {
+  int32_t horizontal[IMAGE_WIDTH];
+  int32_t vertical[IMAGE_HEIGHT];
+};
+
+struct covariance_t {
+  int32_t flow_x;
+  int32_t flow_y;
+  int32_t div_x;
+  int32_t div_y;
 };
 
 
-int calculate_edge_flow(struct image_t *in,struct image_t* out, struct displacement_t* displacement,struct edge_flow_t* edge_flow, struct edge_hist_t* edge_hist,int front,int rear,int windowsize,int max_distance,int edge_threshold,uint16_t image_width,uint16_t image_height);
-void visualize_divergence(struct image_t* in,struct image_t* out,struct displacement_t* displacement,struct edge_hist_t* edge_hist,int front,int rear,float Slope, float Yint,uint16_t image_width, uint16_t image_height,char plot_value);
-void visualize_divergence_debug(struct image_t* in,struct image_t* out,struct displacement_t* displacement,int * edge_histogram,int * edge_histogram_prev,int front,int rear,float Slope, float Yint,uint16_t image_width, uint16_t image_height,char plot_value);
-void image_draw_color_line(struct image_t *img, struct point_t *from, struct point_t *to, uint8_t color);
-int calculate_edge_histogram(struct image_t * in,struct image_t * out,int * edge_histogram, int edge_threshold,int image_width,int image_height,char direction);
-int calculate_displacement(int * edge_histogram,int * edge_histogram_prev,int * displacement,int prev_frame_number,int windowsize,int max_distance,int size);
-int getMinimum(int* flow_error, int max_ind);
-int getMinimumMiddle(int * flow_error, int  max_ind);
-int getMaximum(int a[], int n);
-int GetMedian(int* daArray, int iSize);
-int GetMean(int* daArray, int iSize);
-void line_fit_RANSAC( int* displacement, float* Slope, float* Yint,int size);
-void line_fit(int* displacement, float* Slope, float* Yint,int size);
-void blur_filter(struct image_t *in,struct image_t *out,int Gsize,int sigma);
-float simpleKalmanFilter(float* cov,float previous_est, float current_meas,float Q,float R);
+
+void divergence_init();
+
+int calculate_edge_flow(struct image_t *in, struct displacement_t *displacement, struct edge_flow_t *edge_flow,
+                            struct edge_hist_t edge_hist[], int32_t *avg_disp, uint8_t previous_frame_offset[],
+                            uint8_t current_frame_nr, uint8_t window_size, uint8_t disp_range, uint16_t edge_threshold,
+                            uint16_t image_width, uint16_t image_height, uint16_t RES);
+void calculate_edge_histogram(struct image_t *in, int32_t *edge_histogram, uint16_t image_width, uint16_t image_height,
+                              char direction, char side, uint16_t edge_threshold);
+void calculate_displacement(int32_t *edge_histogram, int32_t *edge_histogram_prev, int32_t *displacement,
+                            uint16_t size, uint8_t window, uint8_t disp_range);
+int32_t calculate_displacement_fullimage(int32_t *edge_histogram, int32_t *edge_histogram_2, uint16_t size, uint8_t disp_range);
+
+void line_fit(int32_t *displacement, int32_t *Slope, int32_t *Yint, uint32_t image_width, uint32_t border, uint16_t RES);
+void line_fit_RANSAC(int32_t *displacement, int32_t *slope, int32_t *yInt, uint16_t size, uint32_t border, uint32_t RES);
+
+void totalKalmanFilter(struct covariance_t *coveriance, struct edge_flow_t *prev_edge_flow,
+                       struct edge_flow_t *edge_flow, uint32_t Q, uint32_t R, uint32_t RES);
+int32_t simpleKalmanFilter(int32_t *cov, int32_t previous_est, int32_t current_meas, int32_t Q, int32_t R, int32_t RES);
+
+void visualize_divergence(uint8_t *in, int32_t *displacement, int32_t slope, int32_t yInt, uint32_t image_width,
+                          uint32_t image_height);
 #endif /* DIVERGENCE_H_ */
