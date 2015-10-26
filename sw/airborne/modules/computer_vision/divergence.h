@@ -25,6 +25,8 @@
 #define MAX_HORIZON 10
 #endif
 #define DISP_RANGE_MAX 20
+#define WINDOW 9
+
 
 struct edge_hist_t {
   int32_t horizontal[IMAGE_WIDTH];

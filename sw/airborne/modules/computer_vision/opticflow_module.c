@@ -49,6 +49,7 @@ const uint32_t Q = 10;    // motion model; 0.25*RES
 const uint32_t R = 100;   // measurement model  1*RES
 
 uint8_t current_frame_nr = 0;
+uint8_t current_imu_buffer_nr = 0;
 
 struct edge_hist_t edge_hist[MAX_HORIZON];
 struct edge_flow_t edge_flow;
@@ -61,6 +62,7 @@ int32_t avg_disp = 0;
 int32_t avg_dist = 0;
 uint8_t previous_frame_offset[2] = {1,1};
 
+float imu_buffer[512];
 
 void divergence_init()
 {
@@ -165,6 +167,24 @@ static void opticflow_telem_send(struct transport_tx *trans, struct link_device 
 	pthread_mutex_unlock(&opticflow_mutex);
 }
 #endif
+
+void imu_buffer_init(void)
+{
+	int k;
+	for(k=0;k<512;k++)
+    imu_buffer[k]=0;
+
+
+
+}
+void imu_buffer_run(void)
+{
+	 current_imu_buffer_nr = (current_imu_buffer_nr + 1) % 512;
+	 imu_buffer[current_imu_buffer_nr]=stateGetNedToBodyEulers_f()->phi;
+
+	// printf("%f\n", imu_buffer[current_imu_buffer_nr]);
+
+}
 
 /**
  * Initialize the optical flow module for the bottom camera
@@ -326,7 +346,7 @@ static void opticflow_telem_send(struct transport_tx *trans, struct link_device 
 #if EDGE_FLOW
 		 image_copy(&img,&img_copy);
 		 median_features=calculate_edge_flow(&img_copy, &displacement, &edge_flow, edge_hist, &avg_disp,
-				 previous_frame_offset, current_frame_nr , 10, DISP_RANGE_MAX, 0,
+				 previous_frame_offset, current_frame_nr , WINDOW, DISP_RANGE_MAX, 0,
 				 img.w,img.h, RES);
 
 
@@ -357,11 +377,7 @@ static void opticflow_telem_send(struct transport_tx *trans, struct link_device 
 
 		 opticflow_calc_frame(&opticflow, &temp_state, &img, &temp_result);
 
-#if EDGE_FLOW
- if (median_features<500)
- 	 {temp_result.flow_der_x=0;
-	 temp_result.flow_der_y=0;}
-#endif
+
 
 		 // Copy the result if finished
 		 pthread_mutex_lock(&opticflow_mutex);

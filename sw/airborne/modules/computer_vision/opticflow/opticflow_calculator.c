@@ -189,8 +189,13 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
      float diff_flow_x = (state->phi - opticflow->prev_phi) * img->w / OPTICFLOW_FOV_W;
      float diff_flow_y = (state->theta - opticflow->prev_theta) * img->h / OPTICFLOW_FOV_H;
 
-     result->flow_der_x = result->flow_x - diff_flow_x * 100;
-     result->flow_der_y = result->flow_y - diff_flow_y * 100;
+     if (result->tracked_cnt>200){
+         result->flow_der_x = result->flow_x - diff_flow_x * 100;
+         result->flow_der_y = result->flow_y - diff_flow_y * 100;}
+     else{result->flow_der_x=0;
+     result->flow_der_y=0;}
+
+
      opticflow->prev_phi = state->phi;
      opticflow->prev_theta = state->theta;
 

@@ -87,8 +87,7 @@ void file_logger_start(void)
   if (file_logger != NULL) {
     fprintf(
       file_logger,
-      "counter, now_ts, flow_x,flow_y,phi,theta,flow_der_x,flow_der_y,gyro_unscaled_p,gyro_unscaled_q,gyro_unscaled_r,accel_unscaled_x,accel_unscaled_y,accel_unscaled_z,mag_unscaled_x,"
-      "mag_unscaled_y,mag_unscaled_z,COMMAND_THRUST,COMMAND_ROLL,COMMAND_PITCH,COMMAND_YAW,qi,qx,qy,qz\n"
+      "counter,now_ts_imu, now_ts_image, flow_x,flow_y,phi,theta,flow_der_x,flow_der_y,gyro_unscaled_p,gyro_unscaled_q,gyro_unscaled_r,accel_unscaled_x,accel_unscaled_y,accel_unscaled_z\n"
     );
   }
 }
@@ -112,10 +111,12 @@ void file_logger_periodic(void)
   struct Int32Quat *quat = stateGetNedToBodyQuat_i();
   float phi=stateGetNedToBodyEulers_f()->phi;
   float theta=stateGetNedToBodyEulers_f()->theta;
+	 uint32_t now_ts_imu = get_sys_time_usec();
 
 
-  fprintf(file_logger, "%d,%d,%d,%d,%f,%f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+  fprintf(file_logger, "%d,%d, %d,%d,%d,%f,%f,%d,%d,%d,%d,%d,%d,%d,%d\n",
           counter,
+          now_ts_imu,
           now_ts,
           flow_x,
           flow_y,
@@ -128,18 +129,7 @@ void file_logger_periodic(void)
           imu.gyro_unscaled.r,
           imu.accel_unscaled.x,
           imu.accel_unscaled.y,
-          imu.accel_unscaled.z,
-          imu.mag_unscaled.x,
-          imu.mag_unscaled.y,
-          imu.mag_unscaled.z,
-          stabilization_cmd[COMMAND_THRUST],
-          stabilization_cmd[COMMAND_ROLL],
-          stabilization_cmd[COMMAND_PITCH],
-          stabilization_cmd[COMMAND_YAW],
-          quat->qi,
-          quat->qx,
-          quat->qy,
-          quat->qz
+          imu.accel_unscaled.z
          );
   counter++;
 }

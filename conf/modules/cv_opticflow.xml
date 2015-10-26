@@ -60,8 +60,10 @@
     <file name="opticflow_module.h"/>
   </header>
 
-  <init fun="opticflow_module_init()"/>
+  <init fun="opticflow_module_init()" fun="imu_buffer_init()"/>
   <periodic fun="opticflow_module_run()" start="opticflow_module_start()" stop="opticflow_module_stop()" autorun="TRUE"/>
+ 
+  <periodic fun="imu_buffer_run()"  autorun="TRUE"/>
 
   <makefile target="ap">
     <!-- Include the needed Computer Vision files -->

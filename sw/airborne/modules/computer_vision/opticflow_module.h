@@ -39,4 +39,8 @@ extern void opticflow_module_run(void);
 extern void opticflow_module_start(void);
 extern void opticflow_module_stop(void);
 
+extern void imu_buffer_init(void);
+extern void imu_buffer_run(void);
+
+
 #endif /* OPTICFLOW_MODULE_H */
