@@ -199,6 +199,9 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
      opticflow->prev_phi = state->phi;
      opticflow->prev_theta = state->theta;
 
+ 	//printf("phi = %f,derflow = %d\n", state->phi,result->flow_der_x);
+
+
      // Velocity calculation
      result->vel_x = -result->flow_der_x * result->fps * state->agl / 100 * img->w / OPTICFLOW_FX;
      result->vel_y =  result->flow_der_y * result->fps * state->agl / 100 * img->h / OPTICFLOW_FY;

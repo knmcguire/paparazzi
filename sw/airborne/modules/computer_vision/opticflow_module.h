@@ -33,11 +33,18 @@
 // Needed for settings
 extern struct opticflow_t opticflow;
 
+
 // Module functions
 extern void opticflow_module_init(void);
 extern void opticflow_module_run(void);
 extern void opticflow_module_start(void);
 extern void opticflow_module_stop(void);
+
+struct imu_buffer_t {
+  float phi;
+  float theta;
+  uint32_t time;
+};
 
 extern void imu_buffer_init(void);
 extern void imu_buffer_run(void);
