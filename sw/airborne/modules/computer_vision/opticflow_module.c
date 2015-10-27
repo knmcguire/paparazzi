@@ -382,7 +382,7 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
 		median_features=calculate_edge_flow(&img_copy, &displacement, &edge_flow, edge_hist, &avg_disp,
 				previous_frame_offset, current_frame_nr , WINDOW, DISP_RANGE_MAX, 0,
-				img.w,img.h, RES,);
+				img.w,img.h, RES);
 
 
 
