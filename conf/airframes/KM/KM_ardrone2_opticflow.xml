@@ -17,7 +17,7 @@
     <subsystem name="motor_mixing"/>
     <subsystem name="actuators" type="ardrone2"/>
     <subsystem name="imu" type="ardrone2"/>
-    <subsystem name="gps" type="ublox"/>
+    <subsystem name="gps" type="datalink"/>
     <subsystem name="stabilization" type="int_quat"/>
     <subsystem name="ahrs" type="int_cmpl_quat"/>
     <subsystem name="ins" type="extended"/>
@@ -25,9 +25,9 @@
 
   <modules main_freq="512">
     <load name="bat_voltage_ardrone2.xml"/>
-    <load name="gps_ubx_ucenter.xml"/>
     <load name="send_imu_mag_current.xml"/>
     <load name="logger_file.xml"/>
+    <load name="stereocam.xml"/>
     <load name="cv_opticflow.xml"/>
     <load name="opticflow_hover.xml">
        <define name="EDGE_FLOW" value="TRUE"/>
