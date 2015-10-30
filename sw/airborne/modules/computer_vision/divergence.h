@@ -46,10 +46,10 @@ struct displacement_t {
 };
 
 struct covariance_t {
-  int32_t flow_x;
-  int32_t flow_y;
-  int32_t div_x;
-  int32_t div_y;
+  float flow_x;
+  float flow_y;
+  float div_x;
+  float div_y;
 };
 
 
@@ -71,8 +71,8 @@ void line_fit_RANSAC(int32_t *displacement, int32_t *slope, int32_t *yInt, uint1
 int ipow(int base, int exp);
 void totalKalmanFilter(struct covariance_t *coveriance, struct edge_flow_t *prev_edge_flow,
                        struct edge_flow_t *edge_flow, uint32_t Q, uint32_t R, uint32_t RES);
-int32_t simpleKalmanFilter(int32_t *cov, int32_t previous_est, int32_t current_meas, int32_t Q, int32_t R, int32_t RES);
-
+//float simpleKalmanFilter(int32_t *cov, float previous_est, float current_meas, int32_t Q, int32_t R);
+float simpleKalmanFilter(float* cov,float previous_est, float current_meas,float Q,float R);
 void visualize_divergence(uint8_t *in, int32_t *displacement, int32_t slope, int32_t yInt, uint32_t image_width,
                           uint32_t image_height);
 #endif /* DIVERGENCE_H_ */

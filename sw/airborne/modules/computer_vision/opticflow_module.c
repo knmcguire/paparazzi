@@ -83,10 +83,10 @@ void divergence_init()
 	edge_flow.vertical_flow = prev_edge_flow.vertical_flow = 0;
 	edge_flow.vertical_div = prev_edge_flow.vertical_div = 0;
 
-	covariance.flow_x = 20;
-	covariance.flow_y = 20;
-	covariance.div_x = 20;
-	covariance.div_y = 20;
+	covariance.flow_x = 0.20;
+	covariance.flow_y = 0.20;
+	covariance.div_x = 0.20;
+	covariance.div_y = 0.20;
 
 	avg_dist = 0;
 	avg_disp = 0;
@@ -378,6 +378,22 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 		//---------------------------EDGEFLOW
 
 #if EDGE_FLOW
+
+#if STEREOCAM_ATTACH
+
+		printf("stereo module%d\n",stereocam_data.fresh);
+		while (stereocam_data.fresh==0){};
+
+		temp_result.tracked_cnt=255;//median_features;
+		temp_result.corner_cnt=255;//median_features;
+		temp_result.flow_x=(stereocam_data.data[1]-127)/10;
+		temp_result.flow_y=(stereocam_data.data[3]-127)/10;
+
+		stereocam_data.fresh=0;
+      //printf("%d\n",stereocam_data.data[1]);
+
+
+#else
 		image_copy(&img,&img_copy);
 
 		median_features=calculate_edge_flow(&img_copy, &displacement, &edge_flow, edge_hist, &avg_disp,
@@ -387,7 +403,6 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
 
 		// Move the dynamic indices and make them circular
-
 		current_frame_nr = (current_frame_nr + 1) % MAX_HORIZON;
 
 
@@ -404,19 +419,30 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 		}
 
 
-		memcpy(&prev_edge_flow, &edge_flow, sizeof(struct edge_flow_t));
 
+#endif       //--------------------------------
+		memcpy(&prev_edge_flow, &edge_flow, sizeof(struct edge_flow_t));
 
 
 #endif       //--------------------------------
 
+
 		opticflow_calc_frame(&opticflow, &temp_state, &img, &temp_result);
 
+		/*//printf("flow_der %d\n",temp_result.flow_der_x);
+	    float Q=0.1;
+	    float R=1.0;
+	    float new_est_x,new_est_y;
+	    new_est_x=simpleKalmanFilter(&covariance.flow_x ,opticflow_result.vel_x,temp_result.vel_x,Q,R);
+	    new_est_y=simpleKalmanFilter(&covariance.flow_y,opticflow_result.vel_y,temp_result.vel_y,Q,R);
 
+	    temp_result.vel_x=new_est_x;
+	    temp_result.vel_y=new_est_y;*/
 
 		// Copy the result if finished
 		pthread_mutex_lock(&opticflow_mutex);
 		memcpy(&opticflow_result, &temp_result, sizeof(struct opticflow_result_t));
+
 
 		opticflow_got_result = TRUE;
 

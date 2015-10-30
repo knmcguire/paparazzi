@@ -709,14 +709,18 @@ void blur_filter(struct image_t *in,struct image_t *out,int Gsize,int sigma)
     }
 }
 
-int32_t simpleKalmanFilter(int32_t *cov, int32_t previous_est, int32_t current_meas, int32_t Q, int32_t R, int32_t RES)
+
+float simpleKalmanFilter(float* cov,float previous_est, float current_meas,float Q,float R)
 {
-  int32_t predict_cov = *cov + Q;
-  int32_t K = RES * predict_cov / (*cov + R);
 
-  *cov = ((RES - K) * predict_cov) / RES;
+    float predict_state=previous_est;
+    float predict_cov=*cov+Q;
+    float K=predict_cov*(1/(*cov+R));
 
-  return (previous_est + (K * (current_meas - previous_est)) / RES);
+    float new_est=predict_state+K*(current_meas-previous_est);
+    *cov=(1-K)*predict_cov;
+
+    return new_est;
 }
 
 

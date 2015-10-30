@@ -35,7 +35,7 @@ typedef struct {
   uint8_t fresh;
 } uint8array;
 
-extern uint8array stereocam_data;
+ extern volatile  uint8array stereocam_data;
 
 extern void stereocam_start(void);
 extern void stereocam_stop(void);

@@ -62,7 +62,7 @@ static uint8_t handleStereoPackage(void);
 MsgProperties msgProperties;
 
 uint8_t msg_buf[256];         // define local data
-uint8array stereocam_data = {.len = 0, .data = msg_buf, .fresh = 0};  // buffer used to contain image without line endings
+volatile uint8array stereocam_data = {.len = 0, .data = msg_buf, .fresh = 0};  // buffer used to contain image without line endings
 uint16_t freq_counter = 0;
 uint8_t frequency = 0;
 uint32_t previous_time = 0;
@@ -170,6 +170,8 @@ static uint8_t handleStereoPackage(void)
       } // continue search for new line
       stereocam_data.len = msgProperties.width * msgProperties.height;
       stereocam_data.fresh = 1;
+  	printf("stereocam%d\n",stereocam_data.fresh);
+
       extract_loc = add(extract_loc, 4);      // step over EOM string
       return 1;
     }
