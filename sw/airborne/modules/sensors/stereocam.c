@@ -170,7 +170,6 @@ static uint8_t handleStereoPackage(void)
       } // continue search for new line
       stereocam_data.len = msgProperties.width * msgProperties.height;
       stereocam_data.fresh = 1;
-  	printf("stereocam%d\n",stereocam_data.fresh);
 
       extract_loc = add(extract_loc, 4);      // step over EOM string
       return 1;

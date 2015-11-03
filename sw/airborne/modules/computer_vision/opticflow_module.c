@@ -205,7 +205,11 @@ void imu_buffer_run(void)
 void opticflow_module_init(void)
 {
 	// Subscribe to the altitude above ground level ABI messages
+#if STEREOCAM_ATTACH
+
+#else
 	AbiBindMsgAGL(OPTICFLOW_AGL_ID, &opticflow_agl_ev, opticflow_agl_cb);
+#endif
 
 	// Set the opticflow state to 0
 	opticflow_state.phi = 0;
@@ -252,7 +256,7 @@ void opticflow_module_run(void)
 // get saved IMU data from imu buffer to handle delay
 	int k=0;//=35;
 	int index=0;
-	uint32_t delay_time=0;
+	uint32_t delay_time=70000;
 
 	for(k=0;k<BUFFER_SIZE;k++){
 		index = (current_imu_buffer_nr -  k + BUFFER_SIZE) % BUFFER_SIZE;
@@ -264,8 +268,8 @@ void opticflow_module_run(void)
 
 
 
-	opticflow_state.phi = imu_buffer[index].phi;
-	opticflow_state.theta = imu_buffer[index].theta;
+	opticflow_state.phi = stateGetNedToBodyEulers_f()->phi;//imu_buffer[index].phi;
+	opticflow_state.theta = stateGetNedToBodyEulers_f()->theta;//imu_buffer[index].theta;
 
 	//printf("k= %d, index = %d, current_imu_buffer_nr = %d,phi = %f,derflow = %d\n", k,index,current_imu_buffer_nr,imu_buffer[index].phi,opticflow_result.flow_der_x);
 
@@ -286,6 +290,7 @@ void opticflow_module_run(void)
 					opticflow_result.vel_x,
 					opticflow_result.vel_y,
 					0.0f);
+		//	printf("stuurt vel door\n");
 		}
 		opticflow_got_result = FALSE;
 	}
@@ -381,17 +386,18 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 
 #if STEREOCAM_ATTACH
 
-		printf("stereo module%d\n",stereocam_data.fresh);
 		while (stereocam_data.fresh==0){};
 
-		temp_result.tracked_cnt=255;//median_features;
-		temp_result.corner_cnt=255;//median_features;
-		temp_result.flow_x=(stereocam_data.data[1]-127)/10;
-		temp_result.flow_y=(stereocam_data.data[3]-127)/10;
+		temp_result.tracked_cnt=255;//stereocam_data.data[7];//median_features;
+		temp_result.corner_cnt=255;//stereocam_data.data[7];//median_features;
+		temp_result.flow_x=-(stereocam_data.data[1]-127)*10;
+		temp_result.flow_y=-(stereocam_data.data[3]-127)*10;
+
+		uint8_t avg_disp=stereocam_data.data[4];
+		temp_state.agl = 100*0.06*128 / (avg_disp*RES*1.042);
 
 		stereocam_data.fresh=0;
       //printf("%d\n",stereocam_data.data[1]);
-
 
 #else
 		image_copy(&img,&img_copy);
@@ -411,25 +417,24 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 		temp_result.tracked_cnt=median_features;
 		temp_result.corner_cnt=median_features;
 
-		if (avg_disp > 0) {
-			avg_dist = RES * 6 * img.w/ (avg_disp * 104);
-		}
-		else {
-			avg_dist = 1477; // 2 * RES * 6 * IMAGE_WIDTH / 104;
-		}
 
 
-
-#endif       //--------------------------------
 		memcpy(&prev_edge_flow, &edge_flow, sizeof(struct edge_flow_t));
 
 
 #endif       //--------------------------------
+		if(temp_result.flow_x>20*100)
+			temp_result.flow_x=0;
+		if(temp_result.flow_y>20*100)
+				temp_result.flow_y=0;
+
+#endif       //--------------------------------
+
 
 
 		opticflow_calc_frame(&opticflow, &temp_state, &img, &temp_result);
 
-		/*//printf("flow_der %d\n",temp_result.flow_der_x);
+#if KALMAN
 	    float Q=0.1;
 	    float R=1.0;
 	    float new_est_x,new_est_y;
@@ -437,8 +442,9 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 	    new_est_y=simpleKalmanFilter(&covariance.flow_y,opticflow_result.vel_y,temp_result.vel_y,Q,R);
 
 	    temp_result.vel_x=new_est_x;
-	    temp_result.vel_y=new_est_y;*/
+	    temp_result.vel_y=new_est_y;
 
+#endif
 		// Copy the result if finished
 		pthread_mutex_lock(&opticflow_mutex);
 		memcpy(&opticflow_result, &temp_result, sizeof(struct opticflow_result_t));

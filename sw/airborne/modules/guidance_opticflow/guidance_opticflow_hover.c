@@ -44,7 +44,7 @@
 #endif
 PRINT_CONFIG_VAR(VISION_VELOCITY_ESTIMATE_ID)
 
-#define CMD_OF_SAT  1500 // 40 deg = 2859.1851
+#define CMD_OF_SAT  2000// 40 deg = 2859.1851
 
 #ifndef VISION_PHI_PGAIN
 #define VISION_PHI_PGAIN 400
@@ -153,8 +153,18 @@ static void stabilization_opticflow_vel_cb(uint8_t sender_id __attribute__((unus
 {
   /* Check if we are in the correct AP_MODE before setting commands */
   if (autopilot_mode != AP_MODE_MODULE) {
-    return;
+	  float err_vx=0;
+	  float err_vy=0;
+	  vel_x=0;
+	  vel_y=0;
+	  opticflow_stab.err_vx_int=0;
+	  opticflow_stab.err_vy_int=0;
+
+	  return;
   }
+
+
+  //printf("Krijgt velocity: %f \n",vel_x);
 
   /* Calculate the error */
   float err_vx = opticflow_stab.desired_vx - vel_x;
@@ -173,4 +183,6 @@ static void stabilization_opticflow_vel_cb(uint8_t sender_id __attribute__((unus
   /* Bound the roll and pitch commands */
   BoundAbs(opticflow_stab.cmd.phi, CMD_OF_SAT);
   BoundAbs(opticflow_stab.cmd.theta, CMD_OF_SAT);
+
+  printf("command phi:%d\n",  opticflow_stab.cmd.phi  );
 }
