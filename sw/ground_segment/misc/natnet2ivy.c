@@ -38,6 +38,7 @@
 #include <Ivy/ivy.h>
 #include <Ivy/ivyglibloop.h>
 #include <time.h>
+#include <sys/time.h>
 
 #include "std.h"
 #include "arch/linux/udp_socket.h"
@@ -56,6 +57,9 @@ uint16_t natnet_cmd_port        = 1510;
 uint16_t natnet_data_port       = 1511;
 uint8_t natnet_major            = 2;
 uint8_t natnet_minor            = 7;
+
+FILE *fp;
+bool_t log_exists = 0;
 
 /** Ivy Bus default */
 #ifdef __APPLE__
@@ -519,6 +523,16 @@ gboolean timeout_transmit_callback(gpointer data) {
 
       // printf("ENU Pos: %u (%.2f, %.2f, %.2f)\n", pos_xyz, pos.x, pos.y, pos.z);
 
+      if(log_exists == 0) {
+	    printf("Open natnet_log.dat for writing.\n");
+        fp = fopen("natnet_log.dat", "a");
+        log_exists = 1;
+      }
+      if (fp == NULL) {
+         printf("I couldn't open natnet_log.dat for writing.\n");
+         exit(0);
+      }
+
       uint32_t speed_xy = (((uint32_t)(speed.x*100.0)) & 0x3FF) << 22; // bits 31-22 speed x in cm/s
       speed_xy |= (((uint32_t)(speed.x*100.0)) & 0x3FF) << 12; // bits 21-12 speed y in cm/s
       speed_xy |= (((uint32_t)(heading*100.0)) & 0x3FF) << 2; // bits 11-2 heading in rad*1e2 (The heading is already subsampled)
@@ -548,6 +562,26 @@ gboolean timeout_transmit_callback(gpointer data) {
         (int)(rigidBodies[i].ecef_vel.z*100.0), //int32 ECEF velocity Z in m/s
         0,
         (int)(heading*10000000.0));             //int32 Course in rad*1e7
+
+        struct timeval cur_time;
+        gettimeofday(&cur_time,NULL);
+        fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n", aircrafts[rigidBodies[i].id].ac_id,
+          rigidBodies[i].nMarkers,                //uint8 Number of markers (sv_num)
+          (int)(ecef_pos.x*100.0),                //int32 ECEF X in CM
+          (int)(ecef_pos.y*100.0),                //int32 ECEF Y in CM
+          (int)(ecef_pos.z*100.0),                //int32 ECEF Z in CM
+          (int)(DegOfRad(lla_pos.lat)*1e7),       //int32 LLA latitude in deg*1e7
+          (int)(DegOfRad(lla_pos.lon)*1e7),       //int32 LLA longitude in deg*1e7
+          (int)(rigidBodies[i].z*1000.0),         //int32 LLA altitude in mm above elipsoid
+          (int)(rigidBodies[i].z*1000.0),         //int32 HMSL height above mean sea level in mm
+          (int)(rigidBodies[i].ecef_vel.x*100.0), //int32 ECEF velocity X in cm/s
+          (int)(rigidBodies[i].ecef_vel.y*100.0), //int32 ECEF velocity Y in cm/s
+          (int)(rigidBodies[i].ecef_vel.z*100.0), //int32 ECEF velocity Z in cm/s
+          (int)(orient_eulers.phi*10000000.0),    //int32 Course in rad*1e7
+          (int)(orient_eulers.theta*10000000.0),  //int32 Course in rad*1e7
+          (int)(heading*10000000.0),              //int32 Course in rad*1e7
+          (int)cur_time.tv_sec,
+          (int)cur_time.tv_usec);
     }
 
     // Reset the velocity differentiator if we calculated the velocity
