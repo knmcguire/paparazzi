@@ -190,6 +190,8 @@ uint8 MAC_ADDR[] = {0x00, 0x00, 0x2d, 0x80, 0x07, 0x00};
 
 // {0x00,0x00,0x2d,0x80,0x07,0x00};   // beginning of all modules adresses
 
+FILE* rssi_fp = NULL;
+
 // list all possible pending actions
 enum actions {
   action_none,
@@ -197,7 +199,8 @@ enum actions {
   action_connect,
   action_info,
   action_connect_all,
-  action_broadcast
+  action_broadcast,
+  action_get_rssi
 };
 enum actions action = action_none;
 
@@ -458,6 +461,11 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
     if (sock[0])
       sendto(sock[0], msg->data.data, msg->data.len, MSG_DONTWAIT,
              (struct sockaddr *)&send_addr[0], sizeof(struct sockaddr));
+  } else if (action == action_get_rssi){
+    gettimeofday(&tm, NULL); //Time zone struct is obsolete, hence NULL
+    mytime = (double)tm.tv_sec + (double)tm.tv_usec / 1000000.0;
+    fprintf(rssi_fp, "%f %x %d\n", mytime, msg->sender.addr[0], msg->rssi); fflush(rssi_fp);
+    fprintf(stderr, "%f %x %d\n", mytime, msg->sender.addr[0], msg->rssi);
   } else {
     uint8_t i, j;
     char *name = NULL;
@@ -927,6 +935,18 @@ int main(int argc, char *argv[])
         usage(argv[0]);
         return 1;
       }
+    } else if (strcmp(argv[CLARG_ACTION], "rssi") == 0) {
+      action = action_get_rssi;
+      time_t timev;
+      time(&timev);
+      char timedate[256];
+      strftime(timedate, 256, "var/logs/%Y%m%d_%H%M%S.rssilog", localtime(&timev));
+      rssi_fp = fopen(timedate, "w");
+      if (!rssi_fp)
+      {
+	fprintf(stderr,"Unable to open file for logging: %s\n Make sure to run from paparazzi home\n", timedate);
+	return -1;
+      }
     } else if (strcmp(argv[CLARG_ACTION], "all") == 0) {
       connect_all = 1;
       action = action_scan;
@@ -1004,7 +1024,7 @@ int main(int argc, char *argv[])
   ble_cmd_system_address_get();
 
   // Execute action
-  if (action == action_scan) {
+  if (action == action_scan || action == action_get_rssi) {
     ble_cmd_gap_discover(gap_discover_generic);
   } else if (action == action_info) {
     ble_cmd_system_get_info();
@@ -1017,8 +1037,11 @@ int main(int argc, char *argv[])
                                    0x07);    // advertise interval scales 625us, min, max, channels (0x07 = 3, 0x03 = 2, 0x04 = 1)
   }
 
-  pthread_create(&threads[0], NULL, send_msg, NULL);
-  pthread_create(&threads[1], NULL, recv_paparazzi_comms, NULL);
+  if (action == action_connect && action == action_connect_all)
+  {
+    pthread_create(&threads[0], NULL, send_msg, NULL);
+    pthread_create(&threads[1], NULL, recv_paparazzi_comms, NULL);
+  }
 
   // Message loop
   while (state != state_finish) {
@@ -1032,4 +1055,7 @@ int main(int argc, char *argv[])
   uart_close();
 
   pthread_exit(NULL);
+
+  if (rssi_fp)
+    fclose(rssi_fp);
 }
