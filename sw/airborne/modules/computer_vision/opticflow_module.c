@@ -397,7 +397,6 @@ static void *opticflow_module_calc(void *data __attribute__((unused)))
 		temp_state.agl = 100*0.06*128 / (avg_disp*RES*1.042);
 
 		stereocam_data.fresh=0;
-      //printf("%d\n",stereocam_data.data[1]);
 
 #else
 		image_copy(&img,&img_copy);

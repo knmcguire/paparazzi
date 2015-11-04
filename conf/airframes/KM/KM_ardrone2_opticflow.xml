@@ -18,7 +18,7 @@
     <subsystem name="actuators" type="ardrone2"/>
     <subsystem name="imu" type="ardrone2"/>
     <subsystem name="gps" type="datalink"/>
-    <subsystem name="stabilization" type="int_quat"/>
+    <subsystem name="stabilization" type="indi"/>
     <subsystem name="ahrs" type="int_cmpl_quat">
        <configure name="USE_MAGNETOMETER" value="FALSE"/>
     </subsystem>
@@ -79,7 +79,7 @@
     <define name="PHI_PGAIN" value="230"/>
     <define name="PHI_IGAIN" value="9"/>
     <define name="THETA_PGAIN" value="230"/>
-    <define name="THETA_IGAIN" value="9"/>
+    <define name="THETA_IGAIN" value="8"/>
     <define name="DESIRED_VX" value="0"/>
     <define name="DESIRED_VY" value="0"/>
    </section>
@@ -103,8 +103,8 @@
     <define name="MAG_Y_CURRENT_COEF" value="0.0"/>
     <define name="MAG_Z_CURRENT_COEF" value="0.0"/>
 
-    <define name="BODY_TO_IMU_PHI" value="-2.7" unit="deg"/>
-    <define name="BODY_TO_IMU_THETA" value="2.6" unit="deg"/>
+    <define name="BODY_TO_IMU_PHI" value="-5.8" unit="deg"/>
+    <define name="BODY_TO_IMU_THETA" value="-2.7" unit="deg"/>
     <define name="BODY_TO_IMU_PSI" value="0." unit="deg"/>
   </section>
 
@@ -197,18 +197,18 @@
 
 <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness -->
-    <define name="G1_P" value="0.032"/>
-    <define name="G1_Q" value="0.025"/>
-    <define name="G1_R" value="0.0032"/>
-    <define name="G2_R" value="0.16"/>
+    <define name="G1_P" value="0.0237"/>
+    <define name="G1_Q" value="0.0191"/>
+    <define name="G1_R" value="0.00183"/>
+    <define name="G2_R" value="0.084"/>
 
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="380.0"/>
     <define name="REF_ERR_Q" value="380.0"/>
-    <define name="REF_ERR_R" value="250.0"/>
+    <define name="REF_ERR_R" value="100.0"/>
     <define name="REF_RATE_P" value="21.6"/>
     <define name="REF_RATE_Q" value="21.6"/>
-    <define name="REF_RATE_R" value="21.0"/>
+    <define name="REF_RATE_R" value="10.0"/>
 
     <!-- second order filter parameters -->
     <define name="FILT_OMEGA" value="20.0"/>
@@ -227,11 +227,12 @@
   </section>
 
 
+
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
     <define name="HOVER_KP" value="240"/>
     <define name="HOVER_KD" value="120"/>
     <define name="HOVER_KI" value="13"/>
-    <define name="NOMINAL_HOVER_THROTTLE" value="0.73"/>
+    <define name="NOMINAL_HOVER_THROTTLE" value="0.74"/>
     <define name="ADAPT_THROTTLE_ENABLED" value="FALSE"/>
   </section>
 
