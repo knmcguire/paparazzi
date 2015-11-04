@@ -1037,11 +1037,11 @@ int main(int argc, char *argv[])
                                    0x07);    // advertise interval scales 625us, min, max, channels (0x07 = 3, 0x03 = 2, 0x04 = 1)
   }
 
-  if (action == action_connect && action == action_connect_all)
-  {
+//  if (action == action_connect || action == action_connect_all)
+//  {
     pthread_create(&threads[0], NULL, send_msg, NULL);
     pthread_create(&threads[1], NULL, recv_paparazzi_comms, NULL);
-  }
+//  }
 
   // Message loop
   while (state != state_finish) {
