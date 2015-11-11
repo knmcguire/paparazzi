@@ -550,12 +550,12 @@ gboolean timeout_transmit_callback(gpointer data) {
       gettimeofday(&cur_time,NULL);
       fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d\n", aircrafts[rigidBodies[i].id].ac_id,
         rigidBodies[i].nMarkers,                //uint8 Number of markers (sv_num)
-        (int)(rigidBodies[i].x*100.0),                //int32 X in CM
-        (int)(rigidBodies[i].y*100.0),                //int32 Y in CM
-        (int)(rigidBodies[i].z*100.0),                //int32 Z in CM
-        (int)(rigidBodies[i].speed.x*100.0), //int32 ECEF velocity X in cm/s
-        (int)(rigidBodies[i].speed.y*100.0), //int32 ECEF velocity Y in cm/s
-        (int)(rigidBodies[i].speed.z*100.0), //int32 ECEF velocity Z in cm/s
+        (int)(pos.x*100.0),                //int32 X in CM
+        (int)(pos.y*100.0),                //int32 Y in CM
+        (int)(pos.z*100.0),                //int32 Z in CM
+        (int)(speed.x*100.0), //int32 ECEF velocity X in cm/s
+        (int)(speed.y*100.0), //int32 ECEF velocity Y in cm/s
+        (int)(speed.z*100.0), //int32 ECEF velocity Z in cm/s
         (int)(orient_eulers.phi*10000000.0),    //int32 Course in rad*1e7
         (int)(orient_eulers.theta*10000000.0),  //int32 Course in rad*1e7
         (int)(heading*10000000.0),              //int32 Course in rad*1e7

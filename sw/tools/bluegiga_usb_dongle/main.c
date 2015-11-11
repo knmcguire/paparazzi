@@ -133,7 +133,7 @@ FUNCTION ANALYSIS:
 #include "uart.h"
 
 // uncomment the following line to show outgoing/incoming BGAPI packet data
-//#define DEBUG
+// #define DEBUG
 
 // timeout for serial port read operations
 #define UART_TIMEOUT 1000
@@ -347,7 +347,7 @@ void send_api_packet(uint8 len1, uint8 *data1, uint16 len2, uint8 *data2)
 {
 #ifdef DEBUG
   // display outgoing BGAPI packet
-  print_raw_packet((struct ble_header *)data1, data2, 1);
+//  print_raw_packet((struct ble_header *)data1, data2);
 #endif
   if (uart_tx(len1, data1) || uart_tx(len2, data2)) {
     // uart_tx returns non-zero on failure
@@ -389,7 +389,7 @@ int read_api_packet(int timeout_ms)
 
 #ifdef DEBUG
   // display incoming BGAPI packet
-  print_raw_packet(&hdr, data, 0);
+  print_raw_packet(&hdr, data);
 #endif
 
   if (!msg) {
@@ -465,7 +465,11 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
     gettimeofday(&tm, NULL); //Time zone struct is obsolete, hence NULL
     mytime = (double)tm.tv_sec + (double)tm.tv_usec / 1000000.0;
     fprintf(rssi_fp, "%f %x %d\n", mytime, msg->sender.addr[0], msg->rssi); fflush(rssi_fp);
-    fprintf(stderr, "%f %x %d\n", mytime, msg->sender.addr[0], msg->rssi);
+    fprintf(stderr, "%f %x %d, ", mytime, msg->sender.addr[0], msg->rssi);
+		uint8_t i = 0;
+    for(i = 0; i < msg->data.len; i++)
+    	fprintf(stderr, "%02x ", msg->data.data[i]);
+    fprintf(stderr, "\n");
   } else {
     uint8_t i, j;
     char *name = NULL;
@@ -1033,8 +1037,8 @@ int main(int argc, char *argv[])
     change_state(state_connecting);
     ble_cmd_gap_connect_direct(&connect_addr, gap_address_type_public, 6, 16, 100, 0);
   } else if (action == action_broadcast) {
-    ble_cmd_gap_set_adv_parameters(0x200, 0x200,
-                                   0x07);    // advertise interval scales 625us, min, max, channels (0x07 = 3, 0x03 = 2, 0x04 = 1)
+    // advertise interval scales 625us, min, max, channels (0x07 = 3, 0x03 = 2, 0x04 = 1)
+    //ble_cmd_gap_set_adv_parameters(0x200, 0x200, 0x07);    
   }
 
 //  if (action == action_connect || action == action_connect_all)
