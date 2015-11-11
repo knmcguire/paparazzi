@@ -534,7 +534,7 @@ gboolean timeout_transmit_callback(gpointer data) {
       }
 
       uint32_t speed_xy = (((uint32_t)(speed.x*100.0)) & 0x3FF) << 22; // bits 31-22 speed x in cm/s
-      speed_xy |= (((uint32_t)(speed.x*100.0)) & 0x3FF) << 12; // bits 21-12 speed y in cm/s
+      speed_xy |= (((uint32_t)(speed.y*100.0)) & 0x3FF) << 12; // bits 21-12 speed y in cm/s
       speed_xy |= (((uint32_t)(heading*100.0)) & 0x3FF) << 2; // bits 11-2 heading in rad*1e2 (The heading is already subsampled)
       // bits 1 and 0 are free
 
@@ -548,23 +548,19 @@ gboolean timeout_transmit_callback(gpointer data) {
         speed_xy); //uint32 ENU velocity X, Y in cm/s and heading in rad*1e2 (4 bytes) 
       struct timeval cur_time;
       gettimeofday(&cur_time,NULL);
-      fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n", aircrafts[rigidBodies[i].id].ac_id,
+      fprintf(fp,"%d %d %d %d %d %d %d %d %d %d %d %d %d\n", aircrafts[rigidBodies[i].id].ac_id,
         rigidBodies[i].nMarkers,                //uint8 Number of markers (sv_num)
-        (int)(ecef_pos.x*100.0),                //int32 ECEF X in CM
-        (int)(ecef_pos.y*100.0),                //int32 ECEF Y in CM
-        (int)(ecef_pos.z*100.0),                //int32 ECEF Z in CM
-        (int)(DegOfRad(lla_pos.lat)*1e7),       //int32 LLA latitude in deg*1e7
-        (int)(DegOfRad(lla_pos.lon)*1e7),       //int32 LLA longitude in deg*1e7
-        (int)(rigidBodies[i].z*1000.0),         //int32 LLA altitude in mm above elipsoid
-        (int)(rigidBodies[i].z*1000.0),         //int32 HMSL height above mean sea level in mm
-        (int)(rigidBodies[i].ecef_vel.x*100.0), //int32 ECEF velocity X in cm/s
-        (int)(rigidBodies[i].ecef_vel.y*100.0), //int32 ECEF velocity Y in cm/s
-        (int)(rigidBodies[i].ecef_vel.z*100.0), //int32 ECEF velocity Z in cm/s
+        (int)(rigidBodies[i].x*100.0),                //int32 X in CM
+        (int)(rigidBodies[i].y*100.0),                //int32 Y in CM
+        (int)(rigidBodies[i].z*100.0),                //int32 Z in CM
+        (int)(rigidBodies[i].speed.x*100.0), //int32 ECEF velocity X in cm/s
+        (int)(rigidBodies[i].speed.y*100.0), //int32 ECEF velocity Y in cm/s
+        (int)(rigidBodies[i].speed.z*100.0), //int32 ECEF velocity Z in cm/s
         (int)(orient_eulers.phi*10000000.0),    //int32 Course in rad*1e7
         (int)(orient_eulers.theta*10000000.0),  //int32 Course in rad*1e7
         (int)(heading*10000000.0),              //int32 Course in rad*1e7
         (int)cur_time.tv_sec,
-        (int)cur_time.tv_usec);  
+        (int)cur_time.tv_usec);
     }
     else {
       IvySendMsg("0 REMOTE_GPS %d %d %d %d %d %d %d %d %d %d %d %d %d %d", aircrafts[rigidBodies[i].id].ac_id,
