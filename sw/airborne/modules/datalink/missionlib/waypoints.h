@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Kirk Scheper
+ * Copyright (C) 2015 Lodewijk Sikkel <l.n.c.sikkel@tudelft.nl>
  *
  * This file is part of paparazzi.
  *
@@ -20,25 +20,15 @@
  *
  */
 
-/** @file modules/stereo_cam/stereocam.h
- *  @brief interface to the TU Delft serial stereocam
+/** @file modules/datalink/missionlib/waypoints.h
+ *
  */
 
-#ifndef STEREOCAM_H_
-#define STEREOCAM_H_
+#ifndef MISSIONLIB_WAYPOINTS_H
+#define MISSIONLIB_WAYPOINTS_H
 
-#include <std.h>
+#include <mavlink/mavlink_types.h>
 
-typedef struct {
-  uint8_t len;
-  uint8_t *data;
-  uint8_t fresh;
-} uint8array;
+extern void mavlink_wp_message_handler(const mavlink_message_t *msg);
 
-extern uint8array stereocam_data;
-
-extern void stereocam_start(void);
-extern void stereocam_stop(void);
-extern void stereocam_periodic(void);
-
-#endif /* STEREOCAM_H_ */
+#endif // MISSIONLIB_WAYPOINTS_H
