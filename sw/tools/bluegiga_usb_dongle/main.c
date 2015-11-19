@@ -133,7 +133,7 @@ FUNCTION ANALYSIS:
 #include "uart.h"
 
 // uncomment the following line to show outgoing/incoming BGAPI packet data
-// #define DEBUG
+#define DEBUG
 
 // timeout for serial port read operations
 #define UART_TIMEOUT 1000
@@ -324,6 +324,9 @@ void print_bdaddr(bd_addr bdaddr)
  */
 void print_raw_packet(struct ble_header *hdr, unsigned char *data)
 {
+  //bd
+  if (data[2] == 0xdf)
+  {
   fprintf(stderr, "Incoming packet: ");
   int i;
   for (i = 0; i < sizeof(*hdr); i++) {
@@ -333,6 +336,7 @@ void print_raw_packet(struct ble_header *hdr, unsigned char *data)
     fprintf(stderr, "%02x ", data[i]);
   }
   fprintf(stderr, "\n");
+  }
 }
 
 /**
@@ -477,7 +481,7 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
     // Check if this device already found, if not add to the list
 
     if (!connect_all) {
-      fprintf(stderr, "New device found: ");
+      //fprintf(stderr, "New device found: ");
 
       // Parse data
       for (i = 0; i < msg->data.len;) {
@@ -1041,11 +1045,8 @@ int main(int argc, char *argv[])
     //ble_cmd_gap_set_adv_parameters(0x200, 0x200, 0x07);    
   }
 
-//  if (action == action_connect || action == action_connect_all)
-//  {
     pthread_create(&threads[0], NULL, send_msg, NULL);
     pthread_create(&threads[1], NULL, recv_paparazzi_comms, NULL);
-//  }
 
   // Message loop
   while (state != state_finish) {
