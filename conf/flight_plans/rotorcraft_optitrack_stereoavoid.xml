@@ -68,24 +68,31 @@
     <block name="route_to_GOAL">
       <exception cond="GpsIsLost()" deroute="attitude_land"/>
       <exception cond="electrical.bat_low" deroute="land here"/>
-      <exception cond="obstacle_detected==1" deroute="stay_W0"/>
+      <!--exception cond="obstacle_detected==1" deroute="stay_W0"/-->
       <call fun="nav_set_heading_towards_waypoint(WP_GOAL)"/>
       <go from="STDBY" hmode="route" wp="GOAL"/>
       <call fun="NavCopyWaypoint(WP_last_wp,WP_GOAL)"/>
       <deroute block="land here"/>
     </block>
-    <block name="stay_W0" pre_call="increase_nav_heading(&nav_heading, 45)">
-      <exception cond="obstacle_detected==0" deroute="route_to_W1"/>
+    <block name="stay_W0">
       <exception cond="GpsIsLost()" deroute="attitude_land"/>
       <exception cond="electrical.bat_low" deroute="land here"/>
       <call fun="NavSetWaypointHere(WP_W0)"/>
       <call fun="NavCopyWaypoint(WP_last_wp,WP_W0)"/>
       <stay wp="W0"/>
     </block>
+    <!--block name="stay_W0" pre_call="increase_nav_heading(&nav_heading, 45)">
+      <exception cond="obstacle_detected==0" deroute="route_to_W1"/>
+      <exception cond="GpsIsLost()" deroute="attitude_land"/>
+      <exception cond="electrical.bat_low" deroute="land here"/>
+      <call fun="NavSetWaypointHere(WP_W0)"/>
+      <call fun="NavCopyWaypoint(WP_last_wp,WP_W0)"/>
+      <stay wp="W0"/>
+    </block-->
     <block name="route_to_W1">
       <exception cond="GpsIsLost()" deroute="attitude_land"/>
       <exception cond="electrical.bat_low" deroute="land here"/>
-      <exception cond="obstacle_detected==1" deroute="stay_W0"/>
+      <!--exception cond="obstacle_detected==1" deroute="stay_W0"/-->
       <go from="W0" hmode="route" wp="W1"/>
       <call fun="NavCopyWaypoint(WP_last_wp,WP_W1)"/>
       <deroute block="heading_to_GOAL"/>

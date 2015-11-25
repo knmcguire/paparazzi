@@ -324,9 +324,6 @@ void print_bdaddr(bd_addr bdaddr)
  */
 void print_raw_packet(struct ble_header *hdr, unsigned char *data)
 {
-  //bd
-  if (data[2] == 0xdf)
-  {
   fprintf(stderr, "Incoming packet: ");
   int i;
   for (i = 0; i < sizeof(*hdr); i++) {
@@ -336,7 +333,6 @@ void print_raw_packet(struct ble_header *hdr, unsigned char *data)
     fprintf(stderr, "%02x ", data[i]);
   }
   fprintf(stderr, "\n");
-  }
 }
 
 /**

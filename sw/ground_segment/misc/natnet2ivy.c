@@ -558,7 +558,7 @@ gboolean timeout_transmit_callback(gpointer data) {
         (int)(speed.z*100.0), //int32 ECEF velocity Z in cm/s
         (int)(orient_eulers.phi*10000000.0),    //int32 Course in rad*1e7
         (int)(orient_eulers.theta*10000000.0),  //int32 Course in rad*1e7
-        (int)(-orient_eulers.psi+90.0/57.6)*10000000.0),              //int32 Course in rad*1e7
+        (int)((-orient_eulers.psi+90.0/57.6)*10000000.0),              //int32 Course in rad*1e7
         (int)cur_time.tv_sec,
         (int)cur_time.tv_usec);
     }
@@ -576,7 +576,7 @@ gboolean timeout_transmit_callback(gpointer data) {
         (int)(rigidBodies[i].ecef_vel.y*100.0), //int32 ECEF velocity Y in m/s
         (int)(rigidBodies[i].ecef_vel.z*100.0), //int32 ECEF velocity Z in m/s
         0,
-        (int)(heading*10000000.0);             //int32 Course in rad*1e7
+        (int)(heading*10000000.0));             //int32 Course in rad*1e7
     }
 
     // Reset the velocity differentiator if we calculated the velocity

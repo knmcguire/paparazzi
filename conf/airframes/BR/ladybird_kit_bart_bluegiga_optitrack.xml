@@ -208,7 +208,8 @@
 
  <modules main_freq="512">
    <load name="send_imu_mag_current.xml"/>
-   <load name="stereoavoid.xml"/>
+   <!--load name="stereoavoid.xml"/-->
+   <load name="gps_avoid.xml"/>
    <load name="mission_rotorcraft.xml"/>
  </modules>
 
