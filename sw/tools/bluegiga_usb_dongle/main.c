@@ -133,7 +133,7 @@ FUNCTION ANALYSIS:
 #include "uart.h"
 
 // uncomment the following line to show outgoing/incoming BGAPI packet data
-#define DEBUG
+//#define DEBUG
 
 // timeout for serial port read operations
 #define UART_TIMEOUT 1000
@@ -182,6 +182,7 @@ unsigned int send_extract_idx[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 int connected_devices = 0;
 //bd_addr found_devices[MAX_DEVICES];
 int connected[] = {0, 0, 0, 0, 0, 0, 0, 0};
+bd_addr connected_addr[MAX_DEVICES];
 
 int connect_all = 0;
 uint8 MAC_ADDR[] = {0x00, 0x00, 0x2d, 0x80, 0x07, 0x00};
@@ -313,6 +314,19 @@ void print_bdaddr(bd_addr bdaddr)
           bdaddr.addr[2],
           bdaddr.addr[1],
           bdaddr.addr[0]);
+}
+
+/**
+ * Copy Bluetooth MAC address in hexadecimal notation
+ *
+ * @param dst Bluetooth MAC address, destination
+ * @param src Bluetooth MAC address, source
+ */
+void cpy_bdaddr(uint8_t* dst, const uint8_t* src)
+{
+  uint8_t i = 0;
+  for(i = 0; i < 6; i++)
+    dst[i] = src[i];
 }
 
 /**
@@ -449,6 +463,18 @@ void ble_rsp_system_get_info(const struct ble_msg_system_get_info_rsp_t *msg)
  */
 void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg)
 {
+
+  if(cmp_addr(msg->sender.addr, MAC_ADDR) >= 4 && msg->sender.addr[0] == 0xdf)
+  {
+    gettimeofday(&tm, NULL); //Time zone struct is obsolete, hence NULL
+    mytime = (double)tm.tv_sec + (double)tm.tv_usec / 1000000.0;
+    fprintf(stderr, "%f %x %d, ", mytime, msg->sender.addr[0], msg->rssi);
+    uint8_t i = 0;
+    for(i = 0; i < msg->data.len; i++)
+	    fprintf(stderr, "%02x ", msg->data.data[i]);
+    fprintf(stderr, "\n");
+  }
+
   if (action == action_broadcast) {
     fprintf(stderr, "advertisement from: ");
     print_bdaddr(msg->sender);
@@ -462,14 +488,7 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
       sendto(sock[0], msg->data.data, msg->data.len, MSG_DONTWAIT,
              (struct sockaddr *)&send_addr[0], sizeof(struct sockaddr));
   } else if (action == action_get_rssi){
-    gettimeofday(&tm, NULL); //Time zone struct is obsolete, hence NULL
-    mytime = (double)tm.tv_sec + (double)tm.tv_usec / 1000000.0;
-    fprintf(rssi_fp, "%f %x %d\n", mytime, msg->sender.addr[0], msg->rssi); fflush(rssi_fp);
-    fprintf(stderr, "%f %x %d, ", mytime, msg->sender.addr[0], msg->rssi);
-		uint8_t i = 0;
-    for(i = 0; i < msg->data.len; i++)
-    	fprintf(stderr, "%02x ", msg->data.data[i]);
-    fprintf(stderr, "\n");
+    
   } else {
     uint8_t i, j;
     char *name = NULL;
@@ -547,7 +566,16 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
     }
 
     // automatically connect if responding device has appropriate mac address header
-    if (connect_all && cmp_addr(msg->sender.addr, MAC_ADDR) >= 4) {
+    // check if bluegiga drone and connectable
+    if (connect_all && msg->packet_type == 0 && cmp_addr(msg->sender.addr, MAC_ADDR) >= 4) {
+	uint8 i = 0;
+    	while(i++ < MAX_DEVICES)
+    	{
+    	  if (!cmp_addr(msg->sender.addr, connected_addr[i].addr))
+    	    return;
+    	}
+    	cpy_bdaddr(connected_addr[i].addr, msg->sender.addr);
+    
       fprintf(stderr, "Trying to connect to "); print_bdaddr(msg->sender); fprintf(stderr, "\n");
       //change_state(state_connecting);
       // connection interval unit 1.25ms
