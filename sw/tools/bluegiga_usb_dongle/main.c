@@ -134,6 +134,7 @@ FUNCTION ANALYSIS:
 
 // uncomment the following line to show outgoing/incoming BGAPI packet data
 //#define DEBUG
+#define DEBUG_BROADCAST
 
 // timeout for serial port read operations
 #define UART_TIMEOUT 1000
@@ -201,7 +202,7 @@ enum actions {
   action_info,
   action_connect_all,
   action_broadcast,
-  action_get_rssi
+  action_broadcast_connect
 };
 enum actions action = action_none;
 
@@ -464,32 +465,32 @@ void ble_rsp_system_get_info(const struct ble_msg_system_get_info_rsp_t *msg)
 void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg)
 {
 
-  if(cmp_addr(msg->sender.addr, MAC_ADDR) >= 4 && msg->sender.addr[0] == 0xdf)
+#ifdef DEBUG_BROADCAST
+  if(cmp_addr(msg->sender.addr, MAC_ADDR) >= 3 )// && msg->sender.addr[0] == 0xdf)
   {
     gettimeofday(&tm, NULL); //Time zone struct is obsolete, hence NULL
     mytime = (double)tm.tv_sec + (double)tm.tv_usec / 1000000.0;
     fprintf(stderr, "%f %x %d, ", mytime, msg->sender.addr[0], msg->rssi);
     uint8_t i = 0;
     for(i = 0; i < msg->data.len; i++)
-	    fprintf(stderr, "%02x ", msg->data.data[i]);
+      fprintf(stderr, "%02x ", msg->data.data[i]);
     fprintf(stderr, "\n");
   }
+#endif
 
-  if (action == action_broadcast) {
-    fprintf(stderr, "advertisement from: ");
-    print_bdaddr(msg->sender);
-    fprintf(stderr, " data: ");
-    int i;
-    for (i = 0; i < msg->data.len; i++) {
-      fprintf(stderr, "%02x ", msg->data.data[i]);
-    }
-    fprintf(stderr, "\n");
+  if(rssi_fp)
+  {
+    fprintf(rssi_fp, "%f %d %d\n", mytime, msg->sender.addr[0], msg->rssi);
+    fflush(rssi_fp);
+  }
+
+  if (action == action_broadcast || action == action_broadcast_connect) {
     if (sock[0])
       sendto(sock[0], msg->data.data, msg->data.len, MSG_DONTWAIT,
              (struct sockaddr *)&send_addr[0], sizeof(struct sockaddr));
-  } else if (action == action_get_rssi){
-    
-  } else {
+  }
+
+  if (action != action_broadcast) {
     uint8_t i, j;
     char *name = NULL;
 
@@ -567,7 +568,7 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
 
     // automatically connect if responding device has appropriate mac address header
     // check if bluegiga drone and connectable
-    if (connect_all && msg->packet_type == 0 && cmp_addr(msg->sender.addr, MAC_ADDR) >= 4) {
+    if (connect_all && msg->packet_type == 0 && cmp_addr(msg->sender.addr, MAC_ADDR) >= 3) {
 	uint8 i = 0;
     	while(i++ < MAX_DEVICES)
     	{
@@ -748,6 +749,13 @@ void ble_evt_attclient_find_information_found(const struct ble_msg_attclient_fin
       drone_handle_measurement = msg->chrhandle;
     } else if (uuid == DRONE_BROADCAST_UUID) {
       drone_handle_broadcast = msg->chrhandle;
+
+      // Handle for Drone Data configuration already known
+      if (action == action_broadcast_connect) {
+	unsigned char var[] = {1};
+	printf("Request sent: %d\n", var[0]);
+	ble_cmd_attclient_attribute_write(msg->connection, drone_handle_broadcast, 1, &var);
+      }
     }
   }
 }
@@ -958,7 +966,7 @@ int main(int argc, char *argv[])
       action = action_scan;
     } else if (strcmp(argv[CLARG_ACTION], "info") == 0) {
       action = action_info;
-    } else if (strcmp(argv[CLARG_ACTION], "broadcast") == 0) {
+    } else if (strcmp(argv[CLARG_ACTION], "broadcast") == 0 || strcmp(argv[CLARG_ACTION], "broadcast_connect") == 0) {
       action = action_broadcast;
       if (argc > CLARG_ACTION + 2) {
         send_port = atoi(argv[CLARG_ACTION + 1]);
@@ -967,17 +975,9 @@ int main(int argc, char *argv[])
         usage(argv[0]);
         return 1;
       }
-    } else if (strcmp(argv[CLARG_ACTION], "rssi") == 0) {
-      action = action_get_rssi;
-      time_t timev;
-      time(&timev);
-      char timedate[256];
-      strftime(timedate, 256, "var/logs/%Y%m%d_%H%M%S.rssilog", localtime(&timev));
-      rssi_fp = fopen(timedate, "w");
-      if (!rssi_fp)
-      {
-	fprintf(stderr,"Unable to open file for logging: %s\n Make sure to run from paparazzi home\n", timedate);
-	return -1;
+      if (strcmp(argv[CLARG_ACTION], "broadcast_connect") == 0) {
+      	connect_all = 1;
+      	action = action_broadcast_connect;
       }
     } else if (strcmp(argv[CLARG_ACTION], "all") == 0) {
       connect_all = 1;
@@ -1020,6 +1020,23 @@ int main(int argc, char *argv[])
     return 1;
   }
 
+  size_t i = 0;
+  for (i = 0; i < argc; i++)
+  {
+    if(strcmp(argv[i],"log") == 0){
+      time_t timev;
+      time(&timev);
+      char timedate[256];
+      strftime(timedate, 256, "var/logs/%Y%m%d_%H%M%S.rssilog", localtime(&timev));
+      rssi_fp = fopen(timedate, "w");
+      if (!rssi_fp)
+      {
+	fprintf(stderr,"Unable to open file for logging: %s\n Make sure to run from paparazzi home\n", timedate);
+	return -1;
+      }
+    }
+  }
+
   // set BGLib output function pointer to "send_api_packet" function
   bglib_output = send_api_packet;
 
@@ -1055,8 +1072,12 @@ int main(int argc, char *argv[])
   // get the mac address of the dongle
   ble_cmd_system_address_get();
 
+  // advertise interval scales 625us, min, max, channels (0x07 = 3, 0x03 = 2, 0x04 = 1)
+  if (action == action_broadcast)
+    ble_cmd_gap_set_adv_parameters(0x20, 0x28, 0x07);
+    
   // Execute action
-  if (action == action_scan || action == action_get_rssi) {
+  if (action == action_scan || action == action_broadcast || action_broadcast_connect) {
     ble_cmd_gap_discover(gap_discover_generic);
   } else if (action == action_info) {
     ble_cmd_system_get_info();
@@ -1064,13 +1085,10 @@ int main(int argc, char *argv[])
     fprintf(stderr, "Trying to connect\n");
     change_state(state_connecting);
     ble_cmd_gap_connect_direct(&connect_addr, gap_address_type_public, 6, 16, 100, 0);
-  } else if (action == action_broadcast) {
-    // advertise interval scales 625us, min, max, channels (0x07 = 3, 0x03 = 2, 0x04 = 1)
-    //ble_cmd_gap_set_adv_parameters(0x200, 0x200, 0x07);    
   }
 
-    pthread_create(&threads[0], NULL, send_msg, NULL);
-    pthread_create(&threads[1], NULL, recv_paparazzi_comms, NULL);
+  pthread_create(&threads[0], NULL, send_msg, NULL);
+  pthread_create(&threads[1], NULL, recv_paparazzi_comms, NULL);
 
   // Message loop
   while (state != state_finish) {

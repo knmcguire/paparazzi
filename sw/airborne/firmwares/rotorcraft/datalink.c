@@ -51,6 +51,10 @@
 
 #include "firmwares/rotorcraft/navigation.h"
 
+#ifdef TRAFFIC_INFO
+#include "subsystems/navigation/traffic_info.h"
+#endif // TRAFFIC_INFO
+
 #include "math/pprz_geodetic_int.h"
 #include "state.h"
 #include "led.h"
@@ -142,13 +146,30 @@ void dl_parse_msg(void)
     case DL_REMOTE_GPS_SMALL :
       // Check if the GPS is for this AC
       if (DL_REMOTE_GPS_SMALL_ac_id(dl_buffer) != AC_ID) {
+#ifdef TRAFFIC_INFO
+	GpsState remote_gps;
+	parse_remote_gps_datalink_small(&remote_gps,
+          DL_REMOTE_GPS_SMALL_numsv(dl_buffer),
+	  DL_REMOTE_GPS_SMALL_pos_xyz(dl_buffer),
+	  DL_REMOTE_GPS_SMALL_speed_xy(dl_buffer));
+
+	uint8_t id = DL_ACINFO_ac_id(dl_buffer);
+	float ux = MOfCm(remote_gps.utm_pos.east);
+	float uy = MOfCm(remote_gps.utm_pos.north);
+	float a = MOfCm(remote_gps.utm_pos.alt);
+	float c = (float)remote_gps.course/1e7;
+	float s = MOfCm(remote_gps.gspeed);
+	float cl = MOfCm(-remote_gps.ned_vel);
+	SetAcInfo(id, ux, uy, c, a, s, cl, remote_gps.tow);
+#endif
         break;
       }
 
       parse_gps_datalink_small(
         DL_REMOTE_GPS_SMALL_numsv(dl_buffer),
         DL_REMOTE_GPS_SMALL_pos_xyz(dl_buffer),
-        DL_REMOTE_GPS_SMALL_speed_xy(dl_buffer));
+        DL_REMOTE_GPS_SMALL_speed_xyh(dl_buffer)
+	DL_REMOTE_GPS_SMALL_speed_z(dl_buffer));
       break;
 #endif
     case DL_REMOTE_GPS :
@@ -184,6 +205,21 @@ void dl_parse_msg(void)
         DL_GPS_INJECT_data(dl_buffer)
         );
       break;
+#endif
+#ifdef TRAFFIC_INFO
+    case DL_ACINFO: {
+      if (DL_ACINFO_ac_id(dl_buffer) == AC_ID) { break; }
+      uint8_t id = DL_ACINFO_ac_id(dl_buffer);
+      float ux = MOfCm(DL_ACINFO_utm_east(dl_buffer));
+      float uy = MOfCm(DL_ACINFO_utm_north(dl_buffer));
+      float a = MOfCm(DL_ACINFO_alt(dl_buffer));
+      float c = RadOfDeg(((float)DL_ACINFO_course(dl_buffer)) / 10.);
+      float s = MOfCm(DL_ACINFO_speed(dl_buffer));
+      float cl = MOfCm(DL_ACINFO_climb(dl_buffer));
+      uint32_t t = DL_ACINFO_itow(dl_buffer);
+      SetAcInfo(id, ux, uy, c, a, s, cl, t);
+    }
+    break;
 #endif
     default:
       break;
