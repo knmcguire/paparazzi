@@ -145,7 +145,6 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   AbiSendMsgGPS(GPS_DATALINK_ID, now_ts, &gps);
 }
 
-#ifdef TRAFFIC_INFO
 // Parse the REMOTE_GPS_SMALL datalink packet
 void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh, int8_t speed_z)
 {
@@ -212,7 +211,6 @@ void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv
 #endif
 
 }
-#endif
 #endif
 
 /** Parse the REMOTE_GPS datalink packet */

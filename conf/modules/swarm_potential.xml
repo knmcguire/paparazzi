@@ -1,0 +1,17 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="swarm_potential" dir="multi">
+  <doc>
+    <description>
+      Potential fields collision avoidance.
+    </description>
+  </doc>
+  <header>
+    <file name="swarm_potential.h"/>
+  </header>
+  <init fun="swarm_potential_init()"/>
+  <periodic fun="swarm_potential_periodic()" freq="2" autorun="TRUE"/>
+  <makefile>
+    <file name="swarm_potential.c"/>
+  </makefile>
+</module>

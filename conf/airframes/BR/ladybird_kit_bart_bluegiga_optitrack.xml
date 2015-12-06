@@ -210,6 +210,7 @@
    <load name="send_imu_mag_current.xml"/>
    <!--load name="stereocam_nav_line_avoid.xml"/-->
    <load name="mission_rotorcraft.xml"/>
+   <load name="swarm_potential.xml"/>
  </modules>
 
   <firmware name="rotorcraft">

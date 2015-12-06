@@ -155,14 +155,7 @@ void dl_parse_msg(void)
 	  DL_REMOTE_GPS_SMALL_speed_xyh(dl_buffer),
 	  DL_REMOTE_GPS_SMALL_speed_z(dl_buffer));
 
-	uint8_t id = DL_ACINFO_ac_id(dl_buffer);
-	float ux = MOfCm(remote_gps.utm_pos.east);
-	float uy = MOfCm(remote_gps.utm_pos.north);
-	float a = MOfCm(remote_gps.utm_pos.alt);
-	float c = (float)remote_gps.course/1e7;
-	float s = MOfCm(remote_gps.gspeed);
-	float cl = -MOfCm(remote_gps.ned_vel.z);
-	SetAcInfo(id, ux, uy, c, a, s, cl, remote_gps.tow);
+	SetAcInfoEcef(DL_ACINFO_ac_id(dl_buffer), &remote_gps);
 #endif
         break;
       }
@@ -208,6 +201,7 @@ void dl_parse_msg(void)
         );
       break;
 #endif
+/*
 #ifdef TRAFFIC_INFO
     case DL_ACINFO: {
       if (DL_ACINFO_ac_id(dl_buffer) == AC_ID) { break; }
@@ -223,6 +217,7 @@ void dl_parse_msg(void)
     }
     break;
 #endif
+*/
     default:
       break;
   }

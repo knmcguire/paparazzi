@@ -29,6 +29,8 @@
 #ifndef TI_H
 #define TI_H
 
+#include "subsystems/gps.h"
+
 #define NB_ACS_ID 256
 #define NB_ACS 24
 
@@ -47,26 +49,13 @@ extern uint8_t acs_idx;
 extern uint8_t the_acs_id[NB_ACS_ID];
 extern struct ac_info_ the_acs[NB_ACS];
 
-// 0 is reserved for ground station (id=0)
-// 1 is reserved for this AC (id=AC_ID)
-#define SetAcInfo(_id, _utm_x /*m*/, _utm_y /*m*/, _course/*rad(CW)*/, _alt/*m*/,_gspeed/*m/s*/,_climb, _itow) { \
-    if (acs_idx < NB_ACS) {                                             \
-      if (_id > 0 && the_acs_id[_id] == 0) {                            \
-        the_acs_id[_id] = acs_idx++;                                    \
-        the_acs[the_acs_id[_id]].ac_id = (uint8_t)_id;                  \
-      }                                                                 \
-      the_acs[the_acs_id[_id]].east = _utm_x -  nav_utm_east0;          \
-      the_acs[the_acs_id[_id]].north = _utm_y - nav_utm_north0;         \
-      the_acs[the_acs_id[_id]].course = _course;                        \
-      the_acs[the_acs_id[_id]].alt = _alt;                              \
-      the_acs[the_acs_id[_id]].gspeed = _gspeed;                        \
-      the_acs[the_acs_id[_id]].climb = _climb;                          \
-      the_acs[the_acs_id[_id]].itow = (uint32_t)_itow;                  \
-    }                                                                   \
-  }
-
 extern void traffic_info_init(void);
 
-struct ac_info_ *get_ac_info(uint8_t id);
+extern struct ac_info_ *get_ac_info(uint8_t id);
+
+extern void SetAcInfo(uint8_t _id, float _utm_x /*m*/, float _utm_y /*m*/, float _course/*rad(CW)*/, float _alt/*m*/, float _gspeed/*m/s*/, float _climb, uint32_t _itow);
+
+struct GpsState;
+extern void SetAcInfoEcef(uint8_t _id, struct GpsState *remote_gps);
 
 #endif

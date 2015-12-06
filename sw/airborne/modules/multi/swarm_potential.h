@@ -18,16 +18,32 @@
  * <http://www.gnu.org/licenses/>.
  */
 /**
- * @file "modules/gps_avoid/gps_avoid.h"
+ * @file "modules/multi/swarm_potential.h"
  * @author Kirk Scheper
  * This module is generates a command to avoid other vehicles based on their relative gps location
  */
 
-#ifndef GPS_AVOID_H
-#define GPS_AVOID_H
+#ifndef SWARM_POTENTIAL_H
+#define SWARM_POTENTIAL_H
 
-extern void gps_avoid_init();
-extern void gps_avoid_periodic();
+#include "subsystems/navigation/traffic_info.h"
 
-#endif
+struct force_ {
+  float east;
+  float north;
+  float alt;
+  float speed;
+  float climb;
+};
 
+extern struct force_ potential_force;
+
+extern float force_pos_gain;
+extern float force_speed_gain;
+extern float force_climb_gain;
+
+extern void swarm_potential_init(void);
+extern void swarm_potential_periodic(void);
+extern int swarm_potential_task(void);
+
+#endif // SWARM_POTENTIAL_H
