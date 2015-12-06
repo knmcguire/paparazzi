@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (C) 2014 Freek van Tienen <freek.v.tienen@gmail.com>
+ * Copyright (C) 2014-2015 Freek van Tienen <freek.v.tienen@gmail.com>
  *
  * This file is part of paparazzi.
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file boards/bebop/actuators.c
- * Actuator driver for the bebop
+ * Actuator driver for the bebop and bebop 2
  */
 
 #include "subsystems/actuators.h"
@@ -36,7 +36,7 @@
 #include "subsystems/datalink/telemetry.h"
 #include "firmwares/rotorcraft/stabilization.h"
 
-static void send_actuators_bebop(struct transport_tx *trans, struct link_device *dev)
+static void send_bebop_actuators(struct transport_tx *trans, struct link_device *dev)
 {
   pprz_msg_send_BEBOP_ACTUATORS(trans, dev, AC_ID,
                                 &stabilization_cmd[COMMAND_THRUST],
@@ -66,7 +66,7 @@ void actuators_bebop_init(void)
   actuators_bebop.led = 0;
 
 #if PERIODIC_TELEMETRY
-  register_periodic_telemetry(DefaultPeriodic, "ACTUATORS_BEBOP", send_actuators_bebop);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_BEBOP_ACTUATORS, send_bebop_actuators);
 #endif
 }
 
@@ -84,9 +84,6 @@ void actuators_bebop_commit(void)
   actuators_bebop.rpm_obs[2] = (actuators_bebop.i2c_trans.buf[5] + (actuators_bebop.i2c_trans.buf[4] << 8)) & ~(1<<15);
   actuators_bebop.rpm_obs[3] = (actuators_bebop.i2c_trans.buf[7] + (actuators_bebop.i2c_trans.buf[6] << 8)) & ~(1<<15);
 
-  // Saturate the bebop motors
-  //actuators_bebop_saturate();
-
   // When detected a suicide
   actuators_bebop.i2c_trans.buf[10] = actuators_bebop.i2c_trans.buf[10] & 0x7;
   if (actuators_bebop.i2c_trans.buf[11] == 2 && actuators_bebop.i2c_trans.buf[10] != 1) {
@@ -101,7 +98,12 @@ void actuators_bebop_commit(void)
 
     // Start the motors
     actuators_bebop.i2c_trans.buf[0] = ACTUATORS_BEBOP_START_PROP;
-    i2c_transmit(&i2c1, &actuators_bebop.i2c_trans, actuators_bebop.i2c_trans.slave_addr, 1);
+#if BEBOP_VERSION2
+    actuators_bebop.i2c_trans.buf[1] = 0b00000110; // For Bebop version 2 some motors are reversed (FIXME: test final version)
+#else
+    actuators_bebop.i2c_trans.buf[1] = 0b00000000;
+#endif
+    i2c_transmit(&i2c1, &actuators_bebop.i2c_trans, actuators_bebop.i2c_trans.slave_addr, 2);
   }
   // Stop the motors
   else if (actuators_bebop.i2c_trans.buf[10] == 4 && !autopilot_motors_on) {

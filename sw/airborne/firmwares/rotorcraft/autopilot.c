@@ -49,7 +49,11 @@
 #if USE_GPS
 #include "subsystems/gps.h"
 #else
+#if NO_GPS_NEEDED_FOR_NAV
+#define GpsIsLost() FALSE
+#else
 #define GpsIsLost() TRUE
+#endif
 #endif
 
 #ifdef POWER_SWITCH_GPIO
@@ -308,20 +312,20 @@ void autopilot_init(void)
   /* set startup mode, propagates through to guidance h/v */
   autopilot_set_mode(MODE_STARTUP);
 
-  register_periodic_telemetry(DefaultPeriodic, "AUTOPILOT_VERSION", send_autopilot_version);
-  register_periodic_telemetry(DefaultPeriodic, "ALIVE", send_alive);
-  register_periodic_telemetry(DefaultPeriodic, "ROTORCRAFT_STATUS", send_status);
-   register_periodic_telemetry(DefaultPeriodic, "ATTITUDE", send_attitude);
-  register_periodic_telemetry(DefaultPeriodic, "ENERGY", send_energy);
-  register_periodic_telemetry(DefaultPeriodic, "ROTORCRAFT_FP", send_fp);
-  register_periodic_telemetry(DefaultPeriodic, "ROTORCRAFT_CMD", send_rotorcraft_cmd);
-  register_periodic_telemetry(DefaultPeriodic, "DL_VALUE", send_dl_value);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_AUTOPILOT_VERSION, send_autopilot_version);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ALIVE, send_alive);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ROTORCRAFT_STATUS, send_status);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ATTITUDE, send_attitude);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ENERGY, send_energy);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ROTORCRAFT_FP, send_fp);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ROTORCRAFT_CMD, send_rotorcraft_cmd);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_DL_VALUE, send_dl_value);
 #ifdef ACTUATORS
-  register_periodic_telemetry(DefaultPeriodic, "ACTUATORS", send_actuators);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ACTUATORS, send_actuators);
 #endif
 #ifdef RADIO_CONTROL
-  register_periodic_telemetry(DefaultPeriodic, "RC", send_rc);
-  register_periodic_telemetry(DefaultPeriodic, "ROTORCRAFT_RADIO_CONTROL", send_rotorcraft_rc);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_RC, send_rc);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_ROTORCRAFT_RADIO_CONTROL, send_rotorcraft_rc);
 #endif
 }
 
@@ -510,8 +514,8 @@ void autopilot_check_in_flight(bool_t motors_on)
     if (autopilot_in_flight_counter > 0) {
       /* probably in_flight if thrust, speed and accel above IN_FLIGHT_MIN thresholds */
       if ((stabilization_cmd[COMMAND_THRUST] <= AUTOPILOT_IN_FLIGHT_MIN_THRUST) &&
-          (abs(stateGetSpeedNed_f()->z) < AUTOPILOT_IN_FLIGHT_MIN_SPEED) &&
-          (abs(stateGetAccelNed_f()->z) < AUTOPILOT_IN_FLIGHT_MIN_ACCEL)) {
+          (fabsf(stateGetSpeedNed_f()->z) < AUTOPILOT_IN_FLIGHT_MIN_SPEED) &&
+          (fabsf(stateGetAccelNed_f()->z) < AUTOPILOT_IN_FLIGHT_MIN_ACCEL)) {
         autopilot_in_flight_counter--;
         if (autopilot_in_flight_counter == 0) {
           autopilot_in_flight = FALSE;
