@@ -60,6 +60,7 @@
 #include "led.h"
 
 #define IdOfMsg(x) (x[1])
+#define MOfCm(_x) (((float)(_x))/100.)
 
 #if USE_NPS
 bool_t datalink_enabled = TRUE;
@@ -147,11 +148,12 @@ void dl_parse_msg(void)
       // Check if the GPS is for this AC
       if (DL_REMOTE_GPS_SMALL_ac_id(dl_buffer) != AC_ID) {
 #ifdef TRAFFIC_INFO
-	GpsState remote_gps;
+	struct GpsState remote_gps;
 	parse_remote_gps_datalink_small(&remote_gps,
           DL_REMOTE_GPS_SMALL_numsv(dl_buffer),
 	  DL_REMOTE_GPS_SMALL_pos_xyz(dl_buffer),
-	  DL_REMOTE_GPS_SMALL_speed_xy(dl_buffer));
+	  DL_REMOTE_GPS_SMALL_speed_xyh(dl_buffer),
+	  DL_REMOTE_GPS_SMALL_speed_z(dl_buffer));
 
 	uint8_t id = DL_ACINFO_ac_id(dl_buffer);
 	float ux = MOfCm(remote_gps.utm_pos.east);
@@ -168,7 +170,7 @@ void dl_parse_msg(void)
       parse_gps_datalink_small(
         DL_REMOTE_GPS_SMALL_numsv(dl_buffer),
         DL_REMOTE_GPS_SMALL_pos_xyz(dl_buffer),
-        DL_REMOTE_GPS_SMALL_speed_xyh(dl_buffer)
+        DL_REMOTE_GPS_SMALL_speed_xyh(dl_buffer),
 	DL_REMOTE_GPS_SMALL_speed_z(dl_buffer));
       break;
 #endif

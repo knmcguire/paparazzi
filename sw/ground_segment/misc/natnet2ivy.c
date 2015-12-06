@@ -538,17 +538,17 @@ gboolean timeout_transmit_callback(gpointer data) {
       speed_xyh |= (((uint32_t)(heading*100.0)) & 0x3FF) << 2; // bits 11-2 heading in rad*1e2 (The heading is already subsampled)
       // bits 1 and 0 are free
 
-      uint8_t speed_z;
-      if (fabs(speed.z) > 2.55)
-	speed_z = (uint8_t)(255*speed.z/fabs(speed.z));
+      int8_t speed_z;
+      if (fabs(speed.z) > 1.27)
+	speed_z = (int8_t)(127*speed.z/fabs(speed.z));
       else
-	speed_z = (uint8_t)(speed.z*100.0);
+	speed_z = (int8_t)(speed.z*100.0);
 
       // printf("ENU Vel: %u (%.2f, %.2f, 0.0)\n", speed_xy, speed.x, speed.y);
 
       // printf("Heading: %.2f\n", heading);
 
-      IvySendMsg("0 REMOTE_GPS_SMALL %d %d %d %d", aircrafts[rigidBodies[i].id].ac_id, // uint8 rigid body ID (1 byte)
+      IvySendMsg("0 REMOTE_GPS_SMALL %d %d %d %d %d", aircrafts[rigidBodies[i].id].ac_id, // uint8 rigid body ID (1 byte)
         (uint8_t)rigidBodies[i].nMarkers, // status (1 byte)
         pos_xyz, //uint32 ENU X, Y and Z in CM (4 bytes)
         speed_xyh, //uint32 ENU velocity X, Y in cm/s and heading in rad*1e2 (4 bytes)

@@ -142,6 +142,10 @@
       <message name="INS3"              period=".20"/>-->
       <message name="INS_REF"           period="5.1"/>
     </mode>
+    
+    <mode name="gps">
+      <message name="INS_REF"           period="5.1"/>
+    </mode>
 
   </process>
 

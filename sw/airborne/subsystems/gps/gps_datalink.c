@@ -73,7 +73,7 @@ void gps_impl_init(void)
 
 #ifdef GPS_USE_DATALINK_SMALL
 // Parse the REMOTE_GPS_SMALL datalink packet
-void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh, uint8_speed_z)
+void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh, int8_t speed_z)
 {
   // Position in ENU coordinates
   enu_pos.x = (int32_t)((pos_xyz >> 22) & 0x3FF); // bits 31-22 x position in cm
@@ -146,7 +146,7 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
 }
 
 // Parse the REMOTE_GPS_SMALL datalink packet
-void parse_remote_gps_datalink_small(GpsState *remote_gps, uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh, uint8_t speed_z)
+void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh, int8_t speed_z)
 {
   // Position in ENU coordinates
   enu_pos.x = (int32_t)((pos_xyz >> 22) & 0x3FF); // bits 31-22 x position in cm
@@ -164,10 +164,10 @@ void parse_remote_gps_datalink_small(GpsState *remote_gps, uint8_t num_sv, uint3
 
   // Convert the ENU coordinates to ECEF
   ecef_of_enu_point_i(&ecef_pos, &tracking_ltp, &enu_pos);
-  gps.ecef_pos = ecef_pos;
+  remote_gps->ecef_pos = ecef_pos;
 
   lla_of_ecef_i(&lla_pos, &ecef_pos);
-  gps.lla_pos = lla_pos;
+  remote_gps->lla_pos = lla_pos;
 
   enu_speed.x = (int32_t)((speed_xyh >> 22) & 0x3FF); // bits 31-22 speed x in cm/s
   if (enu_speed.x & 0x200) {
@@ -183,17 +183,17 @@ void parse_remote_gps_datalink_small(GpsState *remote_gps, uint8_t num_sv, uint3
 
   ecef_of_enu_vect_i(&gps.ecef_vel , &tracking_ltp , &enu_speed);
 
-  remote_gps.hmsl = tracking_ltp.hmsl + enu_pos.z * 10; // TODO: try to compensate for the loss in accuracy
+  remote_gps->hmsl = tracking_ltp.hmsl + enu_pos.z * 10; // TODO: try to compensate for the loss in accuracy
 
-  remote_gps.course = (int32_t)((speed_xyh >> 2) & 0x3FF); // bits 11-2 heading in rad*1e2
-  if (remote_gps.course & 0x200) {
-    remote_gps.course |= 0xFFFFFC00;  // fix for twos complements
+  remote_gps->course = (int32_t)((speed_xyh >> 2) & 0x3FF); // bits 11-2 heading in rad*1e2
+  if (remote_gps->course & 0x200) {
+    remote_gps->course |= 0xFFFFFC00;  // fix for twos complements
   }
 
-  remote_gps.course *= 1e5;
-  remote_gps.num_sv = num_sv;
-  remote_gps.tow = 0; // set time-of-week to 0
-  remote_gps.fix = GPS_FIX_3D; // set 3D fix to true
+  remote_gps->course *= 1e5;
+  remote_gps->num_sv = num_sv;
+  remote_gps->tow = 0; // set time-of-week to 0
+  remote_gps->fix = GPS_FIX_3D; // set 3D fix to true
 
 #if GPS_USE_LATLONG
   // Computes from (lat, long) in the referenced UTM zone
@@ -204,10 +204,10 @@ void parse_remote_gps_datalink_small(GpsState *remote_gps, uint8_t num_sv, uint3
   // convert to utm
   utm_of_lla_f(&utm_f, &lla_f);
   // copy results of utm conversion
-  remote_gps.utm_pos.east = utm_f.east * 100;
-  remote_gps.utm_pos.north = utm_f.north * 100;
-  remote_gps.utm_pos.alt = gps.lla_pos.alt;
-  remote_gps.utm_pos.zone = nav_utm_zone0;
+  remote_gps->utm_pos.east = utm_f.east * 100;
+  remote_gps->utm_pos.north = utm_f.north * 100;
+  remote_gps->utm_pos.alt = gps.lla_pos.alt;
+  remote_gps->utm_pos.zone = nav_utm_zone0;
 #endif
 
 }
