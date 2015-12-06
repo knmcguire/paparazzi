@@ -161,7 +161,7 @@ void dl_parse_msg(void)
 	float a = MOfCm(remote_gps.utm_pos.alt);
 	float c = (float)remote_gps.course/1e7;
 	float s = MOfCm(remote_gps.gspeed);
-	float cl = MOfCm(-remote_gps.ned_vel);
+	float cl = -MOfCm(remote_gps.ned_vel.z);
 	SetAcInfo(id, ux, uy, c, a, s, cl, remote_gps.tow);
 #endif
         break;

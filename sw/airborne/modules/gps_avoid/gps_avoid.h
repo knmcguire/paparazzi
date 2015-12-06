@@ -28,7 +28,6 @@
 
 extern void gps_avoid_init();
 extern void gps_avoid_periodic();
-extern void gps_avoid_parse_REMOTE_GPS_SMALL();
 
 #endif
 

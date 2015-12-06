@@ -27,6 +27,5 @@
 
 void gps_avoid_init() {}
 void gps_avoid_periodic() {}
-void gps_avoid_parse_REMOTE_GPS_SMALL() {}
 
 
