@@ -539,7 +539,7 @@ gboolean timeout_transmit_callback(gpointer data) {
       // bits 1 and 0 are free
 
       int8_t speed_z;
-      if (fabs(speed.z) > 1.27)
+      if (fabs(speed.z) > (127/100))
 	speed_z = (int8_t)(127*speed.z/fabs(speed.z));
       else
 	speed_z = (int8_t)(speed.z*100.0);

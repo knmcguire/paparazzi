@@ -486,8 +486,9 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
 
   if (action == action_broadcast || action == action_broadcast_connect) {
     if (sock[0])
-      sendto(sock[0], msg->data.data, msg->data.len, MSG_DONTWAIT,
+      sendto(sock[0], msg->data.data+13, msg->data.len-13, MSG_DONTWAIT,
              (struct sockaddr *)&send_addr[0], sizeof(struct sockaddr));
+    //printf("first: %02x, last: %02x\n", msg->data.data[13], msg->data.data[msg->data.len]);
   }
 
   if (action != action_broadcast) {
@@ -797,6 +798,7 @@ void ble_evt_attclient_attribute_value(const struct ble_msg_attclient_attribute_
   if (sock[msg->connection])
     sendto(sock[msg->connection], msg->value.data, msg->value.len, MSG_DONTWAIT,
            (struct sockaddr *)&send_addr[msg->connection], sizeof(struct sockaddr));
+  printf("first: %02x, length: %d\n", msg->value.data[0], msg->value.len);
 
 }
 

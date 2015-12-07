@@ -63,6 +63,7 @@ struct bluegiga_periph {
   /* some administrative variables */
   uint32_t bytes_recvd_since_last;
   uint8_t end_of_msg;
+  uint8_t connected;
 
 };
 

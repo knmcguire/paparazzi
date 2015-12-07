@@ -31,6 +31,10 @@
 #include "mcu_periph/gpio.h"
 #include "mcu_periph/spi.h"
 
+//#include "subsystems/datalink/telemetry_common.h"
+//#include "subsystems/datalink/telemetry.h"
+#include "generated/periodic_telemetry.h"
+
 #ifndef BLUEGIGA_SPI_DEV
 #error "bluegiga: must define a BLUEGIGA_SPI_DEV"
 #endif
@@ -51,7 +55,7 @@ struct spi_transaction bluegiga_spi;
 signed char bluegiga_rssi[256];    // values initialized with 127
 unsigned char telemetry_copy[20];
 
-void bluegiga_load_tx(struct bluegiga_periph *p);
+void bluegiga_load_tx(struct bluegiga_periph *p, struct spi_transaction *trans);
 void bluegiga_transmit(struct bluegiga_periph *p, uint8_t data);
 void bluegiga_receive(struct spi_transaction *trans);
 
@@ -162,6 +166,7 @@ void bluegiga_init(struct bluegiga_periph *p)
 
   p->bytes_recvd_since_last = 0;
   p->end_of_msg = p->tx_insert_idx;
+  p->connected = 0;
 
   // set DRDY interrupt pin for spi master triggered on falling edge
   gpio_setup_output(BLUEGIGA_DRDY_GPIO, BLUEGIGA_DRDY_GPIO_PIN);
@@ -187,21 +192,29 @@ void bluegiga_transmit(struct bluegiga_periph *p, uint8_t data)
 }
 
 /* Load waiting data into tx peripheral buffer */
-void bluegiga_load_tx(struct bluegiga_periph *p)
+void bluegiga_load_tx(struct bluegiga_periph *p, struct spi_transaction *trans)
 {
-  // check data available in buffer to send
-  uint8_t packet_len = ((p->end_of_msg - p->tx_extract_idx + BLUEGIGA_BUFFER_SIZE) % BLUEGIGA_BUFFER_SIZE);
-  if (packet_len > 19) {
-    packet_len = 19;
+  uint8_t packet_len;
+  if (p->connected){
+    // check data available in buffer to send
+    packet_len = ((p->end_of_msg - p->tx_extract_idx + BLUEGIGA_BUFFER_SIZE) % BLUEGIGA_BUFFER_SIZE);
+    if (packet_len > 19) {
+      packet_len = 19;
+    }
+  } else {
+    // check data available in buffer to send
+    packet_len = ((p->end_of_msg - p->tx_extract_idx + BLUEGIGA_BUFFER_SIZE) % BLUEGIGA_BUFFER_SIZE);
+    if (packet_len > 17) {
+      bluegiga_increment_buf(&p->tx_extract_idx, packet_len);		// msg too large for broadcast
+      memset(p->work_tx, 0, bluegiga_spi.output_length);
+      return;
+    }
   }
 
   if (packet_len && coms_status == BLUEGIGA_IDLE) {
     uint8_t i;
     // attach header with data length of real data in 20 char data string
-    if (coms_status == BLUEGIGA_BROADCASTING)
-      p->work_tx[0] = 0xff - packet_len;
-    else
-      p->work_tx[0] = packet_len;
+    p->work_tx[0] = packet_len;
 
     // copy data from working buffer to spi output buffer
     for (i = 0; i < packet_len; i++) {
@@ -210,7 +223,7 @@ void bluegiga_load_tx(struct bluegiga_periph *p)
     bluegiga_increment_buf(&p->tx_extract_idx, packet_len);
 
     // clear unused bytes
-    for (i = packet_len + 1; i < bluegiga_spi.output_length; i++) {
+    for (i = packet_len + 1; i < trans->output_length; i++) {
       p->work_tx[i] = 0;
     }
 
@@ -245,7 +258,13 @@ void bluegiga_receive(struct spi_transaction *trans)
     uint8_t packet_len = 0;
     uint8_t read_offset = 0;
     switch (trans->input_buf[0]) {
-      case 0x50:  // communication lost with ground station
+      case 0x50:  // communication status changed
+	bluegiga_p.connected = trans->input_buf[1];
+	if (bluegiga_p.connected)
+	  telemetry_mode_Main = TELEMETRY_PROCESS_Main;
+	  else {
+	      telemetry_mode_Main = NB_TELEMETRY_MODES;		// send no periodic telemetry
+	  }
 #ifdef MODEM_LED
         LED_OFF(MODEM_LED);
 #endif
@@ -289,10 +308,10 @@ void bluegiga_receive(struct spi_transaction *trans)
     }
 
     // load next message to be sent into work buffer, needs to be loaded before calling spi_slave_register
-    bluegiga_load_tx(&bluegiga_p);
+    bluegiga_load_tx(&bluegiga_p, trans);
 
     // register spi slave read for next transaction
-    spi_slave_register(&(BLUEGIGA_SPI_DEV), &bluegiga_spi);
+    spi_slave_register(&(BLUEGIGA_SPI_DEV), trans);
   }
 }
 

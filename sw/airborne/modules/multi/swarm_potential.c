@@ -24,8 +24,12 @@
  */
 
 #include "modules/multi/swarm_potential.h"
+#include "subsystems/gps.h"
+#include "subsystems/gps/gps_datalink.h"
 
-void swarm_potential_periodic(void) {}
+void swarm_potential_periodic(void) {
+  send_remote_gps_datalink_small();
+}
 
 struct force_ potential_force;
 
@@ -63,7 +67,7 @@ void swarm_potential_init(void)
 int swarm_potential_task(void)
 {
   uint8_t i;
-
+/*
   float ch = cosf(stateGetHorizontalSpeedDir_f());
   float sh = sinf(stateGetHorizontalSpeedDir_f());
   potential_force.east = 0.;
@@ -118,7 +122,7 @@ int swarm_potential_task(void)
   fly_to_xy(desired_x, desired_y);
 
   // speed loop
-  /*
+
   float cruise = V_CTL_AUTO_THROTTLE_NOMINAL_CRUISE_THROTTLE;
   cruise += -force_speed_gain * (potential_force.north * ch + potential_force.east * sh);
   Bound(cruise, V_CTL_AUTO_THROTTLE_MIN_CRUISE_THROTTLE, V_CTL_AUTO_THROTTLE_MAX_CRUISE_THROTTLE);

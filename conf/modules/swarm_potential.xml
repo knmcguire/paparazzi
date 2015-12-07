@@ -10,7 +10,7 @@
     <file name="swarm_potential.h"/>
   </header>
   <init fun="swarm_potential_init()"/>
-  <periodic fun="swarm_potential_periodic()" freq="2" autorun="TRUE"/>
+  <periodic fun="swarm_potential_periodic()" freq="5" autorun="TRUE"/>
   <makefile>
     <file name="swarm_potential.c"/>
   </makefile>

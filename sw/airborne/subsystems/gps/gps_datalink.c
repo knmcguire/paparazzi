@@ -27,6 +27,9 @@
  * GPS structure to the values received.
  */
 
+#include "messages.h"
+#include "generated/airframe.h" // AC_ID is required
+#include "subsystems/datalink/downlink.h"
 #include "subsystems/abi.h"
 
 // #include <stdio.h> 
@@ -210,6 +213,29 @@ void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv
   remote_gps->utm_pos.zone = nav_utm_zone0;
 #endif
 
+}
+
+void send_remote_gps_datalink_small(void)
+{
+  uint8_t ac_id = AC_ID;
+
+  enu_of_ecef_point_i(&enu_pos, &tracking_ltp, &ecef_pos);
+
+  // Position in ENU coordinates
+  uint32_t pos_xyz = (((uint32_t)enu_pos.x) & 0x3FF) << 22; // bits 31-22 x position in cm
+  pos_xyz |= (((uint32_t)enu_pos.y) & 0x3FF) << 12;         // bits 21-12 y position in cm
+  pos_xyz |= (((uint32_t)enu_pos.z) & 0x3FF) << 2;          // bits 11-2 z position in cm
+
+  enu_of_ecef_vect_i(&enu_speed, &tracking_ltp, &gps.ecef_vel);
+
+  // Speed in ENU coordinates
+  uint32_t speed_xyh = (((uint32_t)enu_speed.x) & 0x3FF) << 22; // bits 31-22 speed x in cm/s
+  speed_xyh |= (((uint32_t)enu_speed.y) & 0x3FF) << 12;         // bits 21-12 speed y in cm/s
+  speed_xyh |= (((uint32_t)(gps.course/1e5)) & 0x3FF) << 2;     // bits 11-2 heading in rad*1e2
+
+  int8_t speed_z = enu_speed.z;
+
+  DOWNLINK_SEND_TELEM_REMOTE_GPS_SMALL(DefaultChannel, DefaultDevice, &ac_id, &gps.num_sv, &pos_xyz, &speed_xyh, &speed_z);
 }
 #endif
 
