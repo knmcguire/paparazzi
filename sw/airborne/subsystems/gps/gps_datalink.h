@@ -36,14 +36,15 @@
 #define GPS_NB_CHANNELS 0
 
 extern bool_t gps_available;
-#ifdef GPS_USE_DATALINK_SMALL
+
 extern void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh, int8_t speed_z);
 
 struct GpsState;
-extern void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh, int8_t speed_z);
+extern void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv, uint32_t pos_xyz,
+    uint32_t speed_xyh, int8_t speed_z);
 
 extern void send_remote_gps_datalink_small(void);
-#endif
+
 extern void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t ecef_z,
                                int32_t lat, int32_t lon, int32_t alt, int32_t hmsl,
                                int32_t ecef_xd, int32_t ecef_yd, int32_t ecef_zd,

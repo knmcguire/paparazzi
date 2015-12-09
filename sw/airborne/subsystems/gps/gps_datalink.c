@@ -29,31 +29,16 @@
 
 #include "messages.h"
 #include "generated/airframe.h" // AC_ID is required
+#include "generated/flight_plan.h" // AC_ID is required
 #include "subsystems/datalink/downlink.h"
 #include "subsystems/abi.h"
 
-// #include <stdio.h> 
+// #include <stdio.h>
 
-#if GPS_USE_DATALINK_SMALL
-#ifndef GPS_LOCAL_ECEF_ORIGIN_X
-#error Local x coordinate in ECEF of the remote GPS required
-#endif
-
-#ifndef GPS_LOCAL_ECEF_ORIGIN_Y
-#error Local y coordinate in ECEF of the remote GPS required
-#endif
-
-#ifndef GPS_LOCAL_ECEF_ORIGIN_Z
-#error Local z coordinate in ECEF of the remote GPS required
-#endif
-
-struct EcefCoor_i tracking_ecef;
-struct LtpDef_i tracking_ltp;
+struct LtpDef_i ltp_def;
 struct EnuCoor_i enu_pos, enu_speed;
 struct EcefCoor_i ecef_pos, ecef_vel;
 struct LlaCoor_i lla_pos;
-
-#endif
 
 bool_t gps_available;   ///< Is set to TRUE when a new REMOTE_GPS packet is received and parsed
 
@@ -65,16 +50,17 @@ void gps_impl_init(void)
   gps.gspeed = 700; // To enable course setting
   gps.cacc = 0; // To enable course setting
 
-#if GPS_USE_DATALINK_SMALL
-  tracking_ecef.x = GPS_LOCAL_ECEF_ORIGIN_X;
-  tracking_ecef.y = GPS_LOCAL_ECEF_ORIGIN_Y;
-  tracking_ecef.z = GPS_LOCAL_ECEF_ORIGIN_Z;
+  struct LlaCoor_i llh_nav0; /* Height above the ellipsoid */
+  llh_nav0.lat = NAV_LAT0;
+  llh_nav0.lon = NAV_LON0;
+  /* NAV_ALT0 = ground alt above msl, NAV_MSL0 = geoid-height (msl) over ellipsoid */
+  llh_nav0.alt = NAV_ALT0 + NAV_MSL0;
 
-  ltp_def_from_ecef_i(&tracking_ltp, &tracking_ecef);
-#endif
+  struct EcefCoor_i ecef_nav0;
+  ecef_of_lla_i(&ecef_nav0, &llh_nav0);
+  ltp_def_from_ecef_i(&ltp_def, &ecef_nav0);
 }
 
-#ifdef GPS_USE_DATALINK_SMALL
 // Parse the REMOTE_GPS_SMALL datalink packet
 void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh, int8_t speed_z)
 {
@@ -91,7 +77,7 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   // bits 1 and 0 are free
 
   // Convert the ENU coordinates to ECEF
-  ecef_of_enu_point_i(&ecef_pos, &tracking_ltp, &enu_pos);
+  ecef_of_enu_point_i(&ecef_pos, &ltp_def, &enu_pos);
   gps.ecef_pos = ecef_pos;
 
   lla_of_ecef_i(&lla_pos, &ecef_pos);
@@ -107,9 +93,9 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   }
   enu_speed.z = speed_z;
 
-  ecef_of_enu_vect_i(&gps.ecef_vel , &tracking_ltp , &enu_speed);
+  ecef_of_enu_vect_i(&gps.ecef_vel , &ltp_def , &enu_speed);
 
-  gps.hmsl = tracking_ltp.hmsl + enu_pos.z * 10; // TODO: try to compensate for the loss in accuracy
+  gps.hmsl = ltp_def.hmsl + enu_pos.z * 10; // TODO: try to compensate for the loss in accuracy
 
   gps.course = (int32_t)((speed_xyh >> 2) & 0x3FF); // bits 11-2 heading in rad*1e2
   if (gps.course & 0x200) {
@@ -149,7 +135,8 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
 }
 
 // Parse the REMOTE_GPS_SMALL datalink packet
-void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh, int8_t speed_z)
+void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh,
+                                     int8_t speed_z)
 {
   // Position in ENU coordinates
   enu_pos.x = (int32_t)((pos_xyz >> 22) & 0x3FF); // bits 31-22 x position in cm
@@ -160,13 +147,13 @@ void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv
   if (enu_pos.y & 0x200) {
     enu_pos.y |= 0xFFFFFC00;  // fix for twos complements
   }
-  enu_pos.z = (int32_t)((pos_xyz >> 2 ) & 0x3FF); // bits 11-2 z position in cm
+  enu_pos.z = (int32_t)((pos_xyz >> 2) & 0x3FF);  // bits 11-2 z position in cm
   // bits 1 and 0 are free
 
   // printf("ENU Pos: %u (%d, %d, %d)\n", pos_xyz, enu_pos.x, enu_pos.y, enu_pos.z);
 
   // Convert the ENU coordinates to ECEF
-  ecef_of_enu_point_i(&ecef_pos, &tracking_ltp, &enu_pos);
+  ecef_of_enu_point_i(&ecef_pos, &ltp_def, &enu_pos);
   remote_gps->ecef_pos = ecef_pos;
 
   lla_of_ecef_i(&lla_pos, &ecef_pos);
@@ -184,9 +171,9 @@ void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv
 
   // printf("ENU Speed: %u (%d, %d, %d)\n", speed_xy, enu_speed.x, enu_speed.y, enu_speed.z);
 
-  ecef_of_enu_vect_i(&gps.ecef_vel , &tracking_ltp , &enu_speed);
+  ecef_of_enu_vect_i(&gps.ecef_vel , &ltp_def , &enu_speed);
 
-  remote_gps->hmsl = tracking_ltp.hmsl + enu_pos.z * 10; // TODO: try to compensate for the loss in accuracy
+  remote_gps->hmsl = ltp_def.hmsl + enu_pos.z * 10; // TODO: try to compensate for the loss in accuracy
 
   remote_gps->course = (int32_t)((speed_xyh >> 2) & 0x3FF); // bits 11-2 heading in rad*1e2
   if (remote_gps->course & 0x200) {
@@ -219,25 +206,25 @@ void send_remote_gps_datalink_small(void)
 {
   uint8_t ac_id = AC_ID;
 
-  enu_of_ecef_point_i(&enu_pos, &tracking_ltp, &ecef_pos);
+  enu_of_ecef_point_i(&enu_pos, &ltp_def, &ecef_pos);
 
   // Position in ENU coordinates
   uint32_t pos_xyz = (((uint32_t)enu_pos.x) & 0x3FF) << 22; // bits 31-22 x position in cm
   pos_xyz |= (((uint32_t)enu_pos.y) & 0x3FF) << 12;         // bits 21-12 y position in cm
   pos_xyz |= (((uint32_t)enu_pos.z) & 0x3FF) << 2;          // bits 11-2 z position in cm
 
-  enu_of_ecef_vect_i(&enu_speed, &tracking_ltp, &gps.ecef_vel);
+  enu_of_ecef_vect_i(&enu_speed, &ltp_def, &gps.ecef_vel);
 
   // Speed in ENU coordinates
   uint32_t speed_xyh = (((uint32_t)enu_speed.x) & 0x3FF) << 22; // bits 31-22 speed x in cm/s
   speed_xyh |= (((uint32_t)enu_speed.y) & 0x3FF) << 12;         // bits 21-12 speed y in cm/s
-  speed_xyh |= (((uint32_t)(gps.course/1e5)) & 0x3FF) << 2;     // bits 11-2 heading in rad*1e2
+  speed_xyh |= (((uint32_t)(gps.course / 1e5)) & 0x3FF) << 2;   // bits 11-2 heading in rad*1e2
 
   int8_t speed_z = enu_speed.z;
 
-  DOWNLINK_SEND_TELEM_REMOTE_GPS_SMALL(DefaultChannel, DefaultDevice, &ac_id, &gps.num_sv, &pos_xyz, &speed_xyh, &speed_z);
+  DOWNLINK_SEND_TELEM_REMOTE_GPS_SMALL(DefaultChannel, DefaultDevice, &ac_id, &gps.num_sv, &pos_xyz, &speed_xyh,
+                                       &speed_z);
 }
-#endif
 
 /** Parse the REMOTE_GPS datalink packet */
 void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t ecef_z, int32_t lat, int32_t lon,

@@ -2211,14 +2211,15 @@
 
 <msg_class name="datalink">
  <message name="ACINFO" id="1" link="broadcasted">
-  <field name="course" type="int16" unit="decideg"></field>
-  <field name="utm_east"  type="int32" unit="cm"></field>
-  <field name="utm_north"  type="int32" unit="cm"></field>
-  <field name="alt"    type="int32" unit="cm"></field>
-  <field name="itow"  type="uint32" unit="ms"></field>
-  <field name="speed"  type="uint16" unit="cm/s"></field>
-  <field name="climb"  type="int16" unit="cm/s"></field>
   <field name="ac_id" type="uint8"/>
+  <field name="dummy" type="uint8"/>
+  <field name="lat" type="int32" unit="1e7deg" alt_unit="deg" alt_unit_coef="0.0000001"/>
+  <field name="lon" type="int32" unit="1e7deg" alt_unit="deg" alt_unit_coef="0.0000001"/>
+  <field name="alt" type="int32" unit="mm" alt_unit="m" alt_unit_coef="0.001"/>
+  <field name="course" type="int32" unit="1e7deg" alt_unit="deg" alt_unit_coef="0.0000001"/>
+  <field name="gspeed" type="uint16" unit="cm/s" alt_unit="m/s" alt_unit_coef="0.01"/>
+  <field name="climb" type="uint16" unit="cm/s" alt_unit="m/s" alt_unit_coef="0.01"/>
+  <field name="tow" type="uint32" unit="ms" alt_unit="s" alt_unit_coef="0.001"/>
  </message>
 
  <message name="MOVE_WP" id="2" link="forwarded">

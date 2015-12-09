@@ -798,7 +798,7 @@ void ble_evt_attclient_attribute_value(const struct ble_msg_attclient_attribute_
   if (sock[msg->connection])
     sendto(sock[msg->connection], msg->value.data, msg->value.len, MSG_DONTWAIT,
            (struct sockaddr *)&send_addr[msg->connection], sizeof(struct sockaddr));
-  printf("first: %02x, length: %d\n", msg->value.data[0], msg->value.len);
+  printf("%02x %02x %02x %02x\n", msg->value.data[0], msg->value.data[1], msg->value.data[2], msg->value.data[3]);
 
 }
 

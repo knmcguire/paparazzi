@@ -22,9 +22,9 @@ enum slot_status {UNSET, ACTIVE, IDLE, LOST};
 
 struct slot_ {
   enum slot_status status;
-  float east;
-  float north;
-  float alt;
+  float x;
+  float y;
+  float z;
 };
 
 extern struct slot_ formation[NB_ACS];
@@ -34,9 +34,9 @@ extern int formation_init(void);
 extern int add_slot(uint8_t _id, float slot_e, float slot_n, float slot_a);
 
 #define UpdateSlot(_id, _se, _sn, _sa) { \
-    formation[the_acs_id[_id]].east = _se; \
-    formation[the_acs_id[_id]].north = _sn; \
-    formation[the_acs_id[_id]].alt = _sa; \
+    formation[the_acs_id[_id]].x = _se; \
+    formation[the_acs_id[_id]].y = _sn; \
+    formation[the_acs_id[_id]].z = _sa; \
   }
 
 #define UpdateFormationStatus(_id,_status) { formation[the_acs_id[_id]].status = _status; }
