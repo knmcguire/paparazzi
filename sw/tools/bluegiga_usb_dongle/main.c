@@ -576,7 +576,6 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
     	  if (!cmp_addr(msg->sender.addr, connected_addr[i].addr))
     	    return;
     	}
-    	cpy_bdaddr(connected_addr[i].addr, msg->sender.addr);
     
       fprintf(stderr, "Trying to connect to "); print_bdaddr(msg->sender); fprintf(stderr, "\n");
       //change_state(state_connecting);
@@ -617,6 +616,7 @@ void ble_evt_connection_status(const struct ble_msg_connection_status_evt_t *msg
   // Connection request completed
   else if (msg->flags & connection_completed) {
     if (msg->connection + 1 > connected_devices) { connected_devices++; }
+    cpy_bdaddr(connected_addr[msg->connection].addr, msg->address.addr);
     //change_state(state_connected);
     connection_interval = msg->conn_interval * 1.25;
     fprintf(stderr, "Connected, nr: %d, connection interval: %d = %fms\n", msg->connection, msg->conn_interval,
@@ -654,13 +654,16 @@ void ble_evt_connection_status(const struct ble_msg_connection_status_evt_t *msg
       change_state(state_listening_measurements);
       enable_indications(msg->connection, drone_handle_configuration);
       if (connect_all) {
-        ble_cmd_gap_discover(gap_discover_generic);
+	ble_cmd_gap_discover(gap_discover_generic);
       }
     }
     // Find primary services
     else {
       change_state(state_finding_services);
       ble_cmd_attclient_read_by_group_type(msg->connection, FIRST_HANDLE, LAST_HANDLE, 2, primary_service_uuid);
+      if (connect_all) {
+	ble_cmd_gap_discover(gap_discover_generic);
+      }
     }
   }
 }
@@ -719,9 +722,6 @@ void ble_evt_attclient_procedure_completed(const struct ble_msg_attclient_proced
     else {
       change_state(state_listening_measurements);
       enable_indications(msg->connection, drone_handle_configuration);
-      if (connect_all) {
-        ble_cmd_gap_discover(gap_discover_generic);
-      }
     }
   }
 
@@ -798,7 +798,8 @@ void ble_evt_attclient_attribute_value(const struct ble_msg_attclient_attribute_
   if (sock[msg->connection])
     sendto(sock[msg->connection], msg->value.data, msg->value.len, MSG_DONTWAIT,
            (struct sockaddr *)&send_addr[msg->connection], sizeof(struct sockaddr));
-  printf("%02x %02x %02x %02x\n", msg->value.data[0], msg->value.data[1], msg->value.data[2], msg->value.data[3]);
+  //printf("%02x %02x %02x %02x\n", msg->value.data[0], msg->value.data[1], msg->value.data[2], msg->value.data[3]);
+  //printf("%d\n", msg->value.len);
 
 }
 

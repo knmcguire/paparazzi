@@ -117,16 +117,8 @@ void dl_parse_msg(void)
 
 #ifdef TRAFFIC_INFO
     case DL_ACINFO: {
-      if (DL_ACINFO_ac_id(dl_buffer) == AC_ID) { break; }
-      uint8_t id = DL_ACINFO_ac_id(dl_buffer);
-      float ux = MOfCm(DL_ACINFO_utm_east(dl_buffer));
-      float uy = MOfCm(DL_ACINFO_utm_north(dl_buffer));
-      float a = MOfCm(DL_ACINFO_alt(dl_buffer));
-      float c = RadOfDeg(((float)DL_ACINFO_course(dl_buffer)) / 10.);
-      float s = MOfCm(DL_ACINFO_speed(dl_buffer));
-      float cl = MOfCm(DL_ACINFO_climb(dl_buffer));
-      uint32_t t = DL_ACINFO_itow(dl_buffer);
-      SetAcInfo(id, ux, uy, c, a, s, cl, t);
+        SetAcInfo(DL_ACINFO_ac_id(dl_buffer), DL_ACINFO_lat(dl_buffer), DL_ACINFO_lon(dl_buffer), DL_ACINFO_alt(dl_buffer),
+                  DL_ACINFO_course(dl_buffer), DL_ACINFO_gspeed(dl_buffer), DL_ACINFO_climb(dl_buffer), DL_ACINFO_tow(dl_buffer));
     }
     break;
 #endif

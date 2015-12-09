@@ -57,6 +57,6 @@ extern void SetAcInfo(uint8_t id, uint32_t lat, uint32_t lon, uint32_t alt, uint
                       uint16_t climb, uint32_t tow);
 
 struct GpsState;
-extern void SetAcInfoEcef(uint8_t _id, struct GpsState *remote_gps);
+extern void SetAcInfoRemote(uint8_t _id, struct GpsState *remote_gps);
 
 #endif

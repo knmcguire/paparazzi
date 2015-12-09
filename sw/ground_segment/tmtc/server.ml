@@ -377,22 +377,24 @@ let send_aircraft_msg = fun ac ->
                   "climb", f a.climb] in
     Ground_Pprz.message_send my_id "FLIGHT_PARAM" values;
 
-    (** send ACINFO messages if more than one A/C registered *)
+    (** send ACINFO messages if more than one A/C registered 
     if Hashtbl.length aircrafts > 1 then
       begin
         let cm_of_m_32 = fun f -> Pprz.Int32 (Int32.of_int (truncate (100. *. f))) in
         let cm_of_m = fun f -> Pprz.Int (truncate (100. *. f)) in
-        let pos = LL.utm_of WGS84 a.pos in
+        let pos = LL.lla_of WGS84 a.pos in
         let ac_info = ["ac_id", Pprz.String ac;
-                       "utm_east", cm_of_m_32 pos.utm_x;
-                       "utm_north", cm_of_m_32 pos.utm_y;
-                       "course", Pprz.Int (truncate (10. *. (Geometry_2d.rad2deg a.course)));
+                       "dummy", 0;
+                       "lat", pos.lat;
+                       "lat", pos.lon;
                        "alt", cm_of_m_32 a.alt;
-                       "speed", cm_of_m a.gspeed;
+                       "course", Pprz.Int (truncate (10. *. (Geometry_2d.rad2deg a.course)));
+                       "gspeed", cm_of_m a.gspeed;
                        "climb", cm_of_m a.climb;
-                       "itow", Pprz.Int64 a.itow] in
+                       "tow", Pprz.Int64 a.itow] in
         Dl_Pprz.message_send my_id "ACINFO" ac_info;
       end;
+      *)
 
     if !Kml.enabled then
       Kml.update_ac a;

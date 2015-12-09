@@ -28,8 +28,8 @@
  */
 
 #include "messages.h"
-#include "generated/airframe.h" // AC_ID is required
-#include "generated/flight_plan.h" // AC_ID is required
+#include "generated/airframe.h"           // AC_ID
+#include "generated/flight_plan.h"        // reference lla NAV_XXX0
 #include "subsystems/datalink/downlink.h"
 #include "subsystems/abi.h"
 
@@ -37,8 +37,6 @@
 
 struct LtpDef_i ltp_def;
 struct EnuCoor_i enu_pos, enu_speed;
-struct EcefCoor_i ecef_pos, ecef_vel;
-struct LlaCoor_i lla_pos;
 
 bool_t gps_available;   ///< Is set to TRUE when a new REMOTE_GPS packet is received and parsed
 
@@ -77,11 +75,9 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   // bits 1 and 0 are free
 
   // Convert the ENU coordinates to ECEF
-  ecef_of_enu_point_i(&ecef_pos, &ltp_def, &enu_pos);
-  gps.ecef_pos = ecef_pos;
+  ecef_of_enu_point_i(&gps.ecef_pos, &ltp_def, &enu_pos);
 
-  lla_of_ecef_i(&lla_pos, &ecef_pos);
-  gps.lla_pos = lla_pos;
+  lla_of_ecef_i(&gps.lla_pos, &gps.ecef_pos);
 
   enu_speed.x = (int32_t)((speed_xyh >> 22) & 0x3FF); // bits 31-22 speed x in cm/s
   if (enu_speed.x & 0x200) {
@@ -153,11 +149,9 @@ void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv
   // printf("ENU Pos: %u (%d, %d, %d)\n", pos_xyz, enu_pos.x, enu_pos.y, enu_pos.z);
 
   // Convert the ENU coordinates to ECEF
-  ecef_of_enu_point_i(&ecef_pos, &ltp_def, &enu_pos);
-  remote_gps->ecef_pos = ecef_pos;
+  ecef_of_enu_point_i(&remote_gps->ecef_pos, &ltp_def, &enu_pos);
 
-  lla_of_ecef_i(&lla_pos, &ecef_pos);
-  remote_gps->lla_pos = lla_pos;
+  lla_of_ecef_i(&remote_gps->lla_pos, &remote_gps->ecef_pos);
 
   enu_speed.x = (int32_t)((speed_xyh >> 22) & 0x3FF); // bits 31-22 speed x in cm/s
   if (enu_speed.x & 0x200) {
@@ -206,7 +200,7 @@ void send_remote_gps_datalink_small(void)
 {
   uint8_t ac_id = AC_ID;
 
-  enu_of_ecef_point_i(&enu_pos, &ltp_def, &ecef_pos);
+  enu_of_ecef_point_i(&enu_pos, &ltp_def, &gps.ecef_pos);
 
   // Position in ENU coordinates
   uint32_t pos_xyz = (((uint32_t)enu_pos.x) & 0x3FF) << 22; // bits 31-22 x position in cm

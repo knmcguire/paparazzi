@@ -37,6 +37,9 @@ struct ac_info_ the_acs[NB_ACS];
 
 void traffic_info_init(void)
 {
+  memset(the_acs_id, 0, NB_ACS_ID);
+  memset(the_acs, 0, NB_ACS);
+
   the_acs_id[0] = 0;  // ground station
   the_acs_id[AC_ID] = 1;
   the_acs[the_acs_id[AC_ID]].ac_id = AC_ID;
@@ -70,7 +73,7 @@ void SetAcInfo(uint8_t id, uint32_t lat, uint32_t lon, uint32_t alt, uint32_t co
   }
 }
 
-void SetAcInfoEcef(uint8_t id, struct GpsState *remote_gps)
+void SetAcInfoRemote(uint8_t id, struct GpsState *remote_gps)
 {
   if (acsidx < NB_ACS) {
     if (id > 0 && the_acs_id[id] == 0) {

@@ -32,8 +32,9 @@ struct force_ {
   float east;
   float north;
   float alt;
-  float speed;
-  float climb;
+  float speed_x;
+  float speed_y;
+  float speed_z;
 };
 
 extern struct force_ potential_force;

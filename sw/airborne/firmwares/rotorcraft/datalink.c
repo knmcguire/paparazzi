@@ -75,18 +75,8 @@ void dl_parse_msg(void)
   /* parse telemetry messages coming from other AC */
   if (sender_id != 0) {
     switch (msg_id) {
-      case DL_ACINFO: {
 #ifdef TRAFFIC_INFO
-        SetAcInfo(DL_ACINFO_ac_id(dl_buffer), DL_ACINFO_lat(dl_buffer), DL_ACINFO_lon(dl_buffer), DL_ACINFO_alt(dl_buffer),
-                  DL_ACINFO_course(dl_buffer), DL_ACINFO_gspeed(dl_buffer), DL_ACINFO_climb(dl_buffer), DL_ACINFO_tow(dl_buffer));
-#endif
-        break;
-      }
-
-      case DL_REMOTE_GPS_SMALL : {
-        // Check if the GPS is for this AC
-        //if (DL_REMOTE_GPS_SMALL_ac_id(dl_buffer) != AC_ID) {
-#ifdef TRAFFIC_INFO
+      case DL_TELEM_REMOTE_GPS_SMALL: {
         struct GpsState remote_gps;
         parse_remote_gps_datalink_small(&remote_gps,
                                         DL_REMOTE_GPS_SMALL_numsv(dl_buffer),
@@ -94,19 +84,18 @@ void dl_parse_msg(void)
                                         DL_REMOTE_GPS_SMALL_speed_xyh(dl_buffer),
                                         DL_REMOTE_GPS_SMALL_speed_z(dl_buffer));
 
-        SetAcInfoEcef(DL_ACINFO_ac_id(dl_buffer), &remote_gps);
-#endif
+        SetAcInfoRemote(DL_ACINFO_ac_id(dl_buffer), &remote_gps);
+        break;
       }
-      break;
+#endif
       default: {
         break;
       }
     }
-    return;
+    return;  // msg was telemetry not datalink so return
   }
 
   switch (msg_id) {
-
     case  DL_PING: {
       DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
     }
@@ -222,23 +211,14 @@ void dl_parse_msg(void)
       );
       break;
 #endif
-      /*
-      #ifdef TRAFFIC_INFO
-          case DL_ACINFO: {
-            if (DL_ACINFO_ac_id(dl_buffer) == AC_ID) { break; }
-            uint8_t id = DL_ACINFO_ac_id(dl_buffer);
-            float ux = MOfCm(DL_ACINFO_utm_east(dl_buffer));
-            float uy = MOfCm(DL_ACINFO_utm_north(dl_buffer));
-            float a = MOfCm(DL_ACINFO_alt(dl_buffer));
-            float c = RadOfDeg(((float)DL_ACINFO_course(dl_buffer)) / 10.);
-            float s = MOfCm(DL_ACINFO_speed(dl_buffer));
-            float cl = MOfCm(DL_ACINFO_climb(dl_buffer));
-            uint32_t t = DL_ACINFO_itow(dl_buffer);
-            SetAcInfo(id, ux, uy, c, a, s, cl, t);
-          }
-          break;
-      #endif
-      */
+
+#ifdef TRAFFIC_INFO
+    case DL_ACINFO: {
+      SetAcInfo(DL_ACINFO_ac_id(dl_buffer), DL_ACINFO_lat(dl_buffer), DL_ACINFO_lon(dl_buffer), DL_ACINFO_alt(dl_buffer),
+		DL_ACINFO_course(dl_buffer), DL_ACINFO_gspeed(dl_buffer), DL_ACINFO_climb(dl_buffer), DL_ACINFO_tow(dl_buffer));
+      break;
+    }
+#endif
     default:
       break;
   }
