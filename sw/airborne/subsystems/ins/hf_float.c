@@ -86,7 +86,7 @@
 #define HFF_R_SPEED 2.
 #endif
 #ifndef HFF_R_SPEED_MIN
-#define HFF_R_SPEED_MIN 1.
+#define HFF_R_SPEED_MIN 0
 #endif
 
 #ifndef HFF_UPDATE_SPEED

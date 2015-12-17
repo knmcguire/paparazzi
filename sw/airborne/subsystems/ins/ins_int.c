@@ -498,7 +498,7 @@ static void accel_cb(uint8_t sender_id __attribute__((unused)),
                      uint32_t stamp, struct Int32Vect3 *accel)
 {
   PRINT_CONFIG_MSG("Calculating dt for INS int propagation.")
-  /* timestamp in usec when last callback was received */
+  /* timestamp in usec when last callback was received*/
   static uint32_t last_stamp = 0;
 
   if (last_stamp > 0) {
@@ -536,6 +536,8 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
   b2_hff_update_vel(vel,  Rvel);
   ins_update_from_hff();
 #else
+  ins_int.ltp_pos.x = ins_int.ltp_pos.x + POS_BFP_OF_REAL(vel_ned.x);
+  ins_int.ltp_pos.y = ins_int.ltp_pos.y + POS_BFP_OF_REAL(vel_ned.y);
   ins_int.ltp_speed.x = SPEED_BFP_OF_REAL(vel_ned.x);
   ins_int.ltp_speed.y = SPEED_BFP_OF_REAL(vel_ned.y);
 #endif

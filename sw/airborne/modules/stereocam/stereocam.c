@@ -30,6 +30,21 @@
 #include "mcu_periph/uart.h"
 #include "subsystems/datalink/telemetry.h"
 #include "modules/stereocam/stereoprotocol.h"
+
+///////////
+#include "subsystems/abi.h"
+#include "state.h"
+
+#include "math/pprz_algebra_int.h"
+#include "math/pprz_algebra_float.h"
+#include "math/pprz_orientation_conversion.h"
+#include "subsystems/gps.h"
+
+#ifndef SENDER_ID
+#define SENDER_ID 1
+#endif
+///////////////
+
 #ifndef SEND_STEREO
 #define SEND_STEREO TRUE
 #endif
@@ -58,6 +73,24 @@ uint8array stereocam_data = {.len = 0, .data = msg_buf, .fresh = 0, .matrix_widt
 #define BASELINE_STEREO_MM 60.0
 #define BRANDSPUNTSAFSTAND_STEREO 118.0*6
 
+
+////////////////////////////////////////////
+static float agl;
+static float prev_phi;
+static float prev_theta;
+struct prev_velocity_t {
+  float x;
+  float y;
+};
+static struct prev_velocity_t prev_velocity;
+
+struct EcefCoor_i gps_speed;
+struct NedCoor_i opti_speed;
+
+
+void stereocam_to_state(uint8array *stereocam_data, float agl, float dphi, float dtheta,
+                        struct prev_velocity_t *prev_velocity,   struct EcefCoor_i gps_speed);
+/////////////////////////
 extern void stereocam_disparity_to_meters(uint8_t *disparity, float *distancesMeters, int lengthArray)
 {
 
@@ -106,6 +139,15 @@ extern void stereocam_periodic(void)
         freq_counter = 0;
         previous_time = sys_time.nb_tick;
       }
+      ////////////////////////
+      float phi = stateGetNedToBodyEulers_f()->phi;
+      float theta = stateGetNedToBodyEulers_f()->theta;
+      float dphi =  phi - prev_phi;
+      float dtheta = theta - prev_theta;
+      stereocam_to_state(&stereocam_data, agl, dphi, dtheta, &prev_velocity, gps.ecef_vel);
+      prev_theta = theta;
+      prev_phi = phi;
+      ////////////////////
 #if SEND_STEREO
       if (stereocam_data.len > 100) {
         DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &frequency, &(stereocam_data.len), 100, stereocam_data.data);
@@ -118,4 +160,83 @@ extern void stereocam_periodic(void)
 #endif
     }
   }
+}
+
+void stereocam_to_state(uint8array *stereocam_data, float agl, float dphi, float dtheta,
+                        struct prev_velocity_t *prev_velocity,   struct EcefCoor_i gps_speed)
+{
+
+  // Get info from stereocam data
+  float agl_stereo = (float)(stereocam_data->data[4]) / 10;
+  float vel_hor = ((float)(stereocam_data->data[8]) - 127) / 100;
+  float vel_ver = ((float)(stereocam_data->data[9]) - 127) / 100;
+
+  // Calculate derotated velocity
+  float diff_flow_hor = dtheta * 128 / 1.04;
+  float diff_flow_ver = dphi * 96 / 0.785;
+
+  float diff_vel_hor = diff_flow_hor * agl_stereo * 12 * 1.04 / 128;
+  float diff_vel_ver = diff_flow_ver * agl_stereo * 12 * 0.785 / 96;
+
+  // Derotate velocity and transform from frame to body coordinates
+  //float vel_x = - (vel_ver - diff_vel_ver);
+  //float vel_y =  (vel_hor + diff_vel_hor);
+  float vel_x = - (vel_ver);
+  float vel_y = (vel_hor);
+
+  // Calculate velocity in body fixed coordinates from opti-track and the state filter
+  struct NedCoor_f coordinates_speed_state;
+
+  // Information about optitrack origins
+  struct EcefCoor_i tracking_ecef;
+
+  tracking_ecef.x = GPS_LOCAL_ECEF_ORIGIN_X;
+  tracking_ecef.y = GPS_LOCAL_ECEF_ORIGIN_Y;
+  tracking_ecef.z = GPS_LOCAL_ECEF_ORIGIN_Z;
+
+  coordinates_speed_state.x = stateGetSpeedNed_f()->x;
+  coordinates_speed_state.y = stateGetSpeedNed_f()->y;
+  coordinates_speed_state.z = stateGetSpeedNed_f()->z;
+
+  struct NedCoor_f opti_state;
+  opti_state.x = (float)(gps_speed.y) / 100;
+  opti_state.y = (float)(gps_speed.x) / 100;
+  opti_state.z = -(float)(gps_speed.z) / 100;
+
+  struct FloatVect3 velocity_rot_state;
+  struct FloatVect3 velocity_rot_gps;
+
+  float_rmat_vmult(&velocity_rot_state , stateGetNedToBodyRMat_f(), &coordinates_speed_state);
+  float_rmat_vmult(&velocity_rot_gps , stateGetNedToBodyRMat_f(),   &opti_state);
+
+  float vel_x_opti = -((float)(velocity_rot_gps.y));
+  float vel_y_opti = ((float)(velocity_rot_gps.x));
+
+  // Calculate velocity error
+  float vel_x_error = vel_x_opti - vel_x;
+  float vel_y_error = vel_y_opti - vel_y;
+
+//TODO:: Check out why vel_x_opti is 10 x big as stereocamera's output
+  stereocam_data->data[8] = (uint8_t)((vel_x * 10) + 127);
+  stereocam_data->data[9] = (uint8_t)((vel_y * 10) + 127);
+  stereocam_data->data[19] = (uint8_t)((vel_x_opti) * 10 + 127); // dm/s
+  stereocam_data->data[20] = (uint8_t)((vel_y_opti) * 10 + 127); // dm/s
+  stereocam_data->data[21] = (uint8_t)((vel_x_error) * 10 + 127); //dm/s
+  stereocam_data->data[22] = (uint8_t)((vel_y_error) * 10 + 127); //dm/s
+  stereocam_data->data[23] = (uint8_t)((velocity_rot_state.x) * 100 + 127); //dm/s
+  stereocam_data->data[24] = (uint8_t)((velocity_rot_state.y) * 100 + 127); //dm/s
+  uint32_t now_ts = get_sys_time_usec();
+
+  //TODO:: Make variance dependable on line fit error
+  if (!(abs(vel_y) > 0.5 || abs(vel_x) > 0.5) || abs(dphi) > 0.05 || abs(dtheta) > 0.05) {
+    AbiSendMsgVELOCITY_ESTIMATE(SENDER_ID, now_ts,
+                                vel_x,
+                                vel_y,
+                                0.0f,
+                                0.3f
+                               );
+  }
+
+  prev_velocity->x = vel_x;
+  prev_velocity->y = vel_y;
 }
