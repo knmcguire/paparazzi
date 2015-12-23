@@ -33,7 +33,7 @@ EXT_DIR=$(PAPARAZZI_SRC)/sw/ext
 include $(PAPARAZZI_SRC)/conf/Makefile.arm-embedded-toolchain
 
 
-all: libopencm3 luftboot chibios fatfs libsbp
+all: libopencm3 luftboot chibios fatfs libsbp mavlink
 
 # update (and init if needed) all submodules
 update_submodules:
@@ -72,6 +72,7 @@ fatfs: fatfs.update
 mavlink: mavlink.update mavlink.build
 
 mavlink.build:
+	@echo GENERATE $(PAPARAZZI_SRC)/var/include/mavlink
 	$(Q)PYTHONPATH=$(EXT_DIR)/mavlink python $(EXT_DIR)/mavlink/pymavlink/tools/mavgen.py --output $(PAPARAZZI_SRC)/var/include/mavlink --lang C $(EXT_DIR)/mavlink/message_definitions/v1.0/paparazzi.xml --no-validate > /dev/null
 
 libsbp: libsbp.update

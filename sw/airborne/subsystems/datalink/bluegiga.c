@@ -25,11 +25,13 @@
  * Datalink implementation for the BlueGiga Bluetooth radio chip trough SPI
  */
 
-#include <string.h>
 #include "mcu_periph/sys_time.h"
 #include "subsystems/datalink/bluegiga.h"
 #include "mcu_periph/gpio.h"
 #include "mcu_periph/spi.h"
+
+// for memset
+#include <string.h>
 
 //#include "subsystems/datalink/telemetry_common.h"
 //#include "subsystems/datalink/telemetry.h"

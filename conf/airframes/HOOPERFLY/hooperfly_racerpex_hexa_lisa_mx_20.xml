@@ -13,7 +13,7 @@
   <firmware name="rotorcraft">
     <target name="ap" board="lisa_mx_2.0">
       <!-- MPU6000 is configured to output data at 2kHz, but polled at 512Hz PERIODIC_FREQUENCY -->
-      <configure name="BMP_PORT" value="/dev/cu.usbmodemE2B9BDC1"/>
+      <!-- <configure name="BMP_PORT" value="/dev/cu.usbmodemE2B9BDC1"/> -->
     </target>
 
     <target name="nps" board="pc">
@@ -138,9 +138,9 @@
 
   <section name="STABILIZATION_RATE" prefix="STABILIZATION_RATE_">
     <!-- setpoints -->
-    <define name="SP_MAX_P" value="10000"/>
-    <define name="SP_MAX_Q" value="10000"/>
-    <define name="SP_MAX_R" value="10000"/>
+    <define name="SP_MAX_P" value="140" unit="deg/s"/>
+    <define name="SP_MAX_Q" value="140" unit="deg/s"/>
+    <define name="SP_MAX_R" value="140" unit="deg/s"/>
     <define name="DEADBAND_P" value="20"/>
     <define name="DEADBAND_Q" value="20"/>
     <define name="DEADBAND_R" value="200"/>
@@ -223,9 +223,9 @@
   </section>    
 
   <section name="SIMULATOR" prefix="NPS_">
-    <define name="ACTUATOR_NAMES"  value="{&quot;fl_motor&quot;, &quot;fr_motor&quot;, &quot;r_motor&quot;, &quot;br_motor&quot;, &quot;bl_motor&quot;, &quot;l_motor&quot;}"/>
-    <define name="JSBSIM_MODEL"    value="&quot;HOOPERFLY/hooperfly_racerpex_hexa&quot;"/>
-    <define name="SENSORS_PARAMS"  value="&quot;nps_sensors_params_default.h&quot;"/>
+    <define name="ACTUATOR_NAMES"  value="fl_motor, fr_motor, r_motor, br_motor, bl_motor, l_motor" type="string[]"/>
+    <define name="JSBSIM_MODEL"    value="HOOPERFLY/hooperfly_racerpex_hexa" type="string"/>
+    <define name="SENSORS_PARAMS"  value="nps_sensors_params_default.h" type="string"/>
     <!-- mode switch on joystick channel 5 (axis numbering starting at zero) -->
     <define name="JS_AXIS_MODE"    value="4"/>
   </section>

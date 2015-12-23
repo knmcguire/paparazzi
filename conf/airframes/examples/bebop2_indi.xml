@@ -45,8 +45,8 @@
   <servos driver="Default">
     <servo name="TOP_LEFT" no="0" min="2500" neutral="2500" max="12000"/>
     <servo name="TOP_RIGHT" no="1" min="2500" neutral="2500" max="12000"/>
-    <servo name="BOTTOM_LEFT" no="2" min="2500" neutral="2500" max="12000"/>
-    <servo name="BOTTOM_RIGHT" no="3" min="2500" neutral="2500" max="12000"/>
+    <servo name="BOTTOM_RIGHT" no="2" min="2500" neutral="2500" max="12000"/>
+    <servo name="BOTTOM_LEFT" no="3" min="2500" neutral="2500" max="12000"/>
   </servos>
 
   <section name="MIXING" prefix="MOTOR_MIXING_">
@@ -102,9 +102,9 @@
 
   <section name="STABILIZATION_RATE" prefix="STABILIZATION_RATE_">
     <!-- setpoints -->
-    <define name="SP_MAX_P" value="10000"/>
-    <define name="SP_MAX_Q" value="10000"/>
-    <define name="SP_MAX_R" value="10000"/>
+    <define name="SP_MAX_P" value="140" unit="deg/s"/>
+    <define name="SP_MAX_Q" value="140" unit="deg/s"/>
+    <define name="SP_MAX_R" value="140" unit="deg/s"/>
     <define name="DEADBAND_P" value="20"/>
     <define name="DEADBAND_Q" value="20"/>
     <define name="DEADBAND_R" value="200"/>

@@ -50,10 +50,7 @@
 #endif
 
 #include "firmwares/rotorcraft/navigation.h"
-
-#ifdef TRAFFIC_INFO
-#include "subsystems/navigation/traffic_info.h"
-#endif // TRAFFIC_INFO
+#include "firmwares/rotorcraft/autopilot.h"
 
 #include "math/pprz_geodetic_int.h"
 #include "state.h"
@@ -96,6 +93,7 @@ void dl_parse_msg(void)
   }
 
   switch (msg_id) {
+
     case  DL_PING: {
       DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
     }
@@ -169,7 +167,9 @@ void dl_parse_msg(void)
 #if defined GPS_DATALINK
     case DL_REMOTE_GPS_SMALL :
       // Check if the GPS is for this AC
-      if (DL_REMOTE_GPS_ac_id(dl_buffer) != AC_ID) { break; }
+      if (DL_REMOTE_GPS_SMALL_ac_id(dl_buffer) != AC_ID) {
+        break;
+      }
 
       parse_gps_datalink_small(
         DL_REMOTE_GPS_SMALL_numsv(dl_buffer),
@@ -208,9 +208,35 @@ void dl_parse_msg(void)
         DL_GPS_INJECT_packet_id(dl_buffer),
         DL_GPS_INJECT_data_length(dl_buffer),
         DL_GPS_INJECT_data(dl_buffer)
-      );
+        );
       break;
 #endif
+
+    case DL_GUIDED_SETPOINT_NED:
+      if (DL_GUIDED_SETPOINT_NED_ac_id(dl_buffer) != AC_ID) { break; }
+      uint8_t flags = DL_GUIDED_SETPOINT_NED_flags(dl_buffer);
+      float x = DL_GUIDED_SETPOINT_NED_x(dl_buffer);
+      float y = DL_GUIDED_SETPOINT_NED_y(dl_buffer);
+      float z = DL_GUIDED_SETPOINT_NED_z(dl_buffer);
+      float yaw = DL_GUIDED_SETPOINT_NED_yaw(dl_buffer);
+      switch (flags) {
+        case 0x00:
+        case 0x02:
+          /* local NED position setpoints */
+          autopilot_guided_goto_ned(x, y, z, yaw);
+          break;
+        case 0x01:
+          /* local NED offset position setpoints */
+          autopilot_guided_goto_ned_relative(x, y, z, yaw);
+          break;
+        case 0x03:
+          /* body NED offset position setpoints */
+          autopilot_guided_goto_body_relative(x, y, z, yaw);
+          break;
+        default:
+          /* others not handled yet */
+          break;
+      }
 
 #ifdef TRAFFIC_INFO
     case DL_ACINFO: {
