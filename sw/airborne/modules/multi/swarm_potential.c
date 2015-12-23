@@ -32,6 +32,8 @@
 #include "state.h"
 #include "navigation.h"
 
+#include "generated/airframe.h"           // AC_ID
+
 struct force_ potential_force;
 
 float force_pos_gain;
@@ -74,9 +76,9 @@ void swarm_potential_periodic(void) {
   for (i = 0; i < NB_ACS; ++i) {
       if (the_acs[i].ac_id == 0 || the_acs[i].ac_id == AC_ID) { continue; }
       struct ac_info_ * ac = get_ac_info(the_acs[i].ac_id);
-      potential_force.east = ac->ecef_pos.x;
-      potential_force.north = ac->ecef_pos.y;
-      potential_force.alt = ac->ecef_pos.z;
+      potential_force.east = ac->east;
+      potential_force.north = ac->north;
+      potential_force.alt = ac->alt;
   }
 
   DOWNLINK_SEND_POTENTIAL(DefaultChannel, DefaultDevice, &potential_force.east, &potential_force.north,
@@ -100,15 +102,15 @@ int swarm_potential_task(void)
   for (i = 0; i < NB_ACS; ++i) {
     if (the_acs[i].ac_id == 0 || the_acs[i].ac_id == AC_ID) { continue; }
     struct ac_info_ * ac = get_ac_info(the_acs[i].ac_id);
-    float delta_t = Max((int)(gps.tow - ac->tow) / 1000., 0.);
+    float delta_t = Max((int)(gps.tow - ac->itow) / 1000., 0.);
     // if AC not responding for too long, continue, else compute force
     if (delta_t > CARROT) { continue; }
     else {
       float sha = sinf(ac->course);
       float cha = cosf(ac->course);
-      float de = ac->ecef_pos.x  + sha * delta_t - stateGetPositionEnu_f()->x;
-      float dn = ac->ecef_pos.y + cha * delta_t - stateGetPositionEnu_f()->y;
-      float da = ac->ecef_pos.y + ac->climb * delta_t - stateGetPositionEnu_f()->z;
+      float de = ac->east  + sha * delta_t - stateGetPositionEnu_f()->x;
+      float dn = ac->north + cha * delta_t - stateGetPositionEnu_f()->y;
+      float da = ac->alt + ac->climb * delta_t - stateGetPositionEnu_f()->z;
       float dist = sqrtf(de * de + dn * dn + da * da);
       if (dist == 0.) { continue; }
       float dve = stateGetHorizontalSpeedNorm_f() * sh - ac->gspeed * sha;

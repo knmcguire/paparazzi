@@ -183,8 +183,8 @@
     <define name="H_Z" value="0.92060036"/>
     <define name="USE_GPS_HEADING" value="1"/>
   </section>
-<define name="USE_GPS" value="TRUE"/>
- <define name="USE_GPS_HEADING" value="TRUE"/>
+	<define name="USE_GPS" value="TRUE"/><!--why is this here?-->
+ 	<define name="USE_GPS_HEADING" value="TRUE"/><!--why is this here?-->
 
  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
    <define name="PGAIN" value="290"/>

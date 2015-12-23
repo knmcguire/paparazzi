@@ -83,11 +83,11 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   lla_of_ecef_i(&gps.lla_pos, &gps.ecef_pos);
   SetBit(gps.valid_fields, GPS_VALID_POS_LLA_BIT);
 
-  enu_speed.x = (int32_t)((speed_xyh >> 22) & 0x3FF); // bits 31-22 speed x in cm/s
+  enu_speed.x = (int32_t)((speed_xyh >> 21) & 0x7FF); // bits 31-21 speed x in cm/s
   if (enu_speed.x & 0x200) {
     enu_speed.x |= 0xFFFFFC00;  // fix for twos complements
   }
-  enu_speed.y = (int32_t)((speed_xyh >> 12) & 0x3FF); // bits 21-12 speed y in cm/s
+  enu_speed.y = (int32_t)((speed_xyh >> 10) & 0x7FF); // bits 20-10 speed y in cm/s
   if (enu_speed.y & 0x200) {
     enu_speed.y |= 0xFFFFFC00;  // fix for twos complements
   }
@@ -99,7 +99,7 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   gps.hmsl = ltp_def.hmsl + enu_pos.z * 10; // TODO: try to compensate for the loss in accuracy
   SetBit(gps.valid_fields, GPS_VALID_HMSL_BIT);
 
-  gps.course = (int32_t)((speed_xyh >> 2) & 0x3FF); // bits 11-2 heading in rad*1e2
+  gps.course = (int32_t)((speed_xyh) & 0x3FF); // bits 9-0 heading in rad*1e2
   if (gps.course & 0x200) {
     gps.course |= 0xFFFFFC00;  // fix for twos complements
   }
@@ -172,20 +172,9 @@ void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv
   remote_gps->tow = 0; // set time-of-week to 0
   remote_gps->fix = GPS_FIX_3D; // set 3D fix to true
 
-#if GPS_USE_LATLONG
-  // Computes from (lat, long) in the referenced UTM zone
-  struct LlaCoor_f lla_f;
-  LLA_FLOAT_OF_BFP(lla_f, gps.lla_pos);
-  struct UtmCoor_f utm_f;
-  utm_f.zone = nav_utm_zone0;
-  // convert to utm
-  utm_of_lla_f(&utm_f, &lla_f);
-  // copy results of utm conversion
-  remote_gps->utm_pos.east = utm_f.east * 100;
-  remote_gps->utm_pos.north = utm_f.north * 100;
-  remote_gps->utm_pos.alt = gps.lla_pos.alt;
-  remote_gps->utm_pos.zone = nav_utm_zone0;
-#endif
+//todo: set valid bits
+
+  //gps_tow_from_sys_ticks
 
 }
 

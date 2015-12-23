@@ -2160,12 +2160,9 @@
   </message>
 
   <!-- 251 is free -->
-   <message name="TELEM_REMOTE_GPS_SMALL" id="252">
-    <field name="ac_id"   type="uint8"/>
-    <field name="numsv"   type="uint8"/>
-    <field name="pos_xyz"  type="uint32" unit="cm">bits 31-22 x position in cm : bits 21-12 y position in cm : bits 11-2 z position in cm : bits 1 and 0 are free</field>
-    <field name="speed_xyh"  type="uint32" unit="cm/s">bits 31-22 speed x in cm/s : bits 21-12 speed y in cm/s : bits 11-2 heading in rad*1e2 : bits 1 and 0 are free</field>
-    <field name="speed_z"   type="int8" unit="cm/s"/>
+   <message name="TELEM_ACINFO_SMALL" id="252">
+	 <field name="pos_xyz"  type="uint32" unit="cm">bits 31-21 x position in cm : bits 20-10 y position in cm : bits 9-0 z position in cm</field>
+     <field name="speed_xyz" type="uint32" unit="cm/s">bits 31-22 speed x in cm/s : bits 21-12 speed y in cm/s : bits 11-2 heading in rad*1e2 : bits 1 and 0 are free</field>
   </message>
 
   <message name="I2C_ERRORS" id="253">
@@ -2215,15 +2212,14 @@
 
 <msg_class name="datalink">
  <message name="ACINFO" id="1" link="broadcasted">
+  <field name="course" type="int16" unit="decideg"></field>
+  <field name="utm_east"  type="int32" unit="cm"></field>
+  <field name="utm_north"  type="int32" unit="cm"></field>
+  <field name="alt"    type="int32" unit="cm"></field>
+  <field name="itow"  type="uint32" unit="ms"></field>
+  <field name="speed"  type="uint16" unit="cm/s"></field>
+  <field name="climb"  type="int16" unit="cm/s"></field>
   <field name="ac_id" type="uint8"/>
-  <field name="dummy" type="uint8"/>
-  <field name="lat" type="int32" unit="1e7deg" alt_unit="deg" alt_unit_coef="0.0000001"/>
-  <field name="lon" type="int32" unit="1e7deg" alt_unit="deg" alt_unit_coef="0.0000001"/>
-  <field name="alt" type="int32" unit="mm" alt_unit="m" alt_unit_coef="0.001"/>
-  <field name="course" type="int32" unit="1e7deg" alt_unit="deg" alt_unit_coef="0.0000001"/>
-  <field name="gspeed" type="uint16" unit="cm/s" alt_unit="m/s" alt_unit_coef="0.01"/>
-  <field name="climb" type="uint16" unit="cm/s" alt_unit="m/s" alt_unit_coef="0.01"/>
-  <field name="tow" type="uint32" unit="ms" alt_unit="s" alt_unit_coef="0.001"/>
  </message>
 
  <message name="MOVE_WP" id="2" link="forwarded">
@@ -2486,7 +2482,7 @@
   <message name="REMOTE_GPS_SMALL" id="54" link="broadcasted">
     <field name="ac_id"   type="uint8"/>
     <field name="numsv"   type="uint8"/>
-    <field name="pos_xyz"  type="uint32" unit="cm">bits 31-22 x position in cm : bits 21-12 y position in cm : bits 11-2 z position in cm : bits 1 and 0 are free</field>
+    <field name="pos_xyz"  type="uint32" unit="cm">bits 31-21 x position in cm : bits 20-10 y position in cm : bits 9-0 z position in cm</field>
     <field name="speed_xyh"  type="uint32" unit="cm/s">bits 31-22 speed x in cm/s : bits 21-12 speed y in cm/s : bits 11-2 heading in rad*1e2 : bits 1 and 0 are free</field>
     <field name="speed_z"   type="int8" unit="cm/s"/>
   </message>

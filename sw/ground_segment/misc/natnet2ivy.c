@@ -512,14 +512,13 @@ gboolean timeout_transmit_callback(gpointer data) {
     // Transmit the REMOTE_GPS packet on the ivy bus (either small or big)
     if(small_packets) {
       /* The GPS messages are most likely too large to be send over either the datalink
-       * The local position is an int32 and the 10 LSBs of the x and y axis are compressed into 
+       * The local position is an int32 and the 11 LSBs of the x and y axis are compressed into
        * a single integer. The z axis is considered unsigned and only the latter 10 LSBs are
        * used.
        */
-      uint32_t pos_xyz = (((uint32_t)(pos.x*100.0)) & 0x3FF) << 22; // bits 31-22 x position in cm
-      pos_xyz |= (((uint32_t)(pos.y*100.0)) & 0x3FF) << 12; // bits 21-12 y position in cm
-      pos_xyz |= (((uint32_t)(pos.z*100.0)) & 0x3FF) << 2; // bits 11-2 z position in cm
-      // bits 1 and 0 are free
+      uint32_t pos_xyz = (((uint32_t)(pos.x*100.0)) & 0x7FF) << 21; // bits 31-21 x position in cm
+      pos_xyz |= (((uint32_t)(pos.y*100.0)) & 0x7FF) << 10;         // bits 20-10 y position in cm
+      pos_xyz |= (((uint32_t)(pos.z*100.0)) & 0x3FF);               // bits 9-0 z position in cm
 
       // printf("ENU Pos: %u (%.2f, %.2f, %.2f)\n", pos_xyz, pos.x, pos.y, pos.z);
 
@@ -533,6 +532,9 @@ gboolean timeout_transmit_callback(gpointer data) {
          exit(0);
       }
 
+      /* The speed is an int32 and the 10 LSBs of the x and y axis and heading are compressed into
+       * a single integer.
+       */
       uint32_t speed_xyh = (((uint32_t)(speed.x*100.0)) & 0x3FF) << 22; // bits 31-22 speed x in cm/s
       speed_xyh |= (((uint32_t)(speed.y*100.0)) & 0x3FF) << 12; // bits 21-12 speed y in cm/s
       speed_xyh |= (((uint32_t)(heading*100.0)) & 0x3FF) << 2; // bits 11-2 heading in rad*1e2 (The heading is already subsampled)

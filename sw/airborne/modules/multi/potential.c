@@ -69,23 +69,23 @@ int potential_task(void)
   for (i = 0; i < NB_ACS; ++i) {
     if (the_acs[i].ac_id == AC_ID) { continue; }
     struct ac_info_ * ac = get_ac_info(the_acs[i].ac_id);
-    float delta_t = Max((int)(gps.tow - ac->tow) / 1000., 0.);
+    float delta_t = Max((int)(gps.tow - ac->itow) / 1000., 0.);
     // if AC not responding for too long, continue, else compute force
     if (delta_t > CARROT) { continue; }
     else {
       float sha = sinf(ac->course);
       float cha = cosf(ac->course);
-      float de = ac->ecef_pos.x  + sha * delta_t - stateGetPositionEcef_f()->x;
+      float de = ac->east  + sha * delta_t - stateGetPositionEnu_f()->x;
       if (de > FORCE_MAX_DIST || de < -FORCE_MAX_DIST) { continue; }
-      float dn = ac->ecef_pos.y + cha * delta_t - stateGetPositionEcef_f()->y;
+      float dn = ac->north + cha * delta_t - stateGetPositionEnu_f()->y;
       if (dn > FORCE_MAX_DIST || dn < -FORCE_MAX_DIST) { continue; }
-      float da = ac->ecef_pos.z + ac->climb * delta_t - stateGetPositionEcef_f()->z;
+      float da = ac->alt + ac->climb * delta_t - stateGetPositionUtm_f()->alt;
       if (da > FORCE_MAX_DIST || da < -FORCE_MAX_DIST) { continue; }
       float dist = sqrtf(de * de + dn * dn + da * da);
       if (dist == 0.) { continue; }
       float dve = stateGetHorizontalSpeedNorm_f() * sh - ac->gspeed * sha;
       float dvn = stateGetHorizontalSpeedNorm_f() * ch - ac->gspeed * cha;
-      float dva = stateGetSpeedEcef_f()->z - the_acs[i].climb;
+      float dva = stateGetSpeedEnu_f()->z - the_acs[i].climb;
       float scal = dve * de + dvn * dn + dva * da;
       if (scal < 0.) { continue; } // No risk of collision
       float d3 = dist * dist * dist;
