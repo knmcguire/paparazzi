@@ -2161,8 +2161,10 @@
 
   <!-- 251 is free -->
    <message name="TELEM_ACINFO_SMALL" id="252">
-	 <field name="pos_xyz"  type="uint32" unit="cm">bits 31-21 x position in cm : bits 20-10 y position in cm : bits 9-0 z position in cm</field>
-     <field name="speed_xyz" type="uint32" unit="cm/s">bits 31-22 speed x in cm/s : bits 21-12 speed y in cm/s : bits 11-2 heading in rad*1e2 : bits 1 and 0 are free</field>
+    <field name="multiplex_speed"  type="int32">bits 31-21 course in decideg : bits 20-10 ground speed in cm/s : bits 9-0 climb speed in cm/s</field>
+    <field name="utm_east"  type="int32" unit="cm"></field>
+    <field name="utm_north"  type="int32" unit="cm"></field>
+    <field name="alt"    type="int32" unit="cm"></field>
   </message>
 
   <message name="I2C_ERRORS" id="253">

@@ -84,12 +84,12 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   SetBit(gps.valid_fields, GPS_VALID_POS_LLA_BIT);
 
   enu_speed.x = (int32_t)((speed_xyh >> 21) & 0x7FF); // bits 31-21 speed x in cm/s
-  if (enu_speed.x & 0x200) {
-    enu_speed.x |= 0xFFFFFC00;  // fix for twos complements
+  if (enu_speed.x & 0x400) {
+    enu_speed.x |= 0xFFFFF800;  // fix for twos complements
   }
   enu_speed.y = (int32_t)((speed_xyh >> 10) & 0x7FF); // bits 20-10 speed y in cm/s
-  if (enu_speed.y & 0x200) {
-    enu_speed.y |= 0xFFFFFC00;  // fix for twos complements
+  if (enu_speed.y & 0x400) {
+    enu_speed.y |= 0xFFFFF800;  // fix for twos complements
   }
   enu_speed.z = speed_z;
 
@@ -172,7 +172,7 @@ void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv
   remote_gps->tow = 0; // set time-of-week to 0
   remote_gps->fix = GPS_FIX_3D; // set 3D fix to true
 
-//todo: set valid bits
+//todo: set valid bitss
 
   //gps_tow_from_sys_ticks
 

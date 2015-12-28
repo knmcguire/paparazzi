@@ -64,7 +64,7 @@ void SetAcInfo(uint8_t _id, float _utm_x /*m*/, float _utm_y /*m*/, float _cours
     the_acs[the_acs_id[_id]].alt = _alt;
     the_acs[the_acs_id[_id]].gspeed = _gspeed;
     the_acs[the_acs_id[_id]].climb = _climb;
-    the_acs[the_acs_id[_id]].itow = (uint32_t)_itow;
+    the_acs[the_acs_id[_id]].itow = _itow;
   }
 }
 
@@ -73,9 +73,9 @@ void SetAcInfo(uint8_t _id, float _utm_x /*m*/, float _utm_y /*m*/, float _cours
 void SetAcInfoLLA(uint8_t id, uint32_t lat, uint32_t lon, uint32_t alt, uint32_t course, uint16_t gspeed, uint16_t climb,
                uint32_t tow)
 {
-  if (acsidx < NB_ACS) {
+  if (acs_idx < NB_ACS) {
     if (id > 0 && the_acs_id[id] == 0) {
-      the_acs_id[id] = acsidx++;
+      the_acs_id[id] = acs_idx++;
       the_acs[the_acs_id[id]].ac_id = id;
     }
 
@@ -85,38 +85,9 @@ void SetAcInfoLLA(uint8_t id, uint32_t lat, uint32_t lon, uint32_t alt, uint32_t
     the_acs[the_acs_id[id]].east = (float)ecef_pos.x * 100;
     the_acs[the_acs_id[id]].north = (float)ecef_pos.y * 100;
     the_acs[the_acs_id[id]].alt = (float)ecef_pos.z * 100;
-    the_acs[the_acs_id[id]].course = course;
-    the_acs[the_acs_id[id]].gspeed = gspeed;
-    the_acs[the_acs_id[id]].climb = climb;
+    the_acs[the_acs_id[id]].course = (float)course;
+    the_acs[the_acs_id[id]].gspeed = (float)gspeed*100;
+    the_acs[the_acs_id[id]].climb = (float)climb*100;
     the_acs[the_acs_id[id]].itow = tow;
-  }
-}
-
-void SetAcInfoRemote(uint8_t id, struct GpsState *remote_gps)
-{
-  if (acsidx < NB_ACS) {
-    if (id > 0 && the_acs_id[id] == 0) {
-      the_acs_id[id] = acsidx++;
-      the_acs[the_acs_id[id]].ac_id = id;
-    }
-
-    if (bit_is_set(remote_gps.valid_fields, GPS_VALID_POS_ECEF_BIT)) {
-      the_acs[the_acs_id[id]].east = (float)remote_gps->ecef_pos.x * 100;
-      the_acs[the_acs_id[id]].north = (float)remote_gps->ecef_pos.y * 100;
-      the_acs[the_acs_id[id]].alt = (float)remote_gps->ecef_pos.z * 100;
-      the_acs[the_acs_id[id]].course = remote_gps->course;
-      the_acs[the_acs_id[id]].gspeed = remote_gps->gspeed;
-      the_acs[the_acs_id[id]].climb = remote_gps->ecef_vel.z;
-      the_acs[the_acs_id[id]].itow = remote_gps->tow;
-    }
-    else if (bit_is_set(remote_gps.valid_fields, GPS_VALID_POS_UTM_BIT)) {
-	the_acs[the_acs_id[id]].east = (float)remote_gps->utm_pos.east * 100;
-	the_acs[the_acs_id[id]].north = (float)remote_gps->utm_pos.north * 100;
-	the_acs[the_acs_id[id]].alt = (float)remote_gps->utm_pos.alt * 100;
-	the_acs[the_acs_id[id]].course = remote_gps->course;
-	the_acs[the_acs_id[id]].gspeed = remote_gps->gspeed;
-	the_acs[the_acs_id[id]].climb = remote_gps->ned_vel.z;
-	the_acs[the_acs_id[id]].itow = remote_gps->tow;
-    }
   }
 }

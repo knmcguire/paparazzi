@@ -30,6 +30,10 @@
 #include "mcu_periph/gpio.h"
 #include "mcu_periph/spi.h"
 
+#include "subsystems/abi.h"
+
+#define SENDER_ID 1
+
 // for memset
 #include <string.h>
 
@@ -50,12 +54,16 @@
 #define BLUEGIGA_DRDY_GPIO_PIN SUPERBITRF_DRDY_PIN
 #endif
 
+#define TxStrengthOfSender(x) (x[1])
+#define RssiOfSender(x)       (x[2])
+#define Pprz_StxOfMsg(x)      (x[3])
+#define SenderIdOfMsg(x)      (x[5])
+
 enum BlueGigaStatus coms_status;
 struct bluegiga_periph bluegiga_p;
 struct spi_transaction bluegiga_spi;
 
-signed char bluegiga_rssi[256];    // values initialized with 127
-unsigned char telemetry_copy[20];
+uint8_t broadcast_msg[20];
 
 void bluegiga_load_tx(struct bluegiga_periph *p, struct spi_transaction *trans);
 void bluegiga_transmit(struct bluegiga_periph *p, uint8_t data);
@@ -164,7 +172,7 @@ void bluegiga_init(struct bluegiga_periph *p)
   memset(p->work_rx, 0, bluegiga_spi.input_length);
   memset(p->work_tx, 0, bluegiga_spi.output_length);
 
-  memset(bluegiga_rssi, 127, 255);
+  memset(broadcast_msg, 0, 19);
 
   p->bytes_recvd_since_last = 0;
   p->end_of_msg = p->tx_insert_idx;
@@ -236,7 +244,6 @@ void bluegiga_load_tx(struct bluegiga_periph *p, struct spi_transaction *trans)
 /* read data from dma if available, set as call back of successful spi exchange
  *
  * TODO Remove use of bluegiga_p global in following function
- * TODO Add recieved RSSI to ABI broadcast...
  */
 void bluegiga_receive(struct spi_transaction *trans)
 {
@@ -247,13 +254,19 @@ void bluegiga_receive(struct spi_transaction *trans)
       for (uint8_t i = 0; i < trans->output_length; i++) {
         trans->output_buf[i] = 0;
       }
+    } else if (coms_status == BLUEGIGA_SENDING_BROADCAST) {
+      // sending second half of broadcast message
+      for (uint8_t i = 0; i < broadcast_msg[0]; i++) {
+	trans->output_buf[i] = broadcast_msg[i];
+      }
+      coms_status = BLUEGIGA_SENDING;
+      return;
     }
 
     /*
      * >235 data package from broadcast mode
      * 0x50 communication lost with ground station
      * 0x51 interrupt handled
-     * 0x52 receive all recorded RSSI
      * <20  data package from connection
      */
 
@@ -272,26 +285,28 @@ void bluegiga_receive(struct spi_transaction *trans)
 #endif
         coms_status = BLUEGIGA_UNINIT;
         break;
-      case 0x52:  // Receive all recorded RSSI
-        for (uint8_t i = 0; i < trans->input_buf[1]; i++) {
-          bluegiga_rssi[trans->input_buf[2] + i] = trans->input_buf[3 + i];
-        }
-        // no break
       case 0x51:  // Interrupt handled
-        gpio_set(BLUEGIGA_DRDY_GPIO, BLUEGIGA_DRDY_GPIO_PIN);     // Reset interrupt pin
+        gpio_set(BLUEGIGA_DRDY_GPIO, BLUEGIGA_DRDY_GPIO_PIN);          // Reset interrupt pin
         coms_status = BLUEGIGA_IDLE;
         break;
       default:
 	coms_status = BLUEGIGA_IDLE;
         // compute length of transmitted message
-        if (trans->input_buf[0] < trans->input_length) {          // normal connection mode
+        if (trans->input_buf[0] < trans->input_length) {               // normal connection mode
           packet_len = trans->input_buf[0];
           read_offset = 1;
         } else if (trans->input_buf[0] > 0xff - trans->input_length) { // broadcast mode
           packet_len = 0xff - trans->input_buf[0];
-          bluegiga_rssi[trans->input_buf[1]] = trans->input_buf[2];
+
+          int8_t tx_strength = BroadcastStrengthOfSender(trans->input_buf);
+          int8_t rssi = RssiOfSender(trans->input_buf);
+          uint8_t ac_id = SenderIdOfMsg(trans->input_buf);
+
+          if (Pprz_StxOfMsg(trans->input_buf) == STX) {
+            AbiSendMsgDATA(SENDER_ID, &ac_id, & tx_strength, &rssi);
+          }
+
           read_offset = 3;
-          coms_status = BLUEGIGA_BROADCASTING;
         }
     }
 
@@ -303,10 +318,6 @@ void bluegiga_receive(struct spi_transaction *trans)
       }
       bluegiga_increment_buf(&bluegiga_p.rx_insert_idx, packet_len);
       bluegiga_p.bytes_recvd_since_last += packet_len;
-
-      for (uint8_t i = 0; i < trans->input_length; i++) {
-        telemetry_copy[i] = trans->input_buf[i];
-      }
     }
 
     // load next message to be sent into work buffer, needs to be loaded before calling spi_slave_register
@@ -317,14 +328,30 @@ void bluegiga_receive(struct spi_transaction *trans)
   }
 }
 
-/* Request list of all recorded RSSI */
-void bluegiga_request_all_rssi(struct bluegiga_periph *p)
+/* Send data for broadcast message to the bluegiga module
+ * maximum size of message is 22 bytes
+ */
+void bluegiga_broadcast_msg(struct bluegiga_periph *p, char* msg, uint8_t msg_len)
 {
+  if (msg_len == 0 || msg_len > 22)
+    return;
 
-  memset(p->work_tx, 0, bluegiga_spi.output_length);
-  p->work_tx[0] = 0x52;
+  uint8_t max_length = 20;
+  p->work_tx[0] = msg_len;
 
-  coms_status = BLUEGIGA_SENDING;
+  if (msg_len < max_length) {
+    for (uint8_t i = 0; i < msg_len; i++) {
+      p->work_tx[i+1] = msg[i];
+    }
+    coms_status = BLUEGIGA_SENDING;
+  } else {
+    for (uint8_t i = 0; i < max_length - 1; i++) {
+      p->work_tx[i+1] = msg[i];
+    }
+
+    memcpy(broadcast_msg, msg + max_length - 1, msg_len - (max_length - 1));
+    coms_status = BLUEGIGA_SENDING_BROADCAST;
+  }
 
   // trigger bluegiga to read direct command
   gpio_clear(BLUEGIGA_DRDY_GPIO, BLUEGIGA_DRDY_GPIO_PIN);     // set interrupt

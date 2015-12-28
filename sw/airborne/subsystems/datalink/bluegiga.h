@@ -34,7 +34,7 @@ enum BlueGigaStatus {
   BLUEGIGA_UNINIT,                /**< The com isn't initialized */
   BLUEGIGA_IDLE,                  /**< The com is in idle */
   BLUEGIGA_SENDING,               /**< The com is sending */
-  BLUEGIGA_BROADCASTING           /**< The com is switched from data link to rssi scanning */
+  BLUEGIGA_SENDING_BROADCAST      /**< The com is switched from data link to rssi scanning */
 };
 
 #ifndef BLUEGIGA_BUFFER_SIZE
@@ -76,7 +76,7 @@ void bluegiga_increment_buf(uint8_t *buf_idx, uint8_t len);
 
 void bluegiga_init(struct bluegiga_periph *p);
 void bluegiga_scan(struct bluegiga_periph *p);
-void bluegiga_request_all_rssi(struct bluegiga_periph *p);
+void bluegiga_broadcast_msg(struct bluegiga_periph *p, char* msg, uint8_t msg_len);
 
 // BLUEGIGA is using pprz_transport
 // FIXME it should not appear here, this will be fixed with the rx improvements some day...

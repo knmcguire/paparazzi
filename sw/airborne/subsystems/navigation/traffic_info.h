@@ -51,8 +51,8 @@ extern void traffic_info_init(void);
 struct ac_info_ *get_ac_info(uint8_t id);
 
 void SetAcInfo(uint8_t _id, float _utm_x /*m*/, float _utm_y /*m*/, float _course/*rad(CW)*/, float _alt/*m*/, float _gspeed/*m/s*/, float _climb, uint32_t _itow);
+// todo define units
 void SetAcInfoLLA(uint8_t id, uint32_t lat, uint32_t lon, uint32_t alt, uint32_t course, uint16_t gspeed, uint16_t climb,
                uint32_t tow);
-void SetAcInfoRemote(uint8_t id, struct GpsState *remote_gps);
 
 #endif

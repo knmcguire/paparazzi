@@ -73,26 +73,39 @@ void dl_parse_msg(void)
   if (sender_id != 0) {
     switch (msg_id) {
 #ifdef TRAFFIC_INFO
-      case DL_TELEM_REMOTE_GPS_SMALL: {
-        struct GpsState remote_gps;
-        parse_remote_gps_datalink_small(&remote_gps,
-                                        DL_REMOTE_GPS_SMALL_numsv(dl_buffer),
-                                        DL_REMOTE_GPS_SMALL_pos_xyz(dl_buffer),
-                                        DL_REMOTE_GPS_SMALL_speed_xyh(dl_buffer),
-                                        DL_REMOTE_GPS_SMALL_speed_z(dl_buffer));
+      case DL_TELEM_ACINFO_SMALL: {
+	uint32_t multiplex_speed = DL_TELEM_ACINFO_SMALL_multiplex_speed;
 
-        SetAcInfoRemote(DL_ACINFO_ac_id(dl_buffer), &remote_gps);
+	// Position in ENU coordinates
+	int16_t course = (int32_t)((multiplex_speed >> 21) & 0x7FF); // bits 31-21 course in decideg
+	if (gspeed & 0x400) {
+	    course |= 0xFFFFF800;  // fix for twos complements
+	}
+	int16_t gspeed = (int32_t)((multiplex_speed >> 10) & 0x7FF); // bits 20-10 ground speed cm/s
+	if (gspeed & 0x400) {
+	    gspeed |= 0xFFFFF800;  // fix for twos complements
+	}
+	int16_t climb = (int16_t)(multiplex_speed >> 2 & 0x7FF); // bits 9-0 z climb speed in cm/s
+
+      	SetAcInfo(sender_id,
+      		  (float)DL_TELEM_ACINFO_SMALL_utm_east(dl_buffer)*100,    /*m*/
+      		  (float)DL_TELEM_ACINFO_SMALL_utm_north(dl_buffer)*100,   /*m*/
+      		  (float)course*10*7/22.,                                  /*rad(CW)*/
+      		  (float)DL_TELEM_ACINFO_SMALL_alt(dl_buffer)*1000,        /*m*/
+      		  (float)gspeed*100,       /*m/s*/
+      		  (float)climb*100,        /*m/s*/
+		  gps_tow_from_sys_ticks(sys_time.nb_tick));
         break;
       }
 
       case DL_GPS: {
 	SetAcInfo(sender_id,
-		  (float)DL_GPS_utm_east*100,    /*m*/
-		  (float)DL_GPS_utm_north*100,   /*m*/
-		  (float)DL_GPS_course*100*7/22., /*rad(CW)*/
-		  (float)DL_GPS_alt*1000,        /*m*/
-		  (float)DL_GPS_speed*100,       /*m/s*/
-		  (float)DL_GPS_climb*100,
+		  (float)DL_GPS_utm_east(dl_buffer)*100,    /*m*/
+		  (float)DL_GPS_utm_north(dl_buffer)*100,   /*m*/
+		  (float)DL_GPS_course(dl_buffer)*100*7/22., /*rad(CW)*/
+		  (float)DL_GPS_alt(dl_buffer)*1000,        /*m*/
+		  (float)DL_GPS_speed(dl_buffer)*100,       /*m/s*/
+		  (float)DL_GPS_climb(dl_buffer)*100,       /*m/s*/
 		  itow);
 	break;
       }
