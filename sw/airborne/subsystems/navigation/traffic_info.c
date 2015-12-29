@@ -58,8 +58,8 @@ void SetAcInfo(uint8_t _id, float _utm_x /*m*/, float _utm_y /*m*/, float _cours
       the_acs_id[_id] = acs_idx++;
       the_acs[the_acs_id[_id]].ac_id = _id;
     }
-    the_acs[the_acs_id[_id]].east = _utm_x -  nav_utm_east0;
-    the_acs[the_acs_id[_id]].north = _utm_y - nav_utm_north0;
+    the_acs[the_acs_id[_id]].east = _utm_x; //-  nav_utm_east0;
+    the_acs[the_acs_id[_id]].north = _utm_y; // - nav_utm_north0;
     the_acs[the_acs_id[_id]].course = _course;
     the_acs[the_acs_id[_id]].alt = _alt;
     the_acs[the_acs_id[_id]].gspeed = _gspeed;

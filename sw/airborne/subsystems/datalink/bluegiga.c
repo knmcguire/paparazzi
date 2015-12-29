@@ -127,7 +127,7 @@ static void send_bluegiga(struct transport_tx *trans, struct link_device *dev)
 
   if (now_ts > last_ts) {
     uint32_t rate = 1000 * bluegiga_p.bytes_recvd_since_last / (now_ts - last_ts);
-    pprz_msg_send_BLUEGIGA(trans, dev, AC_ID, &rate, 20, bluegiga_rssi);
+    pprz_msg_send_BLUEGIGA(trans, dev, AC_ID, &rate);
 
     bluegiga_p.bytes_recvd_since_last = 0;
     last_ts = now_ts;
@@ -298,12 +298,12 @@ void bluegiga_receive(struct spi_transaction *trans)
         } else if (trans->input_buf[0] > 0xff - trans->input_length) { // broadcast mode
           packet_len = 0xff - trans->input_buf[0];
 
-          int8_t tx_strength = BroadcastStrengthOfSender(trans->input_buf);
+          int8_t tx_strength = TxStrengthOfSender(trans->input_buf);
           int8_t rssi = RssiOfSender(trans->input_buf);
           uint8_t ac_id = SenderIdOfMsg(trans->input_buf);
 
           if (Pprz_StxOfMsg(trans->input_buf) == STX) {
-            AbiSendMsgDATA(SENDER_ID, &ac_id, & tx_strength, &rssi);
+            AbiSendMsgBLUEGIGA_RSSI(SENDER_ID, ac_id, tx_strength, rssi);
           }
 
           read_offset = 3;

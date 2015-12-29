@@ -161,13 +161,6 @@
     <define name="USE_GPS_ALT" value="1"/>
   </section>
 
-  <section name="GPS" prefix="GPS_">
-    <define name="USE_DATALINK_SMALL" value="1"/>
-    <define name="LOCAL_ECEF_ORIGIN_X" value="392433200"/>
-    <define name="LOCAL_ECEF_ORIGIN_Y" value="30036200"/>
-    <define name="LOCAL_ECEF_ORIGIN_Z" value="500219700"/>
-  </section>
-
  <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
    <define name="HOVER_KP" value="276"/>
    <define name="HOVER_KD" value="455"/>
@@ -183,8 +176,6 @@
     <define name="H_Z" value="0.92060036"/>
     <define name="USE_GPS_HEADING" value="1"/>
   </section>
-	<define name="USE_GPS" value="TRUE"/><!--why is this here?-->
- 	<define name="USE_GPS_HEADING" value="TRUE"/><!--why is this here?-->
 
  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
    <define name="PGAIN" value="290"/>
@@ -210,10 +201,7 @@
 
  <modules main_freq="512">
    <load name="send_imu_mag_current.xml"/>
- <load name="stereocam.xml">
-	<configure name="STEREO_UART" value="UART1"/>
-	<configure name="STEREO_BAUD" value="B115200"/>
-</load>
+ <load name="swarm_potential.xml"/>
  </modules>
 
   <firmware name="rotorcraft">

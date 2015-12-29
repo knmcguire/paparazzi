@@ -49,12 +49,19 @@
 #include "subsystems/gps/gps_datalink.h"
 #endif
 
+#ifdef TRAFFIC_INFO
+#include "subsystems/navigation/traffic_info.h"
+#endif // TRAFFIC_INFO
+
 #include "firmwares/rotorcraft/navigation.h"
 #include "firmwares/rotorcraft/autopilot.h"
 
 #include "math/pprz_geodetic_int.h"
 #include "state.h"
 #include "led.h"
+
+#define MOfCm(_x) (((float)(_x))/100.)
+#define MOfMM(_x) (((float)(_x))/1000.)
 
 #define IdOfMsg(x) (x[1])
 #define SenderIdOfMsg(x) (x[0])
@@ -73,12 +80,12 @@ void dl_parse_msg(void)
   if (sender_id != 0) {
     switch (msg_id) {
 #ifdef TRAFFIC_INFO
-      case DL_TELEM_ACINFO_SMALL: {
-	uint32_t multiplex_speed = DL_TELEM_ACINFO_SMALL_multiplex_speed;
+      case DL_GPS_SMALL: {
+	uint32_t multiplex_speed = DL_GPS_SMALL_multiplex_speed(dl_buffer);
 
 	// Position in ENU coordinates
 	int16_t course = (int32_t)((multiplex_speed >> 21) & 0x7FF); // bits 31-21 course in decideg
-	if (gspeed & 0x400) {
+	if (course & 0x400) {
 	    course |= 0xFFFFF800;  // fix for twos complements
 	}
 	int16_t gspeed = (int32_t)((multiplex_speed >> 10) & 0x7FF); // bits 20-10 ground speed cm/s
@@ -86,27 +93,30 @@ void dl_parse_msg(void)
 	    gspeed |= 0xFFFFF800;  // fix for twos complements
 	}
 	int16_t climb = (int16_t)(multiplex_speed >> 2 & 0x7FF); // bits 9-0 z climb speed in cm/s
+	if (climb & 0x400) {
+	    climb |= 0xFFFFF800;  // fix for twos complements
+	}
 
       	SetAcInfo(sender_id,
-      		  (float)DL_TELEM_ACINFO_SMALL_utm_east(dl_buffer)*100,    /*m*/
-      		  (float)DL_TELEM_ACINFO_SMALL_utm_north(dl_buffer)*100,   /*m*/
-      		  (float)course*10*7/22.,                                  /*rad(CW)*/
-      		  (float)DL_TELEM_ACINFO_SMALL_alt(dl_buffer)*1000,        /*m*/
-      		  (float)gspeed*100,       /*m/s*/
-      		  (float)climb*100,        /*m/s*/
+		  MOfCm(DL_GPS_SMALL_utm_east(dl_buffer)),    /*m*/
+                  MOfCm(DL_GPS_SMALL_utm_north(dl_buffer)),   /*m*/
+		  RadOfDeg(((float)course) / 10.),                     /*rad(CW)*/
+		  MOfCm(DL_GPS_SMALL_alt(dl_buffer)),         /*m*/
+		  MOfCm(gspeed),                                       /*m/s*/
+		  MOfCm(climb),                                        /*m/s*/
 		  gps_tow_from_sys_ticks(sys_time.nb_tick));
         break;
       }
 
       case DL_GPS: {
 	SetAcInfo(sender_id,
-		  (float)DL_GPS_utm_east(dl_buffer)*100,    /*m*/
-		  (float)DL_GPS_utm_north(dl_buffer)*100,   /*m*/
-		  (float)DL_GPS_course(dl_buffer)*100*7/22., /*rad(CW)*/
-		  (float)DL_GPS_alt(dl_buffer)*1000,        /*m*/
-		  (float)DL_GPS_speed(dl_buffer)*100,       /*m/s*/
-		  (float)DL_GPS_climb(dl_buffer)*100,       /*m/s*/
-		  itow);
+		  MOfCm(DL_GPS_utm_east(dl_buffer)),    /*m*/
+		  MOfCm(DL_GPS_utm_north(dl_buffer)),   /*m*/
+		  RadOfDeg(((float)DL_GPS_course(dl_buffer)) / 10.), /*rad(CW)*/
+		  MOfCm(DL_GPS_alt(dl_buffer)),        /*m*/
+		  MOfCm(DL_GPS_speed(dl_buffer)),       /*m/s*/
+		  MOfCm(DL_GPS_climb(dl_buffer)),       /*m/s*/
+		  (uint32_t)DL_GPS_itow(dl_buffer));
 	break;
       }
 #endif

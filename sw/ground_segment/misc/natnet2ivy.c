@@ -516,9 +516,10 @@ gboolean timeout_transmit_callback(gpointer data) {
        * a single integer. The z axis is considered unsigned and only the latter 10 LSBs are
        * used.
        */
-      uint32_t pos_xyz = (((uint32_t)(pos.x*100.0)) & 0x7FF) << 21; // bits 31-21 x position in cm
-      pos_xyz |= (((uint32_t)(pos.y*100.0)) & 0x7FF) << 10;         // bits 20-10 y position in cm
-      pos_xyz |= (((uint32_t)(pos.z*100.0)) & 0x3FF);               // bits 9-0 z position in cm
+      uint32_t pos_xyz = (((uint32_t)(pos.x*100.0)) & 0x3FF) << 21; // bits 31-22 x position in cm
+      pos_xyz |= (((uint32_t)(pos.y*100.0)) & 0x3FF) << 10;         // bits 21-12 y position in cm
+      pos_xyz |= (((uint32_t)(pos.z*100.0)) & 0x3FF);               // bits 11-2 z position in cm
+      // bits 1-0 are not used
 
       // printf("ENU Pos: %u (%.2f, %.2f, %.2f)\n", pos_xyz, pos.x, pos.y, pos.z);
 

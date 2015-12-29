@@ -26,8 +26,6 @@
 #ifndef SWARM_POTENTIAL_H
 #define SWARM_POTENTIAL_H
 
-#include "subsystems/navigation/traffic_info.h"
-
 struct force_ {
   float east;
   float north;

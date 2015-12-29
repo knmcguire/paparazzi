@@ -288,8 +288,8 @@ module Gen_onboard = struct
       (** Converts bytes into the required type *)
       let typed = fun o pprz_type -> (* o for offset *)
         let size = pprz_type.Pprz.size in
-        if check_alignment && o mod (min size 4) <> 0 then
-          failwith (sprintf "Wrong alignment of field '%s' in message '%s" field_name msg_name);
+        (**if check_alignment && o mod (min size 4) <> 0 then
+          failwith (sprintf "Wrong alignment of field '%s' in message '%s" field_name msg_name); *)
 
         match size with
             1 -> sprintf "(%s)(*((uint8_t*)_payload+%d))" pprz_type.Pprz.inttype o
@@ -327,8 +327,8 @@ module Gen_onboard = struct
 
       (** The macro to access to the array itself *)
           let pprz_type = Syntax.assoc_types t in
-          if check_alignment && !offset mod (min pprz_type.Pprz.size 4) <> 0 then
-            failwith (sprintf "Wrong alignment of field '%s' in message '%s" field_name msg_name);
+          (**if check_alignment && !offset mod (min pprz_type.Pprz.size 4) <> 0 then
+            failwith (sprintf "Wrong alignment of field '%s' in message '%s" field_name msg_name);*)
 
           fprintf h "#define DL_%s_%s(_payload) ((%s*)(_payload+%d))\n" msg_name field_name pprz_type.Pprz.inttype !offset;
           offset := -1 (** Mark for no more fields *)
@@ -337,8 +337,8 @@ module Gen_onboard = struct
             fprintf h "#define DL_%s_%s_length(_payload) (%d)\n" msg_name field_name len;
             (** The macro to access to the array itself *)
             let pprz_type = Syntax.assoc_types t in
-            if check_alignment && !offset mod (min pprz_type.Pprz.size 4) <> 0 then
-              failwith (sprintf "Wrong alignment of field '%s' in message '%s" field_name msg_name);
+            (**if check_alignment && !offset mod (min pprz_type.Pprz.size 4) <> 0 then
+              failwith (sprintf "Wrong alignment of field '%s' in message '%s" field_name msg_name);*)
 
             fprintf h "#define DL_%s_%s(_payload) ((%s*)(_payload+%d))\n" msg_name field_name pprz_type.Pprz.inttype !offset;
             offset := !offset + (pprz_type.Pprz.size*len)
@@ -387,7 +387,7 @@ let () =
     end;
 
     (** Macros for airborne datalink (receiving) *)
-    if class_name = "datalink" || class_name = "intermcu" then
+    if class_name = "datalink" || class_name = "intermcu" || class_name = "telemetry" then
       List.iter (Gen_onboard.print_get_macros h true) messages;
 
     Printf.fprintf h "#endif // _VAR_MESSAGES_%s_H_\n" class_name

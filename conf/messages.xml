@@ -856,7 +856,6 @@
 
   <message name="BLUEGIGA" id="106">
     <field name="data_rate" type="uint32" unit="bytes/s"/>
-    <field name="rssi" type="int8[]"/>
   </message>
 
   <!--107 is free -->
@@ -2160,8 +2159,8 @@
   </message>
 
   <!-- 251 is free -->
-   <message name="TELEM_ACINFO_SMALL" id="252">
-    <field name="multiplex_speed"  type="int32">bits 31-21 course in decideg : bits 20-10 ground speed in cm/s : bits 9-0 climb speed in cm/s</field>
+   <message name="GPS_SMALL" id="252">
+    <field name="multiplex_speed"  type="uint32">bits 31-21 course in decideg : bits 20-10 ground speed in cm/s : bits 9-0 climb speed in cm/s</field>
     <field name="utm_east"  type="int32" unit="cm"></field>
     <field name="utm_north"  type="int32" unit="cm"></field>
     <field name="alt"    type="int32" unit="cm"></field>

@@ -146,6 +146,11 @@
     <mode name="gps">
       <message name="INS_REF"           period="5.1"/>
     </mode>
+    
+    <mode name="mission">
+      <message name="GPS"               period="1.2"/>
+      <message name="POTENTIAL"         period="1.1"/>
+    </mode>
 
   </process>
 

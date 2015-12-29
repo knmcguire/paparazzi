@@ -83,13 +83,13 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   lla_of_ecef_i(&gps.lla_pos, &gps.ecef_pos);
   SetBit(gps.valid_fields, GPS_VALID_POS_LLA_BIT);
 
-  enu_speed.x = (int32_t)((speed_xyh >> 21) & 0x7FF); // bits 31-21 speed x in cm/s
+  enu_speed.x = (int32_t)((speed_xyh >> 22) & 0x3FF); // bits 31-22 speed x in cm/s
   if (enu_speed.x & 0x400) {
-    enu_speed.x |= 0xFFFFF800;  // fix for twos complements
+    enu_speed.x |= 0xFFFFFC00;  // fix for twos complements
   }
-  enu_speed.y = (int32_t)((speed_xyh >> 10) & 0x7FF); // bits 20-10 speed y in cm/s
+  enu_speed.y = (int32_t)((speed_xyh >> 12) & 0x3FF); // bits 21-12 speed y in cm/s
   if (enu_speed.y & 0x400) {
-    enu_speed.y |= 0xFFFFF800;  // fix for twos complements
+    enu_speed.y |= 0xFFFFFC00;  // fix for twos complements
   }
   enu_speed.z = speed_z;
 
@@ -99,7 +99,7 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   gps.hmsl = ltp_def.hmsl + enu_pos.z * 10; // TODO: try to compensate for the loss in accuracy
   SetBit(gps.valid_fields, GPS_VALID_HMSL_BIT);
 
-  gps.course = (int32_t)((speed_xyh) & 0x3FF); // bits 9-0 heading in rad*1e2
+  gps.course = (int32_t)((speed_xyh) & 0x3FF); // bits 11-2 heading in rad*1e2
   if (gps.course & 0x200) {
     gps.course |= 0xFFFFFC00;  // fix for twos complements
   }
@@ -121,85 +121,6 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
     gps.last_3dfix_time = sys_time.nb_sec;
   }
   AbiSendMsgGPS(GPS_DATALINK_ID, now_ts, &gps);
-}
-
-// Parse the REMOTE_GPS_SMALL datalink packet
-void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh,
-                                     int8_t speed_z)
-{
-  // Position in ENU coordinates
-  enu_pos.x = (int32_t)((pos_xyz >> 22) & 0x3FF); // bits 31-22 x position in cm
-  if (enu_pos.x & 0x200) {
-    enu_pos.x |= 0xFFFFFC00;  // fix for twos complements
-  }
-  enu_pos.y = (int32_t)((pos_xyz >> 12) & 0x3FF); // bits 21-12 y position in cm
-  if (enu_pos.y & 0x200) {
-    enu_pos.y |= 0xFFFFFC00;  // fix for twos complements
-  }
-  enu_pos.z = (int32_t)((pos_xyz >> 2) & 0x3FF);  // bits 11-2 z position in cm
-  // bits 1 and 0 are free
-
-  // printf("ENU Pos: %u (%d, %d, %d)\n", pos_xyz, enu_pos.x, enu_pos.y, enu_pos.z);
-
-  // Convert the ENU coordinates to ECEF
-  ecef_of_enu_point_i(&remote_gps->ecef_pos, &ltp_def, &enu_pos);
-
-  lla_of_ecef_i(&remote_gps->lla_pos, &remote_gps->ecef_pos);
-
-  enu_speed.x = (int32_t)((speed_xyh >> 22) & 0x3FF); // bits 31-22 speed x in cm/s
-  if (enu_speed.x & 0x200) {
-    enu_speed.x |= 0xFFFFFC00;  // fix for twos complements
-  }
-  enu_speed.y = (int32_t)((speed_xyh >> 12) & 0x3FF); // bits 21-12 speed y in cm/s
-  if (enu_speed.y & 0x200) {
-    enu_speed.y |= 0xFFFFFC00;  // fix for twos complements
-  }
-  enu_speed.z = speed_z;  // speed y in cm/s
-
-  // printf("ENU Speed: %u (%d, %d, %d)\n", speed_xy, enu_speed.x, enu_speed.y, enu_speed.z);
-
-  ecef_of_enu_vect_i(&gps.ecef_vel , &ltp_def , &enu_speed);
-
-  remote_gps->hmsl = ltp_def.hmsl + enu_pos.z * 10; // TODO: try to compensate for the loss in accuracy
-
-  remote_gps->course = (int32_t)((speed_xyh >> 2) & 0x3FF); // bits 11-2 heading in rad*1e2
-  if (remote_gps->course & 0x200) {
-    remote_gps->course |= 0xFFFFFC00;  // fix for twos complements
-  }
-
-  remote_gps->course *= 1e5;
-  remote_gps->num_sv = num_sv;
-  remote_gps->tow = 0; // set time-of-week to 0
-  remote_gps->fix = GPS_FIX_3D; // set 3D fix to true
-
-//todo: set valid bitss
-
-  //gps_tow_from_sys_ticks
-
-}
-
-void send_remote_gps_datalink_small(void)
-{
-  uint8_t ac_id = AC_ID;
-
-  enu_of_ecef_point_i(&enu_pos, &ltp_def, &gps.ecef_pos);
-
-  // Position in ENU coordinates
-  uint32_t pos_xyz = (((uint32_t)enu_pos.x) & 0x3FF) << 22; // bits 31-22 x position in cm
-  pos_xyz |= (((uint32_t)enu_pos.y) & 0x3FF) << 12;         // bits 21-12 y position in cm
-  pos_xyz |= (((uint32_t)enu_pos.z) & 0x3FF) << 2;          // bits 11-2 z position in cm
-
-  enu_of_ecef_vect_i(&enu_speed, &ltp_def, &gps.ecef_vel);
-
-  // Speed in ENU coordinates
-  uint32_t speed_xyh = (((uint32_t)enu_speed.x) & 0x3FF) << 22; // bits 31-22 speed x in cm/s
-  speed_xyh |= (((uint32_t)enu_speed.y) & 0x3FF) << 12;         // bits 21-12 speed y in cm/s
-  speed_xyh |= (((uint32_t)(gps.course / 1e5)) & 0x3FF) << 2;   // bits 11-2 heading in rad*1e2
-
-  int8_t speed_z = enu_speed.z;
-
-  DOWNLINK_SEND_TELEM_REMOTE_GPS_SMALL(DefaultChannel, DefaultDevice, &ac_id, &gps.num_sv, &pos_xyz, &speed_xyh,
-                                       &speed_z);
 }
 
 /** Parse the REMOTE_GPS datalink packet */

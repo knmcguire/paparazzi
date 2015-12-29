@@ -32,7 +32,14 @@
 #include "state.h"
 #include "navigation.h"
 
+#include "subsystems/navigation/traffic_info.h"
+
 #include "generated/airframe.h"           // AC_ID
+
+#include "subsystems/abi.h"               // rssi
+
+int8_t rssi[NB_ACS_ID];
+int8_t tx_strength[NB_ACS_ID];
 
 struct force_ potential_force;
 
@@ -56,6 +63,24 @@ float force_climb_gain;
 #define FORCE_MAX_DIST 100.
 #endif
 
+abi_event ev;
+
+void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi);
+void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi) {
+  tx_strength[the_acs_id[_ac_id]] = _tx_strength;
+  rssi[the_acs_id[_ac_id]] = _rssi;
+}
+
+#if PERIODIC_TELEMETRY
+#include "subsystems/datalink/telemetry.h"
+
+static void send_periodic(struct transport_tx *trans, struct link_device *dev) {
+  pprz_msg_send_POTENTIAL(trans, dev, AC_ID, &potential_force.east, &potential_force.north,
+                              &potential_force.alt, &potential_force.speed_x, &potential_force.speed_z);
+}
+
+#endif
+
 void swarm_potential_init(void)
 {
   potential_force.east = 0.;
@@ -69,6 +94,12 @@ void swarm_potential_init(void)
   force_pos_gain = FORCE_POS_GAIN;
   force_speed_gain = FORCE_SPEED_GAIN;
   force_climb_gain = FORCE_CLIMB_GAIN;
+
+  AbiBindMsgBLUEGIGA_RSSI(ABI_BROADCAST, &ev, rssi_cb);
+
+#if PERIODIC_TELEMETRY
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_POTENTIAL, send_periodic);
+#endif
 }
 
 void swarm_potential_periodic(void) {
@@ -81,10 +112,22 @@ void swarm_potential_periodic(void) {
       potential_force.alt = ac->alt;
   }
 
-  DOWNLINK_SEND_POTENTIAL(DefaultChannel, DefaultDevice, &potential_force.east, &potential_force.north,
-                            &potential_force.alt, &potential_force.speed_x, &potential_force.speed_z);
+  /* The GPS messages are most likely too large to be send over either the datalink
+   * The local position is an int32 and the 11 LSBs of the x and y axis are compressed into
+   * a single integer. The z axis is considered unsigned and only the latter 10 LSBs are
+   * used.
+   */
+  uint32_t multiplex_speed = (((uint32_t)(gps.course*10.0)) & 0x7FF) << 21; // bits 31-21 x position in cm
+  multiplex_speed |= (((uint32_t)(gps.gspeed*100.0)) & 0x7FF) << 10;         // bits 20-10 y position in cm
+  multiplex_speed |= (((uint32_t)(-gps.ned_vel.z*100.0)) & 0x3FF);               // bits 9-0 z position in cm
 
-  send_remote_gps_datalink_small();
+  if (bit_is_set(gps.valid_fields, GPS_VALID_POS_UTM_BIT)) {
+      DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.utm_pos.east,
+                              &gps.utm_pos.north, &gps.utm_pos.alt);
+  } else if (bit_is_set(gps.valid_fields, GPS_VALID_POS_UTM_BIT)) {
+      DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.ecef_pos.x,
+                                    &gps.ecef_pos.y, &gps.ecef_pos.z);
+  }
 }
 
 int swarm_potential_task(void)
