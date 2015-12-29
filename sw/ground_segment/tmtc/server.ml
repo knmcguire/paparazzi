@@ -41,7 +41,7 @@ module Tm_Pprz = Pprz.Messages (struct let name = "telemetry" end)
 module Alerts_Pprz = Pprz.Messages(struct let name = "alert" end)
 module Dl_Pprz = Pprz.Messages (struct let name = "datalink" end)
 
-
+let dl_id = "ground_dl" (* Hack, should be [my_id] *)
 
 let (//) = Filename.concat
 let logs_path = Env.paparazzi_home // "var" // "logs"
@@ -359,24 +359,22 @@ let send_aircraft_msg = fun ac ->
                   "climb", f a.climb] in
     Ground_Pprz.message_send my_id "FLIGHT_PARAM" values;
 
-    (** send ACINFO messages if more than one A/C registered 
+    (** send ACINFO messages if more than one A/C registered *)
     if Hashtbl.length aircrafts > 1 then
       begin
         let cm_of_m_32 = fun f -> Pprz.Int32 (Int32.of_int (truncate (100. *. f))) in
         let cm_of_m = fun f -> Pprz.Int (truncate (100. *. f)) in
-        let pos = LL.lla_of WGS84 a.pos in
+        let pos = LL.utm_of WGS84 a.pos in
         let ac_info = ["ac_id", Pprz.String ac;
-                       "dummy", 0;
-                       "lat", pos.lat;
-                       "lat", pos.lon;
-                       "alt", cm_of_m_32 a.alt;
+                       "utm_east", cm_of_m_32 pos.utm_x;
+                       "utm_north", cm_of_m_32 pos.utm_y;
                        "course", Pprz.Int (truncate (10. *. (Geometry_2d.rad2deg a.course)));
-                       "gspeed", cm_of_m a.gspeed;
+                       "alt", cm_of_m_32 a.alt;
+                       "speed", cm_of_m a.gspeed;
                        "climb", cm_of_m a.climb;
-                       "tow", Pprz.Int64 a.itow] in
-        Dl_Pprz.message_send my_id "ACINFO" ac_info;
+                       "itow", Pprz.Int64 a.itow] in
+        Dl_Pprz.message_send dl_id "ACINFO" ac_info;
       end;
-      *)
 
     if !Kml.enabled then
       Kml.update_ac a;
@@ -651,7 +649,7 @@ let send_intruder_acinfo = fun id intruder ->
                  "speed", cm_of_m intruder.Intruder.gspeed;
                  "climb", cm_of_m intruder.Intruder.climb;
                  "itow", Pprz.Int64 intruder.Intruder.itow] in
-  Dl_Pprz.message_send my_id "ACINFO" ac_info
+  Dl_Pprz.message_send dl_id "ACINFO" ac_info
 
 let periodic_handle_intruders = fun () ->
   (* remove old intruders after 10s *)
@@ -738,8 +736,6 @@ let cm_of_m = fun f -> Pprz.Int (truncate ((100. *. f) +. 0.5))
 
 (** Convert to mm, with rounding *)
 let mm_of_m_32 = fun f -> Pprz.Int32 (Int32.of_int (truncate ((1000. *. f) +. 0.5)))
-
-let dl_id = "ground_dl" (* Hack, should be [my_id] *)
 
 (** Got a ground.MOVE_WAYPOINT and send a datalink.MOVE_WP *)
 let move_wp = fun logging _sender vs ->
