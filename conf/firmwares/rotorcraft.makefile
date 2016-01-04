@@ -49,12 +49,6 @@ $(TARGET).srcs   += mcu.c
 $(TARGET).srcs   += $(SRC_ARCH)/mcu_arch.c
 
 #
-# Common Options
-#
-
-$(TARGET).CFLAGS 	+= -DTRAFFIC_INFO
-
-#
 # frequencies of main periodic
 #
 

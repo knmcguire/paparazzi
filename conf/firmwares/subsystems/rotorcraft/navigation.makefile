@@ -2,6 +2,7 @@
 
 $(TARGET).CFLAGS += -DUSE_NAVIGATION
 $(TARGET).srcs += $(SRC_FIRMWARE)/navigation.c
+#$(TARGET).srcs += subsystems/navigation/common_nav.c
 $(TARGET).srcs += subsystems/navigation/waypoints.c
 $(TARGET).srcs += subsystems/navigation/common_flight_plan.c
 $(TARGET).srcs += $(SRC_SUBSYSTEMS)/navigation/traffic_info.c

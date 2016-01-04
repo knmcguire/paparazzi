@@ -654,7 +654,7 @@ void ble_evt_connection_status(const struct ble_msg_connection_status_evt_t *msg
       change_state(state_listening_measurements);
       enable_indications(msg->connection, drone_handle_configuration);
       if (connect_all) {
-	ble_cmd_gap_discover(gap_discover_generic);
+	      ble_cmd_gap_discover(gap_discover_generic);
       }
     }
     // Find primary services
@@ -662,7 +662,7 @@ void ble_evt_connection_status(const struct ble_msg_connection_status_evt_t *msg
       change_state(state_finding_services);
       ble_cmd_attclient_read_by_group_type(msg->connection, FIRST_HANDLE, LAST_HANDLE, 2, primary_service_uuid);
       if (connect_all) {
-	ble_cmd_gap_discover(gap_discover_generic);
+	      ble_cmd_gap_discover(gap_discover_generic);
       }
     }
   }
@@ -753,9 +753,9 @@ void ble_evt_attclient_find_information_found(const struct ble_msg_attclient_fin
 
       // Handle for Drone Data configuration already known
       if (action == action_broadcast_connect) {
-	unsigned char var[] = {1};
-	printf("Request sent: %d\n", var[0]);
-	ble_cmd_attclient_attribute_write(msg->connection, drone_handle_broadcast, 1, &var);
+	      unsigned char var[] = {1};
+	      printf("Request sent: %d\n", var[0]);
+	      ble_cmd_attclient_attribute_write(msg->connection, drone_handle_broadcast, 1, &var);
       }
     }
   }

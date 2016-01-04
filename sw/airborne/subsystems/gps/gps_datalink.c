@@ -149,13 +149,9 @@ void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t e
   gps.ecef_vel.z = ecef_zd;
   SetBit(gps.valid_fields, GPS_VALID_VEL_ECEF_BIT);
 
-  struct LtpDef_d ref_ltp;
-  ltp_def_from_ecef_d(&ref_ltp, &gps.ecef_pos);
-  struct NedCoor_d ned_vel_d;
-  ned_of_ecef_vect_d(&ned_vel_d, &ref_ltp, &gps.ecef_vel);
-  gps.ned_vel.x = ned_vel_d.x * 100;
-  gps.ned_vel.y = ned_vel_d.y * 100;
-  gps.ned_vel.z = ned_vel_d.z * 100;
+  struct LtpDef_i ref_ltp;
+  ltp_def_from_ecef_i(&ref_ltp, &gps.ecef_pos);
+  ned_of_ecef_vect_i(&gps.ned_vel, &ref_ltp, &gps.ecef_vel);
   SetBit(gps.valid_fields, GPS_VALID_VEL_NED_BIT);
 
   gps.course = course;
