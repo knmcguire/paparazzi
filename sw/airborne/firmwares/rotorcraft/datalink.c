@@ -209,8 +209,8 @@ void dl_parse_msg(void)
       parse_gps_datalink_small(
         DL_REMOTE_GPS_SMALL_numsv(dl_buffer),
         DL_REMOTE_GPS_SMALL_pos_xyz(dl_buffer),
-        DL_REMOTE_GPS_SMALL_speed_xyh(dl_buffer),
-        DL_REMOTE_GPS_SMALL_speed_z(dl_buffer));
+        DL_REMOTE_GPS_SMALL_speed_xyz(dl_buffer),
+        DL_REMOTE_GPS_SMALL_heading(dl_buffer));
       break;
     case DL_REMOTE_GPS :
       // Check if the GPS is for this AC

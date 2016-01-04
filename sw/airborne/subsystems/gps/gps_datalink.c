@@ -62,19 +62,18 @@ void gps_impl_init(void)
 }
 
 // Parse the REMOTE_GPS_SMALL datalink packet
-void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh, int8_t speed_z)
+void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyz, int16_t heading)
 {
   // Position in ENU coordinates
-  enu_pos.x = (int32_t)((pos_xyz >> 22) & 0x3FF); // bits 31-22 x position in cm
-  if (enu_pos.x & 0x200) {
-    enu_pos.x |= 0xFFFFFC00;  // fix for twos complements
+  enu_pos.x = (int32_t)((pos_xyz >> 21) & 0x7FF); // bits 31-21 x position in cm
+  if (enu_pos.x & 0x400) {
+    enu_pos.x |= 0xFFFFF800;  // sign extend for twos complements
   }
-  enu_pos.y = (int32_t)((pos_xyz >> 12) & 0x3FF); // bits 21-12 y position in cm
-  if (enu_pos.y & 0x200) {
-    enu_pos.y |= 0xFFFFFC00;  // fix for twos complements
+  enu_pos.y = (int32_t)((pos_xyz >> 10) & 0x7FF); // bits 20-10 y position in cm
+  if (enu_pos.y & 0x400) {
+    enu_pos.y |= 0xFFFFF800;  // sign extend for twos complements
   }
-  enu_pos.z = (int32_t)(pos_xyz >> 2 & 0x3FF); // bits 11-2 z position in cm
-  // bits 1 and 0 are free
+  enu_pos.z = (int32_t)(pos_xyz & 0x3FF); // bits 9-0 z position in cm
 
   // Convert the ENU coordinates to ECEF
   ecef_of_enu_point_i(&gps.ecef_pos, &ltp_def, &enu_pos);
@@ -83,32 +82,36 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   lla_of_ecef_i(&gps.lla_pos, &gps.ecef_pos);
   SetBit(gps.valid_fields, GPS_VALID_POS_LLA_BIT);
 
-  enu_speed.x = (int32_t)((speed_xyh >> 22) & 0x3FF); // bits 31-22 speed x in cm/s
+  enu_speed.x = (int32_t)((speed_xyz >> 21) & 0x7FF); // bits 31-21 speed x in cm/s
   if (enu_speed.x & 0x400) {
-    enu_speed.x |= 0xFFFFFC00;  // fix for twos complements
+    enu_speed.x |= 0xFFFFF800;  // sign extend for twos complements
   }
-  enu_speed.y = (int32_t)((speed_xyh >> 12) & 0x3FF); // bits 21-12 speed y in cm/s
+  enu_speed.y = (int32_t)((speed_xyz >> 10) & 0x7FF); // bits 20-10 speed y in cm/s
   if (enu_speed.y & 0x400) {
-    enu_speed.y |= 0xFFFFFC00;  // fix for twos complements
+    enu_speed.y |= 0xFFFFF800;  // sign extend for twos complements
   }
-  enu_speed.z = speed_z;
+  enu_speed.z = (int32_t)((speed_xyz) & 0x3FF); // bits 9-0 speed y in cm/s
+  if (enu_speed.y & 0x200) {
+    enu_speed.y |= 0xFFFFFC00;  // sign extend for twos complements
+  }
 
   ecef_of_enu_vect_i(&gps.ecef_vel , &ltp_def , &enu_speed);
   SetBit(gps.valid_fields, GPS_VALID_VEL_ECEF_BIT);
 
-  gps.hmsl = ltp_def.hmsl + enu_pos.z * 10; // TODO: try to compensate for the loss in accuracy
+  // todo check correct
+  gps.ned_vel.x = enu_speed.x;
+  gps.ned_vel.y = enu_speed.y;
+  gps.ned_vel.z = -enu_speed.z;
+  SetBit(gps.valid_fields, GPS_VALID_VEL_NED_BIT);
+
+  gps.hmsl = ltp_def.hmsl + enu_pos.z * 10;
   SetBit(gps.valid_fields, GPS_VALID_HMSL_BIT);
 
-  gps.course = (int32_t)((speed_xyh) & 0x3FF); // bits 11-2 heading in rad*1e2
-  if (gps.course & 0x200) {
-    gps.course |= 0xFFFFFC00;  // fix for twos complements
-  }
-
-  gps.course *= 1e5;
+  gps.course = ((int32_t)heading)*1e3;
   SetBit(gps.valid_fields, GPS_VALID_COURSE_BIT);
 
   gps.num_sv = num_sv;
-  gps.tow = 0; // set time-of-week to 0
+  gps.tow = gps_tow_from_sys_ticks(sys_time.nb_tick);	// todo check
   gps.fix = GPS_FIX_3D; // set 3D fix to true
   gps_available = TRUE; // set GPS available to true
 
@@ -146,11 +149,24 @@ void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t e
   gps.ecef_vel.z = ecef_zd;
   SetBit(gps.valid_fields, GPS_VALID_VEL_ECEF_BIT);
 
+  struct LtpDef_d ref_ltp;
+  ltp_def_from_ecef_d(&ref_ltp, &gps.ecef_pos);
+  struct NedCoor_d ned_vel_d;
+  ned_of_ecef_vect_d(&ned_vel_d, &ref_ltp, &gps.ecef_vel);
+  gps.ned_vel.x = ned_vel_d.x * 100;
+  gps.ned_vel.y = ned_vel_d.y * 100;
+  gps.ned_vel.z = ned_vel_d.z * 100;
+  SetBit(gps.valid_fields, GPS_VALID_VEL_NED_BIT);
+
   gps.course = course;
   SetBit(gps.valid_fields, GPS_VALID_COURSE_BIT);
 
   gps.num_sv = numsv;
-  gps.tow = tow;
+  if (tow == 0) {
+    gps.tow = gps_tow_from_sys_ticks(sys_time.nb_tick); //tow;
+  } else {
+    gps.tow = gps_tow_from_sys_ticks(sys_time.nb_tick); //tow;
+  }
   gps.fix = GPS_FIX_3D;
   gps_available = TRUE;
 

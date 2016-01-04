@@ -37,7 +37,7 @@
 
 extern bool_t gps_available;
 
-extern void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyh, int8_t speed_z);
+extern void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyz, int16_t heading);
 
 struct GpsState;
 extern void parse_remote_gps_datalink_small(struct GpsState *remote_gps, uint8_t num_sv, uint32_t pos_xyz,
