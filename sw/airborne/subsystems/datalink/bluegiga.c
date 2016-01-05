@@ -205,7 +205,7 @@ void bluegiga_transmit(struct bluegiga_periph *p, uint8_t data)
 void bluegiga_load_tx(struct bluegiga_periph *p, struct spi_transaction *trans)
 {
   uint8_t packet_len;
-  if (p->connected){
+  if (p->connected) {
     // check data available in buffer to send
     packet_len = ((p->end_of_msg - p->tx_extract_idx + BLUEGIGA_BUFFER_SIZE) % BLUEGIGA_BUFFER_SIZE);
     if (packet_len > 19) {
@@ -215,7 +215,7 @@ void bluegiga_load_tx(struct bluegiga_periph *p, struct spi_transaction *trans)
     // check data available in buffer to send
     packet_len = ((p->end_of_msg - p->tx_extract_idx + BLUEGIGA_BUFFER_SIZE) % BLUEGIGA_BUFFER_SIZE);
     if (packet_len > 17) {
-      bluegiga_increment_buf(&p->tx_extract_idx, packet_len);		// msg too large for broadcast
+      bluegiga_increment_buf(&p->tx_extract_idx, packet_len);   // msg too large for broadcast
       memset(p->work_tx, 0, bluegiga_spi.output_length);
       return;
     }
@@ -257,7 +257,7 @@ void bluegiga_receive(struct spi_transaction *trans)
     } else if (coms_status == BLUEGIGA_SENDING_BROADCAST) {
       // sending second half of broadcast message
       for (uint8_t i = 0; i < broadcast_msg[0]; i++) {
-	trans->output_buf[i] = broadcast_msg[i];
+        trans->output_buf[i] = broadcast_msg[i];
       }
       coms_status = BLUEGIGA_SENDING;
       return;
@@ -274,12 +274,12 @@ void bluegiga_receive(struct spi_transaction *trans)
     uint8_t read_offset = 0;
     switch (trans->input_buf[0]) {
       case 0x50:  // communication status changed
-	bluegiga_p.connected = trans->input_buf[1];
-	if (bluegiga_p.connected)
-	  telemetry_mode_Main = TELEMETRY_PROCESS_Main;
-	  else {
-	      telemetry_mode_Main = NB_TELEMETRY_MODES;		// send no periodic telemetry
-	  }
+        bluegiga_p.connected = trans->input_buf[1];
+        /*if (bluegiga_p.connected) {
+          telemetry_mode_Main = TELEMETRY_PROCESS_Main;
+        } else {
+          telemetry_mode_Main = NB_TELEMETRY_MODES;   // send no periodic telemetry
+        }*/
 #ifdef MODEM_LED
         LED_OFF(MODEM_LED);
 #endif
@@ -290,7 +290,7 @@ void bluegiga_receive(struct spi_transaction *trans)
         coms_status = BLUEGIGA_IDLE;
         break;
       default:
-	coms_status = BLUEGIGA_IDLE;
+        coms_status = BLUEGIGA_IDLE;
         // compute length of transmitted message
         if (trans->input_buf[0] < trans->input_length) {               // normal connection mode
           packet_len = trans->input_buf[0];
@@ -331,22 +331,23 @@ void bluegiga_receive(struct spi_transaction *trans)
 /* Send data for broadcast message to the bluegiga module
  * maximum size of message is 22 bytes
  */
-void bluegiga_broadcast_msg(struct bluegiga_periph *p, char* msg, uint8_t msg_len)
+void bluegiga_broadcast_msg(struct bluegiga_periph *p, char *msg, uint8_t msg_len)
 {
-  if (msg_len == 0 || msg_len > 22)
+  if (msg_len == 0 || msg_len > 22) {
     return;
+  }
 
   uint8_t max_length = 20;
   p->work_tx[0] = msg_len;
 
   if (msg_len < max_length) {
     for (uint8_t i = 0; i < msg_len; i++) {
-      p->work_tx[i+1] = msg[i];
+      p->work_tx[i + 1] = msg[i];
     }
     coms_status = BLUEGIGA_SENDING;
   } else {
     for (uint8_t i = 0; i < max_length - 1; i++) {
-      p->work_tx[i+1] = msg[i];
+      p->work_tx[i + 1] = msg[i];
     }
 
     memcpy(broadcast_msg, msg + max_length - 1, msg_len - (max_length - 1));
