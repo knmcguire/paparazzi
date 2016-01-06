@@ -390,6 +390,9 @@ let () =
     if class_name = "datalink" || class_name = "intermcu" then
       List.iter (Gen_onboard.print_get_macros h true) messages;
 
+		if class_name = "telemetry" then
+      List.iter (Gen_onboard.print_get_macros h false) messages;
+      
     Printf.fprintf h "#endif // _VAR_MESSAGES_%s_H_\n" class_name
 
   with
