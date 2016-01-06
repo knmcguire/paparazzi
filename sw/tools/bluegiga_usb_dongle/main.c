@@ -167,7 +167,7 @@ int count[8] = {0, 0, 0, 0, 0, 0, 0, 0}, send_count[8] = {0, 0, 0, 0, 0, 0, 0, 0
 int rssi_count = 0;
 int last0 = 0, last1 = 0;
 
-uint8_t connection_interval = 10; // connection interval in ms
+float connection_interval = 10.; // connection interval in ms
 
 int ac_id[8] = { -1, -1, -1, -1, -1, -1, -1, -1};
 
@@ -484,7 +484,7 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
     fflush(rssi_fp);
   }
 
-  if (action == action_broadcast || action == action_broadcast_connect) {
+  if (action == action_broadcast) {
     if (sock[0])
       sendto(sock[0], msg->data.data+13, msg->data.len-13, MSG_DONTWAIT,
              (struct sockaddr *)&send_addr[0], sizeof(struct sockaddr));
@@ -875,12 +875,19 @@ void *send_msg()
           //  fprintf(stderr,"Long msg: %d, buff size: %d\n", bt_msg_len, diff);
           //ble_cmd_attclient_attribute_write(device, drone_handle_measurement, bt_msg_len[device], &data_buf[device][extract_idx[device]]);
 
-          ble_cmd_attclient_write_command(device, drone_handle_measurement, bt_msg_len, &data_buf[device][extract_idx[device]]);
-          extract_idx[device] = (extract_idx[device] + bt_msg_len) % BUF_SIZE;
+          uint16_t i = 0;
+          unsigned char buf[19];
+          for (i = 0; i < bt_msg_len; i++)
+          {
+            buf[i] = data_buf[device][extract_idx[device]];
+            extract_idx[device] = (extract_idx[device] + 1) % BUF_SIZE;
+          }
+
+          ble_cmd_attclient_write_command(device, drone_handle_measurement, bt_msg_len, buf);
         }
         device++;
       } // next device
-      usleep(connection_interval * 1000); // send messages at max intervals of the connection interval
+      usleep(connection_interval * 1000*2); // send messages at max intervals of the connection interval, 2 safety factor
     } // repeat
   }
   pthread_exit(NULL);
@@ -909,18 +916,21 @@ void *recv_paparazzi_comms()
           if (connected[device] && sock[device]) {
             bytes_recv = recvfrom(sock[device], recv_data, BUF_SIZE, MSG_DONTWAIT, (struct sockaddr *)&rec_addr[device],
                                   (socklen_t *)&sin_size);
-            if (bytes_recv > 0) { // TODO: can overtake extract!
+            // ensure we don't overtake reading
+            if (bytes_recv > 0 && bytes_recv - 1 <= (extract_idx[device] - insert_idx[device] - 1 + BUF_SIZE) % BUF_SIZE ) {
+              uint16_t i = 0;
+              for (i = 0; i < bytes_recv; i++){
+                data_buf[device][insert_idx[device]] = recv_data[i];
+                insert_idx[device] = (insert_idx[device] + 1) % BUF_SIZE;
+              }
               send_count[device] += bytes_recv;
-              memcpy(&data_buf[device][insert_idx[device]], recv_data, bytes_recv);
-
-              insert_idx[device] = (insert_idx[device] + bytes_recv) % BUF_SIZE;
             }
           }
           device++;
         }
       }
     }
-    usleep(20000);  // assuming connection interval 10ms, give a bit of overhead
+    usleep(connection_interval * 1000 * 2);  // assuming connection interval 10ms, give a bit of overhead
   }
   pthread_exit(NULL);
 }
@@ -1080,7 +1090,7 @@ int main(int argc, char *argv[])
     ble_cmd_gap_set_adv_parameters(0x20, 0x28, 0x07);
     
   // Execute action
-  if (action == action_scan || action == action_broadcast || action_broadcast_connect) {
+  if (action == action_scan || action == action_broadcast || action == action_broadcast_connect) {
     ble_cmd_gap_discover(gap_discover_generic);
   } else if (action == action_info) {
     ble_cmd_system_get_info();

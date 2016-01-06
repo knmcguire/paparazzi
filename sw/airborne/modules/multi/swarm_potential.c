@@ -122,11 +122,18 @@ void swarm_potential_periodic(void) {
   multiplex_speed |= (((uint32_t)(-gps.ned_vel.z*100.0)) & 0x3FF);               // bits 9-0 z position in cm
 
   if (bit_is_set(gps.valid_fields, GPS_VALID_POS_UTM_BIT)) {
+    int16_t alt = (int16_t)gps.utm_pos.alt;
       DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.utm_pos.east,
-                              &gps.utm_pos.north, &gps.utm_pos.alt);
+                              &gps.utm_pos.north, &alt);
   } else if (bit_is_set(gps.valid_fields, GPS_VALID_POS_UTM_BIT)) {
+    int16_t alt = (int16_t)gps.ecef_pos.z;
       DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.ecef_pos.x,
-                                    &gps.ecef_pos.y, &gps.ecef_pos.z);
+                                    &gps.ecef_pos.y, &alt);
+  } else { // debug
+    int32_t nil = 0;
+    uint32_t nil1 = 0;
+    int16_t nil2 = 0;
+    DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &nil1, &nil, &nil, &nil2);
   }
 }
 

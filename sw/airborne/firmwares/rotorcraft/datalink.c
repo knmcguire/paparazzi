@@ -81,43 +81,43 @@ void dl_parse_msg(void)
     switch (msg_id) {
 #ifdef TRAFFIC_INFO
       case DL_GPS_SMALL: {
-	uint32_t multiplex_speed = DL_GPS_SMALL_multiplex_speed(dl_buffer);
+        uint32_t multiplex_speed = DL_GPS_SMALL_multiplex_speed(dl_buffer);
 
-	// Position in ENU coordinates
-	int16_t course = (int32_t)((multiplex_speed >> 21) & 0x7FF); // bits 31-21 course in decideg
-	if (course & 0x400) {
-	    course |= 0xFFFFF800;  // fix for twos complements
-	}
-	int16_t gspeed = (int32_t)((multiplex_speed >> 10) & 0x7FF); // bits 20-10 ground speed cm/s
-	if (gspeed & 0x400) {
-	    gspeed |= 0xFFFFF800;  // fix for twos complements
-	}
-	int16_t climb = (int16_t)(multiplex_speed >> 2 & 0x7FF); // bits 9-0 z climb speed in cm/s
-	if (climb & 0x400) {
-	    climb |= 0xFFFFF800;  // fix for twos complements
-	}
+        // Position in ENU coordinates
+        int16_t course = (int32_t)((multiplex_speed >> 21) & 0x7FF); // bits 31-21 course in decideg
+        if (course & 0x400) {
+          course |= 0xFFFFF800;  // fix for twos complements
+        }
+        int16_t gspeed = (int32_t)((multiplex_speed >> 10) & 0x7FF); // bits 20-10 ground speed cm/s
+        if (gspeed & 0x400) {
+          gspeed |= 0xFFFFF800;  // fix for twos complements
+        }
+        int16_t climb = (int16_t)(multiplex_speed >> 2 & 0x7FF); // bits 9-0 z climb speed in cm/s
+        if (climb & 0x400) {
+          climb |= 0xFFFFF800;  // fix for twos complements
+        }
 
-      	SetAcInfo(sender_id,
-		  MOfCm(DL_GPS_SMALL_utm_east(dl_buffer)),    /*m*/
+        SetAcInfo(sender_id,
+                  MOfCm(DL_GPS_SMALL_utm_east(dl_buffer)),    /*m*/
                   MOfCm(DL_GPS_SMALL_utm_north(dl_buffer)),   /*m*/
-		  RadOfDeg(((float)course) / 10.),                     /*rad(CW)*/
-		  MOfCm(DL_GPS_SMALL_alt(dl_buffer)),         /*m*/
-		  MOfCm(gspeed),                                       /*m/s*/
-		  MOfCm(climb),                                        /*m/s*/
-		  gps_tow_from_sys_ticks(sys_time.nb_tick));
+                  RadOfDeg(((float)course) / 10.),                     /*rad(CW)*/
+                  MOfCm(DL_GPS_SMALL_alt(dl_buffer)),         /*m*/
+                  MOfCm(gspeed),                                       /*m/s*/
+                  MOfCm(climb),                                        /*m/s*/
+                  gps_tow_from_sys_ticks(sys_time.nb_tick));
         break;
       }
 
       case DL_GPS: {
-	SetAcInfo(sender_id,
-		  MOfCm(DL_GPS_utm_east(dl_buffer)),    /*m*/
-		  MOfCm(DL_GPS_utm_north(dl_buffer)),   /*m*/
-		  RadOfDeg(((float)DL_GPS_course(dl_buffer)) / 10.), /*rad(CW)*/
-		  MOfCm(DL_GPS_alt(dl_buffer)),        /*m*/
-		  MOfCm(DL_GPS_speed(dl_buffer)),       /*m/s*/
-		  MOfCm(DL_GPS_climb(dl_buffer)),       /*m/s*/
-		  (uint32_t)DL_GPS_itow(dl_buffer));
-	break;
+        SetAcInfo(sender_id,
+                  MOfCm(DL_GPS_utm_east(dl_buffer)),    /*m*/
+                  MOfCm(DL_GPS_utm_north(dl_buffer)),   /*m*/
+                  RadOfDeg(((float)DL_GPS_course(dl_buffer)) / 10.), /*rad(CW)*/
+                  MOfCm(DL_GPS_alt(dl_buffer)),        /*m*/
+                  MOfCm(DL_GPS_speed(dl_buffer)),       /*m/s*/
+                  MOfCm(DL_GPS_climb(dl_buffer)),       /*m/s*/
+                  (uint32_t)DL_GPS_itow(dl_buffer));
+        break;
       }
 #endif
       default: {
@@ -127,8 +127,8 @@ void dl_parse_msg(void)
     return;  // msg was telemetry not datalink so return
   }
 
+  /* parse telemetry messages coming from ground station */
   switch (msg_id) {
-
     case  DL_PING: {
       DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
     }
@@ -151,7 +151,7 @@ void dl_parse_msg(void)
     }
     break;
 
-#if defined USE_NAVIGATION
+#ifdef USE_NAVIGATION
     case DL_BLOCK : {
       if (DL_BLOCK_ac_id(dl_buffer) != AC_ID) { break; }
       nav_goto_block(DL_BLOCK_block_id(dl_buffer));
@@ -199,20 +199,21 @@ void dl_parse_msg(void)
       }
       break;
 #endif // RADIO_CONTROL_TYPE_DATALINK
-#if defined GPS_DATALINK
-    case DL_REMOTE_GPS_SMALL :
+#if USE_GPS
+#ifdef GPS_DATALINK
+    case DL_REMOTE_GPS_SMALL : {
       // Check if the GPS is for this AC
-      if (DL_REMOTE_GPS_SMALL_ac_id(dl_buffer) != AC_ID) {
-        break;
-      }
+      if (DL_REMOTE_GPS_SMALL_ac_id(dl_buffer) != AC_ID) { break; }
 
       parse_gps_datalink_small(
         DL_REMOTE_GPS_SMALL_numsv(dl_buffer),
         DL_REMOTE_GPS_SMALL_pos_xyz(dl_buffer),
         DL_REMOTE_GPS_SMALL_speed_xyz(dl_buffer),
         DL_REMOTE_GPS_SMALL_heading(dl_buffer));
-      break;
-    case DL_REMOTE_GPS :
+    }
+    break;
+
+    case DL_REMOTE_GPS : {
       // Check if the GPS is for this AC
       if (DL_REMOTE_GPS_ac_id(dl_buffer) != AC_ID) { break; }
 
@@ -231,10 +232,11 @@ void dl_parse_msg(void)
         DL_REMOTE_GPS_ecef_zd(dl_buffer),
         DL_REMOTE_GPS_tow(dl_buffer),
         DL_REMOTE_GPS_course(dl_buffer));
-      break;
-#endif
-#if USE_GPS
-    case DL_GPS_INJECT :
+    }
+    break;
+#endif // GPS_DATALINK
+
+    case DL_GPS_INJECT : {
       // Check if the GPS is for this AC
       if (DL_GPS_INJECT_ac_id(dl_buffer) != AC_ID) { break; }
 
@@ -243,9 +245,10 @@ void dl_parse_msg(void)
         DL_GPS_INJECT_packet_id(dl_buffer),
         DL_GPS_INJECT_data_length(dl_buffer),
         DL_GPS_INJECT_data(dl_buffer)
-        );
-      break;
-#endif
+      );
+    }
+    break;
+#endif  // USE_GPS
 
     case DL_GUIDED_SETPOINT_NED:
       if (DL_GUIDED_SETPOINT_NED_ac_id(dl_buffer) != AC_ID) { break; }
@@ -276,15 +279,15 @@ void dl_parse_msg(void)
 #ifdef TRAFFIC_INFO
     case DL_ACINFO: {
       if (DL_ACINFO_ac_id(dl_buffer) == AC_ID) { break; }
-        uint8_t id = DL_ACINFO_ac_id(dl_buffer);
-        float ux = MOfCm(DL_ACINFO_utm_east(dl_buffer));
-        float uy = MOfCm(DL_ACINFO_utm_north(dl_buffer));
-        float a = MOfCm(DL_ACINFO_alt(dl_buffer));
-        float c = RadOfDeg(((float)DL_ACINFO_course(dl_buffer)) / 10.);
-        float s = MOfCm(DL_ACINFO_speed(dl_buffer));
-        float cl = MOfCm(DL_ACINFO_climb(dl_buffer));
-        uint32_t t = DL_ACINFO_itow(dl_buffer);
-        SetAcInfo(id, ux, uy, c, a, s, cl, t);
+      uint8_t id = DL_ACINFO_ac_id(dl_buffer);
+      float ux = MOfCm(DL_ACINFO_utm_east(dl_buffer));
+      float uy = MOfCm(DL_ACINFO_utm_north(dl_buffer));
+      float a = MOfCm(DL_ACINFO_alt(dl_buffer));
+      float c = RadOfDeg(((float)DL_ACINFO_course(dl_buffer)) / 10.);
+      float s = MOfCm(DL_ACINFO_speed(dl_buffer));
+      float cl = MOfCm(DL_ACINFO_climb(dl_buffer));
+      uint32_t t = DL_ACINFO_itow(dl_buffer);
+      SetAcInfo(id, ux, uy, c, a, s, cl, t);
     }
     break;
 #endif

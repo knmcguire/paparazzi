@@ -201,7 +201,7 @@
 
  <modules main_freq="512">
    <load name="send_imu_mag_current.xml"/>
- <load name="swarm_potential.xml"/>
+   <load name="swarm_potential.xml"/>
  </modules>
 
   <firmware name="rotorcraft">
@@ -209,6 +209,7 @@
       <subsystem name="radio_control" type="datalink"/>
       <define name="TRAFFIC_INFO"/>
       <configure name="USE_MAGNETOMETER" value="0"/>
+      <!--define name="INS_BARO_ID" value="ABI_DISABLE"/-->
       <configure name="AHRS_PROPAGATE_FREQUENCY" value="500"/>
       <define name="USE_PERSISTENT_SETTINGS" value="TRUE"/>
     </target>

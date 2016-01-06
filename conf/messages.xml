@@ -2163,7 +2163,7 @@
     <field name="multiplex_speed"  type="uint32">bits 31-21 course in decideg : bits 20-10 ground speed in cm/s : bits 9-0 climb speed in cm/s</field>
     <field name="utm_east"  type="int32" unit="cm"></field>
     <field name="utm_north"  type="int32" unit="cm"></field>
-    <field name="alt"    type="int32" unit="cm"></field>
+    <field name="alt"    type="int16" unit="cm"></field>
   </message>
 
   <message name="I2C_ERRORS" id="253">

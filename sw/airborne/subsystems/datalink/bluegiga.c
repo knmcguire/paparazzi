@@ -30,6 +30,10 @@
 #include "mcu_periph/gpio.h"
 #include "mcu_periph/spi.h"
 
+#ifdef MODEM_LED
+#include "led.h"
+#endif
+
 #include "subsystems/abi.h"
 
 #define SENDER_ID 1
@@ -92,6 +96,8 @@ static int dev_char_available(struct bluegiga_periph *p)
 {
   return bluegiga_ch_available(p);
 }
+
+// note, need to run dev_char_available first
 static uint8_t dev_get_byte(struct bluegiga_periph *p)
 {
   uint8_t ret = p->rx_buf[p->rx_extract_idx];
@@ -205,20 +211,10 @@ void bluegiga_transmit(struct bluegiga_periph *p, uint8_t data)
 void bluegiga_load_tx(struct bluegiga_periph *p, struct spi_transaction *trans)
 {
   uint8_t packet_len;
-  if (p->connected) {
-    // check data available in buffer to send
-    packet_len = ((p->end_of_msg - p->tx_extract_idx + BLUEGIGA_BUFFER_SIZE) % BLUEGIGA_BUFFER_SIZE);
-    if (packet_len > 19) {
-      packet_len = 19;
-    }
-  } else {
-    // check data available in buffer to send
-    packet_len = ((p->end_of_msg - p->tx_extract_idx + BLUEGIGA_BUFFER_SIZE) % BLUEGIGA_BUFFER_SIZE);
-    if (packet_len > 17) {
-      bluegiga_increment_buf(&p->tx_extract_idx, packet_len);   // msg too large for broadcast
-      memset(p->work_tx, 0, bluegiga_spi.output_length);
-      return;
-    }
+  // check data available in buffer to send
+  packet_len = ((p->end_of_msg - p->tx_extract_idx + BLUEGIGA_BUFFER_SIZE) % BLUEGIGA_BUFFER_SIZE);
+  if (packet_len > 19) {
+    packet_len = 19;
   }
 
   if (packet_len && coms_status == BLUEGIGA_IDLE) {
@@ -275,19 +271,15 @@ void bluegiga_receive(struct spi_transaction *trans)
     switch (trans->input_buf[0]) {
       case 0x50:  // communication status changed
         bluegiga_p.connected = trans->input_buf[1];
-        /*if (bluegiga_p.connected) {
-          telemetry_mode_Main = TELEMETRY_PROCESS_Main;
+        if (bluegiga_p.connected) {
+          //telemetry_mode_Main = TELEMETRY_PROCESS_Main;
         } else {
-          telemetry_mode_Main = NB_TELEMETRY_MODES;   // send no periodic telemetry
-        }*/
-#ifdef MODEM_LED
-        LED_OFF(MODEM_LED);
-#endif
-        coms_status = BLUEGIGA_UNINIT;
+          //telemetry_mode_Main = NB_TELEMETRY_MODES;   // send no periodic telemetry
+        }
+        coms_status = BLUEGIGA_IDLE;
         break;
       case 0x51:  // Interrupt handled
         gpio_set(BLUEGIGA_DRDY_GPIO, BLUEGIGA_DRDY_GPIO_PIN);          // Reset interrupt pin
-        coms_status = BLUEGIGA_IDLE;
         break;
       default:
         coms_status = BLUEGIGA_IDLE;
@@ -311,7 +303,10 @@ void bluegiga_receive(struct spi_transaction *trans)
     }
 
     // handle incoming datalink message
-    if (packet_len > 0 && packet_len < trans->input_length) {
+    if (packet_len > 0 && packet_len <= trans->input_length - read_offset) {
+#ifdef MODEM_LED
+      LED_TOGGLE(MODEM_LED);
+#endif
       // Handle received message
       for (uint8_t i = 0; i < packet_len; i++) {
         bluegiga_p.rx_buf[(bluegiga_p.rx_insert_idx + i) % BLUEGIGA_BUFFER_SIZE] = trans->input_buf[i + read_offset];

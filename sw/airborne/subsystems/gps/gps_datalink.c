@@ -90,9 +90,9 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   if (enu_speed.y & 0x400) {
     enu_speed.y |= 0xFFFFF800;  // sign extend for twos complements
   }
-  enu_speed.z = (int32_t)((speed_xyz) & 0x3FF); // bits 9-0 speed y in cm/s
-  if (enu_speed.y & 0x200) {
-    enu_speed.y |= 0xFFFFFC00;  // sign extend for twos complements
+  enu_speed.z = (int32_t)((speed_xyz) & 0x3FF); // bits 9-0 speed z in cm/s
+  if (enu_speed.z & 0x200) {
+    enu_speed.z |= 0xFFFFFC00;  // sign extend for twos complements
   }
 
   ecef_of_enu_vect_i(&gps.ecef_vel , &ltp_def , &enu_speed);

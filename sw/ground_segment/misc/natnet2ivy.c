@@ -521,32 +521,32 @@ gboolean timeout_transmit_callback(gpointer data)
       if (fabs(pos.x * 100) < pow(2, 10)) {
         pos_xyz = (((uint32_t)(pos.x * 100.0)) & 0x7FF) << 21;                     // bits 31-21 x position in cm
       } else {
-        printf("Warning!! X position out of maximum range of small message (±%.2fm): %.2f", pow(2, 10) / 100, pos.x);
+        fprintf(stderr, "Warning!! X position out of maximum range of small message (±%.2fm): %.2f", pow(2, 10) / 100, pos.x);
         pos_xyz = (((uint32_t)(pow(2, 10) * pos.x / fabs(pos.x))) & 0x7FF) << 21;  // bits 31-21 x position in cm
       }
 
       if (fabs(pos.y * 100) < pow(2, 10)) {
         pos_xyz |= (((uint32_t)(pos.y * 100.0)) & 0x7FF) << 10;                    // bits 20-10 y position in cm
       } else {
-        printf("Warning!! Y position out of maximum range of small message (±%.2fm): %.2f", pow(2, 10) / 100, pos.y);
+        fprintf(stderr, "Warning!! Y position out of maximum range of small message (±%.2fm): %.2f", pow(2, 10) / 100, pos.y);
         pos_xyz |= (((uint32_t)(pow(2, 10) * pos.y / fabs(pos.y))) & 0x7FF) << 10; // bits 20-10 y position in cm
       }
 
       if (pos.z * 100 < pow(2, 10)) {
         pos_xyz |= (((uint32_t)(pos.z * 100.0)) & 0x3FF);                          // bits 9-0 z position in cm
       } else {
-        printf("Warning!! Z position out of maximum range of small message (%.2fm): %.2f", pow(2, 10) / 100, pos.z);
+        fprintf(stderr,"Warning!! Z position out of maximum range of small message (%.2fm): %.2f", pow(2, 10) / 100, pos.z);
         pos_xyz |= (((uint32_t)(pow(2, 10))) & 0x3FF);                             // bits 9-0 z position in cm
       }
       // printf("ENU Pos: %u (%.2f, %.2f, %.2f)\n", pos_xyz, pos.x, pos.y, pos.z);
 
       if (log_exists == 0) {
-        printf("Open natnet_log.dat for writing.\n");
+        fprintf(stderr,"Open natnet_log.dat for writing.\n");
         fp = fopen("natnet_log.dat", "a");
         log_exists = 1;
       }
       if (fp == NULL) {
-        printf("I couldn't open natnet_log.dat for writing.\n");
+        fprintf(stderr, "I couldn't open natnet_log.dat for writing.\n");
         exit(0);
       }
 
@@ -558,21 +558,21 @@ gboolean timeout_transmit_callback(gpointer data)
       if (fabs(speed.x * 100) < pow(2, 10)) {
         speed_xyz = (((uint32_t)(speed.x * 100.0)) & 0x7FF) << 21;                       // bits 31-21 speed x in cm/s
       } else {
-        printf("Warning!! X Speed out of maximum range of small message (±%.2fm/s): %.2f", pow(2, 10) / 100, speed.x);
+        fprintf(stderr, "Warning!! X Speed out of maximum range of small message (±%.2fm/s): %.2f", pow(2, 10) / 100, speed.x);
         speed_xyz = (((uint32_t)(pow(2, 10) * speed.x / fabs(speed.x))) & 0x7FF) << 21;  // bits 31-21 speed x in cm/s
       }
 
       if (fabs(speed.y * 100) < pow(2, 10)) {
         speed_xyz |= (((uint32_t)(speed.y * 100.0)) & 0x7FF) << 10;                      // bits 20-10 speed y in cm/s
       } else {
-        printf("Warning!! Y Speed out of maximum range of small message (±%.2fm/s): %.2f", pow(2, 10) / 100, speed.y);
+        fprintf(stderr, "Warning!! Y Speed out of maximum range of small message (±%.2fm/s): %.2f", pow(2, 10) / 100, speed.y);
         speed_xyz |= (((uint32_t)(pow(2, 10) * speed.y / fabs(speed.y))) & 0x7FF) << 10; // bits 20-10 speed y in cm/s
       }
 
       if (fabs(pos.z * 100) < pow(2, 9)) {
         speed_xyz |= (((uint32_t)(speed.z * 100.0)) & 0x3FF);                            // bits 9-0 speed z in cm/s
       } else {
-        printf("Warning!! Z Speed out of maximum range of small message (±%.2fm/s): %.2f", pow(2, 9) / 100, speed.z);
+        fprintf(stderr, "Warning!! Z Speed out of maximum range of small message (±%.2fm/s): %.2f", pow(2, 9) / 100, speed.z);
         speed_xyz |= (((uint32_t)(pow(2, 9) * speed.z / fabs(speed.z))) & 0x3FF);       // bits 9-0 speed z in cm/s
       }
 
