@@ -535,7 +535,7 @@ gboolean timeout_transmit_callback(gpointer data)
       if (pos.z * 100 < pow(2, 10)) {
         pos_xyz |= (((uint32_t)(pos.z * 100.0)) & 0x3FF);                          // bits 9-0 z position in cm
       } else {
-        fprintf(stderr,"Warning!! Z position out of maximum range of small message (%.2fm): %.2f", pow(2, 10) / 100, pos.z);
+        fprintf(stderr, "Warning!! Z position out of maximum range of small message (%.2fm): %.2f", pow(2, 10) / 100, pos.z);
         pos_xyz |= (((uint32_t)(pow(2, 10))) & 0x3FF);                             // bits 9-0 z position in cm
       }
       // printf("ENU Pos: %u (%.2f, %.2f, %.2f)\n", pos_xyz, pos.x, pos.y, pos.z);

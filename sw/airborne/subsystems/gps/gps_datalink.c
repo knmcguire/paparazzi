@@ -27,10 +27,7 @@
  * GPS structure to the values received.
  */
 
-#include "messages.h"
-#include "generated/airframe.h"           // AC_ID
 #include "generated/flight_plan.h"        // reference lla NAV_XXX0
-#include "subsystems/datalink/downlink.h"
 
 #include "subsystems/gps.h"
 #include "subsystems/abi.h"
@@ -98,20 +95,19 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   ecef_of_enu_vect_i(&gps.ecef_vel , &ltp_def , &enu_speed);
   SetBit(gps.valid_fields, GPS_VALID_VEL_ECEF_BIT);
 
-  // todo check correct
-  gps.ned_vel.x = enu_speed.x;
-  gps.ned_vel.y = enu_speed.y;
+  gps.ned_vel.x = enu_speed.y;
+  gps.ned_vel.y = enu_speed.x;
   gps.ned_vel.z = -enu_speed.z;
   SetBit(gps.valid_fields, GPS_VALID_VEL_NED_BIT);
 
   gps.hmsl = ltp_def.hmsl + enu_pos.z * 10;
   SetBit(gps.valid_fields, GPS_VALID_HMSL_BIT);
 
-  gps.course = ((int32_t)heading)*1e3;
+  gps.course = ((int32_t)heading) * 1e3;
   SetBit(gps.valid_fields, GPS_VALID_COURSE_BIT);
 
   gps.num_sv = num_sv;
-  gps.tow = gps_tow_from_sys_ticks(sys_time.nb_tick);	// todo check
+  gps.tow = gps_tow_from_sys_ticks(sys_time.nb_tick);
   gps.fix = GPS_FIX_3D; // set 3D fix to true
   gps_available = TRUE; // set GPS available to true
 
@@ -149,9 +145,9 @@ void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t e
   gps.ecef_vel.z = ecef_zd;
   SetBit(gps.valid_fields, GPS_VALID_VEL_ECEF_BIT);
 
-  struct LtpDef_i ref_ltp;
-  ltp_def_from_ecef_i(&ref_ltp, &gps.ecef_pos);
-  ned_of_ecef_vect_i(&gps.ned_vel, &ref_ltp, &gps.ecef_vel);
+  gps.ned_vel.x = enu_speed.y;
+  gps.ned_vel.y = enu_speed.x;
+  gps.ned_vel.z = -enu_speed.z;
   SetBit(gps.valid_fields, GPS_VALID_VEL_NED_BIT);
 
   gps.course = course;
