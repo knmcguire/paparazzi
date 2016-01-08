@@ -32,15 +32,17 @@
 #define NB_ACS_ID 256
 #define NB_ACS 24
 
+#include <inttypes.h>
+
 struct ac_info_ {
   uint8_t ac_id;
-  float east; /* m relative to nav_utm_east0 */
-  float north; /* m relative to nav_utm_north0 */
+  float east;   /* m relative to nav_utm_east0 */
+  float north;  /* m relative to nav_utm_north0 */
   float course; /* rad (CW) */
-  float alt; /* m */
+  float alt;    /* m */
   float gspeed; /* m/s */
-  float climb; /* m/s */
-  uint32_t itow; /* ms */
+  float climb;  /* m/s */
+  uint32_t itow;/* ms */
 };
 
 extern uint8_t acs_idx;
@@ -50,9 +52,10 @@ extern struct ac_info_ the_acs[NB_ACS];
 extern void traffic_info_init(void);
 struct ac_info_ *get_ac_info(uint8_t id);
 
-void SetAcInfo(uint8_t _id, float _utm_x /*m*/, float _utm_y /*m*/, float _course/*rad(CW)*/, float _alt/*m*/, float _gspeed/*m/s*/, float _climb, uint32_t _itow);
-// todo define units
-void SetAcInfoLLA(uint8_t id, uint32_t lat, uint32_t lon, uint32_t alt, uint32_t course, uint16_t gspeed, uint16_t climb,
-               uint32_t tow);
+void SetAcInfo(uint8_t _id, float _utm_x /*m*/, float _utm_y /*m*/, float _course/*rad(CW)*/, float _alt/*m*/,
+               float _gspeed/*m/s*/, float _climb, uint32_t _itow/*ms*/);
+void SetAcInfoLLA(uint8_t _id, int32_t lat/*1e7deg*/, int32_t lon/*1e7deg*/, int32_t alt/*mm*/,
+                  int16_t course/*decideg*/, uint16_t gspeed/*cm/s*/, int16_t climb/*cm/s*/,
+                  uint32_t itow/*ms*/);
 
 #endif

@@ -110,15 +110,26 @@ void dl_parse_msg(void)
 
       case DL_GPS: {
         SetAcInfo(sender_id,
-                  MOfCm(DL_GPS_utm_east(dl_buffer)),    /*m*/
-                  MOfCm(DL_GPS_utm_north(dl_buffer)),   /*m*/
-                  RadOfDeg(((float)DL_GPS_course(dl_buffer)) / 10.), /*rad(CW)*/
-                  MOfCm(DL_GPS_alt(dl_buffer)),        /*m*/
-                  MOfCm(DL_GPS_speed(dl_buffer)),       /*m/s*/
-                  MOfCm(DL_GPS_climb(dl_buffer)),       /*m/s*/
-                  (uint32_t)DL_GPS_itow(dl_buffer));
-        break;
+          MOfCm(DL_GPS_utm_east(dl_buffer)),    /*m*/
+          MOfCm(DL_GPS_utm_north(dl_buffer)),   /*m*/
+          RadOfDeg(((float)DL_GPS_course(dl_buffer)) / 10.), /*rad(CW)*/
+          MOfCm(DL_GPS_alt(dl_buffer)),        /*m*/
+          MOfCm(DL_GPS_speed(dl_buffer)),       /*m/s*/
+          MOfCm(DL_GPS_climb(dl_buffer)),       /*m/s*/
+          (uint32_t)DL_GPS_itow(dl_buffer));
       }
+      break;
+      case DL_GPS_LLA: {
+        SetAcInfoLLA(sender_id,
+          DL_GPS_LLA_lat(dl_buffer),    /*1e7deg*/
+          DL_GPS_LLA_lon(dl_buffer),    /*1e7deg*/
+          DL_GPS_LLA_alt(dl_buffer),    /*mm*/
+          DL_GPS_LLA_course(dl_buffer), /*decideg*/
+          DL_GPS_LLA_speed(dl_buffer),  /*cm/s*/
+          DL_GPS_LLA_climb(dl_buffer),  /*cm/s*/
+          DL_GPS_LLA_itow(dl_buffer));  /*ms*/
+      }
+      break;
 #endif
       default: {
         break;
@@ -129,6 +140,7 @@ void dl_parse_msg(void)
 
   /* parse telemetry messages coming from ground station */
   switch (msg_id) {
+
     case  DL_PING: {
       DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
     }
