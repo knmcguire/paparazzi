@@ -95,7 +95,7 @@ void swarm_potential_init(void)
   force_speed_gain = FORCE_SPEED_GAIN;
   force_climb_gain = FORCE_CLIMB_GAIN;
 
-  AbiBindMsgBLUEGIGA_RSSI(ABI_BROADCAST, &ev, rssi_cb);
+  AbiBindMsgRSSI(ABI_BROADCAST, &ev, rssi_cb);
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_POTENTIAL, send_periodic);
@@ -110,6 +110,8 @@ void swarm_potential_periodic(void) {
       potential_force.east = ac->east;
       potential_force.north = ac->north;
       potential_force.alt = ac->alt;
+      potential_force.speed_x = ((float)ac->itow)/1000.;
+      potential_force.speed_z = the_acs[i].ac_id;
   }
 
   /* The GPS messages are most likely too large to be send over either the datalink

@@ -56,6 +56,10 @@ void gps_impl_init(void)
   struct EcefCoor_i ecef_nav0;
   ecef_of_lla_i(&ecef_nav0, &llh_nav0);
   ltp_def_from_ecef_i(&ltp_def, &ecef_nav0);
+
+  gps_time_sync.t0_ticks = sys_time.nb_tick;
+  gps_time_sync.t0_tow = 0;
+  gps_time_sync.t0_tow_frac = 0;
 }
 
 // Parse the REMOTE_GPS_SMALL datalink packet

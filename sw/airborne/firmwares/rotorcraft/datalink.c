@@ -98,13 +98,13 @@ void dl_parse_msg(void)
         }
 
         SetAcInfo(sender_id,
-                  MOfCm(DL_GPS_SMALL_utm_east(dl_buffer)),    /*m*/
-                  MOfCm(DL_GPS_SMALL_utm_north(dl_buffer)),   /*m*/
-                  RadOfDeg(((float)course) / 10.),                     /*rad(CW)*/
-                  MOfCm(DL_GPS_SMALL_alt(dl_buffer)),         /*m*/
-                  MOfCm(gspeed),                                       /*m/s*/
-                  MOfCm(climb),                                        /*m/s*/
-                  gps_tow_from_sys_ticks(sys_time.nb_tick));
+          MOfCm(DL_GPS_SMALL_utm_east(dl_buffer)),    /*m*/
+          MOfCm(DL_GPS_SMALL_utm_north(dl_buffer)),   /*m*/
+          RadOfDeg(((float)course) / 10.),            /*rad(CW)*/
+          MOfCm(DL_GPS_SMALL_alt(dl_buffer)),         /*m*/
+          MOfCm(gspeed),                              /*m/s*/
+          MOfCm(climb),                               /*m/s*/
+          gps_tow_from_sys_ticks(sys_time.nb_tick));
         break;
       }
 
