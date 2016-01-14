@@ -286,6 +286,9 @@ void bluegiga_receive(struct spi_transaction *trans)
           packet_len = trans->input_buf[0];
           read_offset = 1;
         } else if (trans->input_buf[0] > 0xff - trans->input_length) { // broadcast mode
+#ifdef MODEM_LED
+      LED_TOGGLE(MODEM_LED);
+#endif
           packet_len = 0xff - trans->input_buf[0];
 
           int8_t tx_strength = TxStrengthOfSender(trans->input_buf);
@@ -302,9 +305,9 @@ void bluegiga_receive(struct spi_transaction *trans)
 
     // handle incoming datalink message
     if (packet_len > 0 && packet_len <= trans->input_length - read_offset) {
-#ifdef MODEM_LED
-      LED_TOGGLE(MODEM_LED);
-#endif
+//#ifdef MODEM_LED
+//      LED_TOGGLE(MODEM_LED);
+//#endif
       // Handle received message
       for (uint8_t i = 0; i < packet_len; i++) {
         bluegiga_p.rx_buf[(bluegiga_p.rx_insert_idx + i) % BLUEGIGA_BUFFER_SIZE] = trans->input_buf[i + read_offset];

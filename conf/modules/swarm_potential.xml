@@ -3,15 +3,42 @@
 <module name="swarm_potential" dir="multi">
   <doc>
     <description>
-      Potential fields collision avoidance.
+      Potential fields swarm flocking.
     </description>
+    <!-- Satbilization parameters and gains -->
+    <section name="SWARM_POTENTIAL" prefix="SWARM_">
+      <define name="PHI_PGAIN" value="400" description="Optic flow proportional gain on the roll velocity error"/>
+      <define name="PHI_IGAIN" value="20" description="Optic flow integrated gain on the summed roll velocity error"/>
+      <define name="THETA_PGAIN" value="400" description="Optic flow proportional gain on the pitch velocity error"/>
+      <define name="THETA_IGAIN" value="20" description="Optic flow integrated gain on the summed pitch velocity error"/>
+    </section>
   </doc>
+    <settings>
+	<dl_settings NAME="Vision stabilization">
+      <!-- Satabilization loop parameters and gains -->
+      <dl_settings name="swarm_stab">
+        <dl_setting var="swarm_stab.phi_pgain" module="multi/swarm_potential" min="0" step="1" max="10000" shortname="kp_v_phi" param="SWARM_POT_PHI_PGAIN"/>
+        <dl_setting var="swarm_stab.phi_igain" module="multi/swarm_potential" min="0" step="1" max="1000" shortname="ki_v_phi" param="SWARM_POT_PHI_IGAIN"/>
+        <dl_setting var="swarm_stab.theta_pgain" module="multi/swarm_potential" min="0" step="1" max="10000" shortname="kp_v_theta" param="SWARM_POT_THETA_PGAIN"/>
+        <dl_setting var="swarm_stab.theta_igain" module="multi/swarm_potential" min="0" step="1" max="1000" shortname="ki_v_theta" param="SWARM_POT_THETA_IGAIN"/>
+        <dl_setting var="force_hor_gain" module="multi/swarm_potential" min="0" step="1" max="1000" shortname="pot_h_gain" param="FORCE_HOR_GAIN"/>
+        <dl_setting var="force_climb_gain" module="multi/swarm_potential" min="0" step="1" max="1000" shortname="pot_v_gain" param="FORCE_CLIMB_GAIN"/>
+        <dl_setting var="target_dist3" module="multi/swarm_potential" min="0.5" step="0.5" max="3" shortname="swarm_dist" param="TARGET_DIST3"/>
+      </dl_settings>
+    </dl_settings>
+  </settings>
+  
   <header>
     <file name="swarm_potential.h"/>
   </header>
   <init fun="swarm_potential_init()"/>
   <periodic fun="swarm_potential_periodic()" freq="5" autorun="TRUE"/>
+  <periodic fun="swarm_potential_task()" freq="10" autorun="TRUE"/>
   <makefile>
     <file name="swarm_potential.c"/>
+    <raw>
+      ap.CFLAGS += -DGUIDANCE_V_MODE_MODULE_SETTING=GUIDANCE_V_MODE_HOVER
+      ap.CFLAGS += -DGUIDANCE_H_MODE_MODULE_SETTING=GUIDANCE_H_MODE_MODULE
+    </raw>
   </makefile>
 </module>

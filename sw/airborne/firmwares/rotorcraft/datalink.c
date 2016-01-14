@@ -105,8 +105,14 @@ void dl_parse_msg(void)
           MOfCm(gspeed),                              /*m/s*/
           MOfCm(climb),                               /*m/s*/
           gps_tow_from_sys_ticks(sys_time.nb_tick));
-        break;
+
+          int32_t east = DL_GPS_SMALL_utm_east(dl_buffer);
+          int32_t north = DL_GPS_SMALL_utm_north(dl_buffer);
+          int16_t alt = DL_GPS_SMALL_alt(dl_buffer);
+
+          DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &east, &north, &alt);
       }
+      break;
 
       case DL_GPS: {
         SetAcInfo(sender_id,

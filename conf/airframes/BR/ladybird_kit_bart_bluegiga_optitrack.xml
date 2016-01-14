@@ -193,6 +193,14 @@
   <section name="MISC">
     <define name="ARRIVED_AT_WAYPOINT" value="0.2"/>
   </section>
+  
+  <section name="SWARM_POTENTIAL" prefix="SWARM_">
+	<define name="HOVER" value="FALSE"/>
+    <define name="PHI_PGAIN" value="300"/>
+    <define name="PHI_IGAIN" value="0"/>
+    <define name="THETA_PGAIN" value="300"/>
+    <define name="THETA_IGAIN" value="0"/>
+  </section>
 
  <section name="SIMULATOR" prefix="NPS_">
    <define name="ACTUATOR_NAMES" value="ne_motor, se_motor, sw_motor, nw_motor" type="string[]"/>
