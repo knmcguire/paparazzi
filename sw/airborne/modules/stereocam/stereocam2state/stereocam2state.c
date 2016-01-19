@@ -86,6 +86,8 @@ void stereocam_to_state(float dphi, float dtheta)
   float vel_ver = ((float)(stereocam_data.data[9]) - 127) / 100;
   float vel_x = 0;
   float vel_y = 0;
+
+  float alt_stereo = ((float)(stereocam_data.data[4])) / 10;
   //rotate to body coordinates
   vel_x = - (vel_ver);
   vel_y = (vel_hor);
@@ -143,14 +145,14 @@ void stereocam_to_state(float dphi, float dtheta)
   float vel_x_error = vel_x_opti - vel_x;
   float vel_y_error = vel_y_opti - vel_y;
 
-  stereocam_data.data[8] = (uint8_t)((vel_x * 10) + 127); // dm/s
+ /* stereocam_data.data[8] = (uint8_t)((vel_x * 10) + 127); // dm/s
   stereocam_data.data[9] = (uint8_t)((vel_y * 10) + 127); // dm/s
   stereocam_data.data[19] = (uint8_t)((vel_x_opti) * 10 + 127); // dm/s
   stereocam_data.data[20] = (uint8_t)((vel_y_opti) * 10 + 127); // dm/s
   stereocam_data.data[21] = (uint8_t)((vel_x_error) * 10 + 127); // dm/s
   stereocam_data.data[22] = (uint8_t)((vel_y_error) * 10 + 127); // dm/s
   stereocam_data.data[23] = (uint8_t)((velocity_rot_state.x) * 10 + 127); // dm/s
-  stereocam_data.data[24] = (uint8_t)((velocity_rot_state.y) * 10 + 127); // dm/s
+  stereocam_data.data[24] = (uint8_t)((velocity_rot_state.y) * 10 + 127); // dm/s*/
 
   //todo: retrieve optitrack in int16
   int16_t vel_x_opti_int = (int16_t)(vel_x_opti * 100);
@@ -174,5 +176,8 @@ void stereocam_to_state(float dphi, float dtheta)
                                 0.3f
                                );
   }
+
+ // if (stateGetPositionNed_f()->z < -0.5)
+  AbiSendMsgAGL(SENDER_ID, alt_stereo);
 
 }

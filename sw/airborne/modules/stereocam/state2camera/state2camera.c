@@ -41,9 +41,10 @@ void write_serial_rot()
   /* for (int indexRot = 0; indexRot < 9; indexRot++) {
      pointer[indexRot] = ltp_to_body_mat->m[indexRot];
    }*/
-  ar[0] = (uint8_t)(stateGetNedToBodyEulers_f()->phi * 50 + 127);
-  ar[1] = (uint8_t)(30);//(30stateGetNedToBodyEulers_f()->theta*50+127);
-  ar[2] = (uint8_t)(40);//stateGetNedToBodyEulers_f()->psi*50+127);
+  ar[0] = (uint8_t)(stateGetNedToBodyEulers_f()->phi * 100 + 127);
+  ar[1] = (uint8_t)(stateGetNedToBodyEulers_f()->theta * 100 +127);
+  ar[2] = (uint8_t)(stateGetNedToBodyEulers_f()->psi* 100 +127);
+  ar[3] = (uint8_t)(stateGetPositionNed_f()->z* 100 +127);
 
   //pointer[9] = (int32_t)(state.alt_agl_f * 100);  //height above ground level in CM.
   pointer[10] = frame_number_sending++;

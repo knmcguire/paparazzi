@@ -225,6 +225,7 @@
 
   <firmware name="rotorcraft">
     <target name="ap" board="lisa_s_1.0">
+    <define name="USE_SONAR" value="TRUE"/>
       <subsystem name="radio_control" type="datalink">
       </subsystem>
       <configure name="USE_MAGNETOMETER" value="0"/>
@@ -256,7 +257,9 @@
     <subsystem name="gps" type="datalink"/>
     <subsystem name="stabilization" type="int_quat"/>
     <subsystem name="ahrs" type="int_cmpl_quat"/>
-    <subsystem name="ins">
+    <subsystem name="ins" type="extended">
+       <define name="VFF_R_SONAR_0" value="0.5"/>
+       <define name="VFF_R_SONAR_M" value="0.2"/>
        <define name="INS_INT_GPS_ID" value="ABI_DISABLE"/>
     </subsystem>
   </firmware>
