@@ -430,13 +430,13 @@ void nav_periodic_task(void)
 
 void navigation_update_wp_from_speed(uint8_t wp, struct Int16Vect3 speed_sp, int16_t heading_rate_sp)
 {
-  //  MY_ASSERT(wp < nb_waypoint); FIXME
+  if(wp > nb_waypoint) {return;}
   int32_t s_heading, c_heading;
   PPRZ_ITRIG_SIN(s_heading, nav_heading);
   PPRZ_ITRIG_COS(c_heading, nav_heading);
   // FIXME : scale POS to SPEED
   struct Int32Vect3 delta_pos;
-  VECT3_SDIV(delta_pos, speed_sp, NAV_FREQ); /* fixme :make sure the division is really a >> */
+  VECT3_SDIV(delta_pos, speed_sp, NAV_FREQ);
   INT32_VECT3_RSHIFT(delta_pos, delta_pos, (INT32_SPEED_FRAC - INT32_POS_FRAC));
   waypoints[wp].enu_i.x += (s_heading * delta_pos.x + c_heading * delta_pos.y) >> INT32_TRIG_FRAC;
   waypoints[wp].enu_i.y += (c_heading * delta_pos.x - s_heading * delta_pos.y) >> INT32_TRIG_FRAC;

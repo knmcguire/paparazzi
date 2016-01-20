@@ -27,16 +27,18 @@
 #include "subsystems/gps.h"
 #include "subsystems/gps/gps_datalink.h"
 #include "subsystems/datalink/downlink.h"
-#include "guidance/guidance_h.h"
-#include "guidance/guidance_v.h"
+//#include "guidance/guidance_h.h"
+//#include "guidance/guidance_v.h"
 #include "state.h"
 #include "navigation.h"
 
 #include "generated/flight_plan.h"
 
-#include "math/pprz_algebra_float.h"
-#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
-#include "firmwares/rotorcraft/guidance/guidance_v.h"
+//#include "math/pprz_algebra_float.h"
+//#include "math/pprz_algebra_int.h"
+//#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
+//#include "firmwares/rotorcraft/guidance/guidance_v.h"
+
 #include "autopilot.h"
 
 #include "subsystems/navigation/traffic_info.h"
@@ -66,6 +68,10 @@ float target_dist3;
 #define TARGET_DIST3 1.
 #endif
 
+#ifndef SP_WP
+#define SP_WP WP_STDBY
+#endif
+
 abi_event ev;
 
 void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi);
@@ -73,44 +79,6 @@ void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _
   tx_strength[the_acs_id[_ac_id]] = _tx_strength;
   rssi[the_acs_id[_ac_id]] = _rssi;
 }
-
-#define CMD_OF_SAT  1500 // 40 deg = 2859.1851
-
-#ifndef SWARM_PHI_PGAIN
-#define SWARM_PHI_PGAIN 400
-#endif
-////PRINT_CONFIG_VAR(SWARM_PHI_PGAIN)
-
-#ifndef SWARM_PHI_IGAIN
-#define SWARM_PHI_IGAIN 20
-#endif
-//PRINT_CONFIG_VAR(SWARM_PHI_IGAIN)
-
-#ifndef SWARM_THETA_PGAIN
-#define SWARM_THETA_PGAIN 400
-#endif
-//PRINT_CONFIG_VAR(SWARM_THETA_PGAIN)
-
-#ifndef SWARM_THETA_IGAIN
-#define SWARM_THETA_IGAIN 20
-#endif
-//PRINT_CONFIG_VAR(SWARM_THETA_IGAIN)
-
-/* Check the control gains */
-#if (SWARM_PHI_PGAIN < 0)      ||  \
-  (SWARM_PHI_IGAIN < 0)        ||  \
-  (SWARM_THETA_PGAIN < 0)      ||  \
-  (SWARM_THETA_IGAIN < 0)
-#error "ALL control gains have to be positive!!!"
-#endif
-
-/* Initialize the default gains and settings */
-struct swarm_stab_t swarm_stab = {
-  .phi_pgain = SWARM_PHI_PGAIN,
-  .phi_igain = SWARM_PHI_IGAIN,
-  .theta_pgain = SWARM_THETA_PGAIN,
-  .theta_igain = SWARM_THETA_IGAIN
-};
 
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
@@ -121,50 +89,6 @@ static void send_periodic(struct transport_tx *trans, struct link_device *dev) {
 }
 
 #endif
-
-/**
- * Initialization of horizontal guidance module.
- */
-void guidance_h_module_init(void)
-{
-}
-
-/**
- * Horizontal guidance mode enter resets the errors
- * and starts the controller.
- */
-void guidance_h_module_enter(void)
-{
-  /* Reset the integrated errors */
-  swarm_stab.err_vx_int = 0;
-  swarm_stab.err_vy_int = 0;
-
-  /* Set roll/pitch to 0 degrees and psi to current heading */
-  swarm_stab.cmd.phi = 0;
-  swarm_stab.cmd.theta = 0;
-  swarm_stab.cmd.psi = stateGetNedToBodyEulers_i()->psi;
-}
-
-/**
- * Read the RC commands
- */
-void guidance_h_module_read_rc(void)
-{
-}
-
-/**
- * Main guidance loop
- * @param[in] in_flight Whether we are in flight or not
- */
-void guidance_h_module_run(bool_t in_flight)
-{
-  /* Update the setpoint */
-  stabilization_attitude_set_rpy_setpoint_i(&swarm_stab.cmd);
-
-  /* Run the default attitude stabilization */
-  stabilization_attitude_run(in_flight);
-}
-
 void swarm_potential_init(void)
 {
   potential_force.east = 0.;
@@ -205,8 +129,7 @@ void swarm_potential_periodic(void) {
 
 int swarm_potential_task(void)
 {
-  swarm_stab.desired_vx = 0.;
-  swarm_stab.desired_vy = 0.;
+  struct EnuCoor_f speed_sp = {.x=0., .y=0., .z=0.};
 
   // compute desired velocity
   int8_t nb = 0;
@@ -226,19 +149,19 @@ int swarm_potential_task(void)
       float de = ac->east - my_pos.east; // + sha * delta_t
       float dn = ac->north - my_pos.north; // cha * delta_t
       float da = ac->alt - my_pos.alt; // ac->climb * delta_t
-      float dist2 = de * de + dn * dn + da * da;
-      if (dist2 == 0.) { continue; }
+      //float dist2 = de * de + dn * dn + da * da;
+      if (de == 0. || dn == 0. || da == 0.) { continue; }
 
       // attractive - repulsive
-      // x^2 - d0^3/x
+      // potential force equation: x^2 - d0^3/x
       potential_force.east = de*de - TARGET_DIST3/de;
       potential_force.north = dn*dn - TARGET_DIST3/dn;
       potential_force.alt = da*da - TARGET_DIST3/da;
 
       // carrot
-      swarm_stab.desired_vx += -force_hor_gain * potential_force.east + ac->gspeed * sha;   // add other speed for cohesion
-      swarm_stab.desired_vy += -force_hor_gain * potential_force.north + ac->gspeed * cha;
-      //potential_force.speed_z += -force_climb_gain * potential_force.alt + ac->climb;
+      speed_sp.x += -force_hor_gain * potential_force.east + ac->gspeed * sha;   // add other speed for cohesion
+      speed_sp.y += -force_hor_gain * potential_force.north + ac->gspeed * cha;
+      speed_sp.z += -force_climb_gain * potential_force.alt + ac->climb;
 
       ++nb;
       potential_force.east = my_pos.east;
@@ -247,46 +170,29 @@ int swarm_potential_task(void)
    // }
   }
 
-  potential_force.speed = swarm_stab.desired_vx;
-  potential_force.climb = swarm_stab.desired_vy;
+  potential_force.speed = speed_sp.x;
+  potential_force.climb = speed_sp.y;
+
   // limit commands
 #ifdef GUIDANCE_H_REF_MAX_SPEED
-  BoundAbs(swarm_stab.desired_vx, GUIDANCE_H_REF_MAX_SPEED);
-  BoundAbs(swarm_stab.desired_vy, GUIDANCE_H_REF_MAX_SPEED);
+  BoundAbs(speed_sp.x, GUIDANCE_H_REF_MAX_SPEED);
+  BoundAbs(speed_sp.y, GUIDANCE_H_REF_MAX_SPEED);
+  BoundAbs(speed_sp.z, GUIDANCE_H_REF_MAX_SPEED);
 #endif
 
-  // set commands
-  /* Check if we are in the correct AP_MODE before setting commands */
-  if (autopilot_mode != AP_MODE_MODULE) {
-    return -1;
-  }
+  autopilot_guided_move_ned(speed_sp.x, speed_sp.y, 0, 0);
+  /*
+  struct EnuCoor_f delta_pos;
+  VECT3_SDIV(delta_pos, speed_sp, NAV_FREQ);
 
-  // get velocity in body coordinates
-  //struct FloatVect3 *ned_vel = (struct FloatVect3)stateGetSpeedNed_f();
-  struct FloatVect3 vel;
+  struct EnuCoor_f new_wp;
+  new_wp.x = waypoint_get_x(SP_WP) + delta_pos.x;
+  new_wp.y = waypoint_get_y(SP_WP) + delta_pos.y;
+  new_wp.z = waypoint_get_alt(SP_WP) + delta_pos.z;
 
-  float_rmat_vmult(&vel, stateGetNedToBodyRMat_f(), (struct FloatVect3*)stateGetSpeedNed_f());
 
-  /* Calculate the error */
-  float err_vx = swarm_stab.desired_vx - vel.x;
-  float err_vy = swarm_stab.desired_vy - vel.y;
-
-  /* Calculate the integrated errors */
-  swarm_stab.err_vx_int += err_vx / 512;
-  swarm_stab.err_vy_int += err_vy / 512;
-
-  BoundAbs(swarm_stab.err_vx_int, CMD_OF_SAT);
-  BoundAbs(swarm_stab.err_vy_int, CMD_OF_SAT);
-
-  /* Calculate the commands */
-  swarm_stab.cmd.phi   = swarm_stab.phi_pgain * err_vy
-                             + swarm_stab.phi_igain * swarm_stab.err_vy_int;
-  swarm_stab.cmd.theta = -(swarm_stab.theta_pgain * err_vx
-                               + swarm_stab.theta_igain * swarm_stab.err_vx_int);
-
-  /* Bound the roll and pitch commands */
-  BoundAbs(swarm_stab.cmd.phi, CMD_OF_SAT);
-  BoundAbs(swarm_stab.cmd.theta, CMD_OF_SAT);
+  waypoint_set_enu(SP_WP, &new_wp);*/
+  //navigation_update_wp_from_speed(, speed_sp, 0);
 
   return 1;
 }
