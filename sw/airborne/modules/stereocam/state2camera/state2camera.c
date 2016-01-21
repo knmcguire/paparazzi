@@ -28,6 +28,8 @@
 #include "subsystems/abi.h"
 #include "state.h"
 #include "mcu_periph/uart.h"
+#include "subsystems/imu.h"
+#include "math/pprz_algebra_int.h"
 static int frame_number_sending = 0;
 float lastKnownHeight = 0.0;
 int pleaseResetOdroid = 0;
@@ -35,16 +37,30 @@ int pleaseResetOdroid = 0;
 void write_serial_rot()
 {
   struct Int32RMat *ltp_to_body_mat = stateGetNedToBodyRMat_i();
-  static int32_t lengthArrayInformation = 11 * sizeof(int32_t);
+  static int16_t lengthArrayInformation = 11 * sizeof(int16_t);
   uint8_t ar[lengthArrayInformation];
-  int32_t *pointer = (int32_t *) ar;
+  int16_t *pointer = (int16_t *) ar;
   /* for (int indexRot = 0; indexRot < 9; indexRot++) {
      pointer[indexRot] = ltp_to_body_mat->m[indexRot];
    }*/
-  ar[0] = (uint8_t)(stateGetNedToBodyEulers_f()->phi * 100 + 127);
-  ar[1] = (uint8_t)(stateGetNedToBodyEulers_f()->theta * 100 +127);
-  ar[2] = (uint8_t)(stateGetNedToBodyEulers_f()->psi* 100 +127);
-  ar[3] = (uint8_t)(stateGetPositionNed_f()->z* 100 +127);
+  struct Int32Eulers  euler_angles, euler_rates;
+
+  INT32_EULERS_DOT_OF_RATES(euler_rates, euler_angles, imu.gyro );
+
+
+
+  pointer[0] = (int16_t)(stateGetNedToBodyEulers_f()->phi * 100);
+  pointer[1] = (int16_t)(stateGetNedToBodyEulers_f()->theta * 100);
+  pointer[2] = (int16_t)(stateGetNedToBodyEulers_f()->psi* 100 );
+
+  pointer[3] = (int16_t)(stateGetPositionNed_f()->z* 100 );
+
+
+  //pointer[4] = (int16_t)(RATE_FLOAT_OF_BFP(euler_rates.phi) * 100);
+ // pointer[5] = (int16_t)(RATE_FLOAT_OF_BFP(euler_rates.theta)* 100);
+  pointer[4] = (int16_t)(RATE_FLOAT_OF_BFP(imu.gyro.p) * 100);
+    pointer[5] = (int16_t)(RATE_FLOAT_OF_BFP(imu.gyro.q)* 100);
+
 
   //pointer[9] = (int32_t)(state.alt_agl_f * 100);  //height above ground level in CM.
   pointer[10] = frame_number_sending++;

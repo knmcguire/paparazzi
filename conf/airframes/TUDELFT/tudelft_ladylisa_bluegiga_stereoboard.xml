@@ -78,8 +78,8 @@
  <section name="AUTOPILOT">
    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
-   <define name="MODE_AUTO1" value="AP_MODE_HOVER_DIRECT"/>
-   <define name="MODE_AUTO2" value="AP_MODE_HOVER_DIRECT"/>
+   <define name="MODE_AUTO1" value="AP_MODE_HOVER_Z_HOLD"/>
+   <define name="MODE_AUTO2" value="AP_MODE_HOVER_Z_HOLD"/>
 
     <define name="USE_THROTTLE_FOR_MOTOR_ARMING" value="TRUE"/>
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
@@ -187,11 +187,12 @@
 
 
  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-   <define name="PGAIN" value="120"/>
+   <define name="PGAIN" value="95"/>
    <define name="DGAIN" value="40"/>
    <define name="IGAIN" value="0"/>
    <define name="REF_MAX_SPEED" value="0.5"/>
    <define name="USE_REF" value="FALSE"/>
+   <define name="USE_REF_SPEED" value="TRUE"/>
  </section>
 
   <section name="NAVIGATION" prefix="NAV_">
@@ -225,7 +226,7 @@
 
   <firmware name="rotorcraft">
     <target name="ap" board="lisa_s_1.0">
-    <define name="USE_SONAR" value="TRUE"/>
+
       <subsystem name="radio_control" type="datalink">
       </subsystem>
       <configure name="USE_MAGNETOMETER" value="0"/>
@@ -257,6 +258,7 @@
     <subsystem name="gps" type="datalink"/>
     <subsystem name="stabilization" type="int_quat"/>
     <subsystem name="ahrs" type="int_cmpl_quat"/>
+    <define name="USE_SONAR" value="FALSE"/>
     <subsystem name="ins" type="extended">
        <define name="VFF_R_SONAR_0" value="0.5"/>
        <define name="VFF_R_SONAR_M" value="0.2"/>
