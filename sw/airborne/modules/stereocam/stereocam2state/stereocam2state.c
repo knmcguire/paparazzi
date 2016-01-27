@@ -49,7 +49,7 @@ static void stereocam_gps_cb(uint8_t sender_id __attribute__((unused)),
 {
   gps_stereocam.ecef_vel.x = gps_s->ecef_vel.x;
   gps_stereocam.ecef_vel.y = gps_s->ecef_vel.y;
-  gps_stereocam.ecef_vel.z = gps_s->ecef_vel.y;
+  gps_stereocam.ecef_vel.z = gps_s->ecef_vel.z;
 
 }
 
@@ -128,8 +128,8 @@ void stereocam_to_state(float dphi, float dtheta)
   coordinates_speed_state.z = stateGetSpeedNed_f()->z;
 
   struct NedCoor_f opti_state;
-  opti_state.x = (float)(gps_stereocam.ecef_vel.y) / 100;
-  opti_state.y = (float)(gps_stereocam.ecef_vel.x) / 100;
+  opti_state.x = (float)(gps_stereocam.ecef_vel.x) / 100;
+  opti_state.y = (float)(gps_stereocam.ecef_vel.y) / 100;
   opti_state.z = -(float)(gps_stereocam.ecef_vel.z) / 100;
 
   struct FloatVect3 velocity_rot_state;
@@ -139,7 +139,7 @@ void stereocam_to_state(float dphi, float dtheta)
   float_rmat_vmult(&velocity_rot_gps , stateGetNedToBodyRMat_f(), (struct FloatVect3 *)&opti_state);
 
   float vel_x_opti = -((float)(velocity_rot_gps.y));
-  float vel_y_opti = ((float)(velocity_rot_gps.x));
+  float vel_y_opti = ((float)(velocity_rot_gps.z));
 
   // Calculate velocity error
   float vel_x_error = vel_x_opti - vel_x;
@@ -168,7 +168,7 @@ void stereocam_to_state(float dphi, float dtheta)
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
   uint32_t now_ts = get_sys_time_usec();
 
-  if (!(abs(vel_y_int) > 50 || abs(vel_x_int) > 50) || abs(dphi) > 0.05 || abs(dtheta) > 0.05) {
+  if ((!abs(vel_y_int) > 50 || !abs(vel_x_int) > 50)) {
     AbiSendMsgVELOCITY_ESTIMATE(SENDER_ID, now_ts,
                                 (float)vel_x_int / 100,
                                 (float)vel_y_int / 100,
