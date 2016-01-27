@@ -139,7 +139,7 @@ void stereocam_to_state(float dphi, float dtheta)
   float_rmat_vmult(&velocity_rot_gps , stateGetNedToBodyRMat_f(), (struct FloatVect3 *)&opti_state);
 
   float vel_x_opti = -((float)(velocity_rot_gps.y));
-  float vel_y_opti = ((float)(velocity_rot_gps.z));
+  float vel_y_opti = -((float)(velocity_rot_gps.x));
 
   // Calculate velocity error
   float vel_x_error = vel_x_opti - vel_x;
@@ -154,12 +154,15 @@ void stereocam_to_state(float dphi, float dtheta)
   stereocam_data.data[23] = (uint8_t)((velocity_rot_state.x) * 10 + 127); // dm/s
   stereocam_data.data[24] = (uint8_t)((velocity_rot_state.y) * 10 + 127); // dm/s*/
 
+  int16_t vel_x_state = (int16_t)(velocity_rot_state.x * 100);
+  int16_t vel_y_state = (int16_t)(velocity_rot_state.y * 100);
+
   //todo: retrieve optitrack in int16
   int16_t vel_x_opti_int = (int16_t)(vel_x_opti * 100);
   int16_t vel_y_opti_int = (int16_t)(vel_y_opti * 100);
   //Send measurement values in same structure as stereocam message for state measurements
   DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &frequency, &(stereocam_data.len), &vel_x_int, &vel_y_int,
-                           &vel_x_opti_int, &vel_y_opti_int, stereocam_data.len,
+                           &vel_x_opti_int, &vel_y_opti_int,&vel_x_state,&vel_y_state, stereocam_data.len,
                            stereocam_data.data);
 
 #endif
@@ -168,7 +171,7 @@ void stereocam_to_state(float dphi, float dtheta)
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
   uint32_t now_ts = get_sys_time_usec();
 
-  if ((!abs(vel_y_int) > 50 || !abs(vel_x_int) > 50)) {
+  if (!(abs(vel_y_int) > 100 || abs(vel_x_int) > 100)) {
     AbiSendMsgVELOCITY_ESTIMATE(SENDER_ID, now_ts,
                                 (float)vel_x_int / 100,
                                 (float)vel_y_int / 100,

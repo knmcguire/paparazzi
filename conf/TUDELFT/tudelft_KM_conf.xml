@@ -2,12 +2,25 @@
   <aircraft
    name="LadyLisaBluegiga"
    ac_id="114"
+   airframe="airframes/TUDELFT/tudelft_ladylisa_bluegiga_stereoboard.xml"
+   radio="radios/cockpitSX.xml"
+   telemetry="telemetry/default_rotorcraft_slow.xml"
+   flight_plan="flight_plans/rotorcraft_optitrack.xml"
+   settings="settings/rotorcraft_basic.xml settings/control/rotorcraft_guidance.xml settings/control/stabilization_rate.xml settings/estimation/body_to_imu.xml settings/control/stabilization_att_int_quat.xml settings/estimation/body_to_imu.xml"
+   settings_modules=""
+   gui_color="blue"
+  />
+
+  <aircraft
+   name="LadyLisaBluegigaindi"
+   ac_id="115"
    airframe="airframes/TUDELFT/tudelft_ladylisa_bluegiga_indi_stereoboard.xml"
    radio="radios/cockpitSX.xml"
    telemetry="telemetry/default_rotorcraft_slow.xml"
    flight_plan="flight_plans/rotorcraft_optitrack.xml"
-   settings="settings/rotorcraft_basic.xml settings/control/rotorcraft_guidance.xml settings/control/stabilization_rate.xml settings/estimation/body_to_imu.xml settings/control/stabilization_att_indi.xml settings/estimation/body_to_imu.xml"
+   settings="settings/rotorcraft_basic.xml settings/control/rotorcraft_guidance.xml settings/control/stabilization_rate.xml settings/estimation/body_to_imu.xml settings/control/stabilization_att_indi.xml "
    settings_modules=""
    gui_color="blue"
   />
+
 </conf>

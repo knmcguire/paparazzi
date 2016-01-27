@@ -35,6 +35,10 @@
 
 #include "generated/airframe.h"
 
+
+#include "filters/median_filter.h"
+
+struct MedianFilterInt filter;
 #if USE_VFF_EXTENDED
 #include "subsystems/ins/vf_extended_float.h"
 #else
@@ -188,7 +192,7 @@ static void ins_update_from_hff(void);
 
 void ins_int_init(void)
 {
-
+	init_median_filter(&filter);
 #if USE_INS_NAV_INIT
   ins_init_origin_from_flightplan();
   ins_int.ltp_initialized = TRUE;
@@ -554,8 +558,8 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
   ins_int.ltp_speed.x = SPEED_BFP_OF_REAL(vel_ned.x);
   ins_int.ltp_speed.y = SPEED_BFP_OF_REAL(vel_ned.y);
   if (last_stamp > 0) {
-    ins_int.ltp_pos.x = ins_int.ltp_pos.x + POS_BFP_OF_REAL(dt * vel_ned.x);
-    ins_int.ltp_pos.y = ins_int.ltp_pos.y + POS_BFP_OF_REAL(dt * vel_ned.y);
+    ins_int.ltp_pos.x = ins_int.ltp_pos.x + POS_BFP_OF_REAL(dt * update_median_filter(&filter,vel_ned.x));
+    ins_int.ltp_pos.y = ins_int.ltp_pos.y + POS_BFP_OF_REAL(dt * update_median_filter(&filter,vel_ned.y));
   }
 #endif
 

@@ -1988,6 +1988,8 @@
     <field name="vel_y" type="int16" unit="cm/s"/>
     <field name="vel_x_opti" type="int16" unit="cm/s"/>
     <field name="vel_y_opti" type="int16" unit="cm/s"/>
+    <field name="vel_x_state" type="int16" unit="cm/s"/>
+    <field name="vel_y_state" type="int16" unit="cm/s"/>
     <field name="imageBuffer" type="uint8[]"/>
   </message>
 
