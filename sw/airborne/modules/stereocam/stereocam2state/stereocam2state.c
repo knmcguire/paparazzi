@@ -51,6 +51,11 @@ static void stereocam_gps_cb(uint8_t sender_id __attribute__((unused)),
   gps_stereocam.ecef_vel.y = gps_s->ecef_vel.y;
   gps_stereocam.ecef_vel.z = gps_s->ecef_vel.z;
 
+  gps_stereocam.ecef_pos.x = gps_s->ecef_pos.x;
+  gps_stereocam.ecef_pos.y = gps_s->ecef_pos.y;
+  gps_stereocam.ecef_pos.z = gps_s->ecef_pos.z;
+
+
 }
 
 void stereo_to_state_init(void)
@@ -127,16 +132,19 @@ void stereocam_to_state(float dphi, float dtheta)
   coordinates_speed_state.y = stateGetSpeedNed_f()->y;
   coordinates_speed_state.z = stateGetSpeedNed_f()->z;
 
-  struct NedCoor_f opti_state;
-  opti_state.x = (float)(gps_stereocam.ecef_vel.x) / 100;
-  opti_state.y = (float)(gps_stereocam.ecef_vel.y) / 100;
-  opti_state.z = -(float)(gps_stereocam.ecef_vel.z) / 100;
+  struct NedCoor_f opti_vel, opti_pos;
+  opti_vel.x = (float)(gps_stereocam.ecef_vel.x) / 100;
+  opti_vel.y = (float)(gps_stereocam.ecef_vel.y) / 100;
+  opti_vel.z = -(float)(gps_stereocam.ecef_vel.z) / 100;
+  opti_pos.x = (float)(gps_stereocam.ecef_pos.x) / 100;
+  opti_pos.y = (float)(gps_stereocam.ecef_pos.y) / 100;
+  opti_pos.z = -(float)(gps_stereocam.ecef_pos.z) / 100;
 
   struct FloatVect3 velocity_rot_state;
   struct FloatVect3 velocity_rot_gps;
 
   float_rmat_vmult(&velocity_rot_state , stateGetNedToBodyRMat_f(), (struct FloatVect3 *)&coordinates_speed_state);
-  float_rmat_vmult(&velocity_rot_gps , stateGetNedToBodyRMat_f(), (struct FloatVect3 *)&opti_state);
+  float_rmat_vmult(&velocity_rot_gps , stateGetNedToBodyRMat_f(), (struct FloatVect3 *)&opti_vel);
 
   float vel_x_opti = -((float)(velocity_rot_gps.y));
   float vel_y_opti = -((float)(velocity_rot_gps.x));
@@ -160,9 +168,12 @@ void stereocam_to_state(float dphi, float dtheta)
   //todo: retrieve optitrack in int16
   int16_t vel_x_opti_int = (int16_t)(vel_x_opti * 100);
   int16_t vel_y_opti_int = (int16_t)(vel_y_opti * 100);
+  int16_t pos_x_opti_int = (int16_t)(opti_pos.x * 100);
+  int16_t pos_y_opti_int = (int16_t)(opti_pos.y * 100);
+
   //Send measurement values in same structure as stereocam message for state measurements
   DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &frequency, &(stereocam_data.len), &vel_x_int, &vel_y_int,
-                           &vel_x_opti_int, &vel_y_opti_int,&vel_x_state,&vel_y_state, stereocam_data.len,
+                           &vel_x_opti_int, &vel_y_opti_int, &pos_x_opti_int, &pos_y_opti_int ,&vel_x_state,&vel_y_state, stereocam_data.len,
                            stereocam_data.data);
 
 #endif

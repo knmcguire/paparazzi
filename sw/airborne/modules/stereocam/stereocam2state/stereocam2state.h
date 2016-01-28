@@ -23,6 +23,8 @@
 
 struct GpsStereoCam {
   struct EcefCoor_i ecef_vel;
+  struct EcefCoor_i ecef_pos;
+
 };
 
 extern struct GpsStereoCam gps_stereocam;

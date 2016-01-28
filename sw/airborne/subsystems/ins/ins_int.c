@@ -534,6 +534,7 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
   static uint32_t last_stamp = 0;
   float dt = 0;
 
+  static uint8_t freq_down =0 ;
   /* rotate velocity estimate to nav/ltp frame */
   struct FloatQuat q_b2n = *stateGetNedToBodyQuat_f();
   QUAT_INVERT(q_b2n, q_b2n);
@@ -544,7 +545,6 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
     dt = (float)(stamp - last_stamp) * 1e-6;
   }
 
-  last_stamp = stamp;
 
 #if USE_HFF
   (void)dt; //dt is unused variable in this define
@@ -557,9 +557,9 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
 #else
   ins_int.ltp_speed.x = SPEED_BFP_OF_REAL(vel_ned.x);
   ins_int.ltp_speed.y = SPEED_BFP_OF_REAL(vel_ned.y);
-  if (last_stamp > 0) {
-    ins_int.ltp_pos.x = ins_int.ltp_pos.x + POS_BFP_OF_REAL(dt * update_median_filter(&filter,vel_ned.x));
-    ins_int.ltp_pos.y = ins_int.ltp_pos.y + POS_BFP_OF_REAL(dt * update_median_filter(&filter,vel_ned.y));
+  if (last_stamp > 0 ) {
+    ins_int.ltp_pos.x = ins_int.ltp_pos.x + POS_BFP_OF_REAL(dt*vel_ned.x);
+    ins_int.ltp_pos.y = ins_int.ltp_pos.y + POS_BFP_OF_REAL(dt*vel_ned.y);
   }
 #endif
 
