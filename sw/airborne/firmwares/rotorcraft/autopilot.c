@@ -644,7 +644,7 @@ static uint8_t ap_mode_of_two_switches(void)
 {
   if (radio_control.values[RADIO_MODE] < THRESHOLD_1_PPRZ) {
     /* RADIO_MODE in MANUAL position */
-    return MODE_NAV;
+    return MODE_MANUAL;
   }
   else {
     /* RADIO_MODE not in MANUAL position.

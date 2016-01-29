@@ -48,10 +48,7 @@ $(TARGET).CFLAGS += -DPERIPHERALS_AUTO_INIT
 $(TARGET).srcs   += mcu.c
 $(TARGET).srcs   += $(SRC_ARCH)/mcu_arch.c
 
-#
-# frequencies of main periodic
-#
-
+# frequency of main periodic
 PERIODIC_FREQUENCY ?= 512
 $(TARGET).CFLAGS += -DPERIODIC_FREQUENCY=$(PERIODIC_FREQUENCY)
 
