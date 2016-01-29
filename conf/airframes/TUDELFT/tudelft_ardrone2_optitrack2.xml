@@ -4,6 +4,9 @@
 
   <firmware name="rotorcraft">
     <target name="ap" board="ardrone2">
+      <configure name="HOST" value="192.168.209.202"/>
+      <define name="MODEM_HOST" value="192.168.209.29"/>
+      <define name="TRAFFIC_INFO"/>
       <configure name="USE_BARO_BOARD" value="FALSE"/>
     </target>
 

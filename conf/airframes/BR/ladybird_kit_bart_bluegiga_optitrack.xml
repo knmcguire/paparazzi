@@ -77,8 +77,8 @@
 
  <section name="AUTOPILOT">
    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
-   <define name="MODE_MANUAL" value="AP_MODE_HOVER_Z_HOLD"/>
-   <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
+   <define name="MODE_MANUAL" value="AP_MODE_HOVER_DIRECT"/>
+   <define name="MODE_AUTO1" value="AP_MODE_NAV"/>
    <define name="MODE_AUTO2" value="AP_MODE_GUIDED"/>
 
     <define name="USE_THROTTLE_FOR_MOTOR_ARMING" value="TRUE"/>
@@ -194,13 +194,8 @@
     <define name="ARRIVED_AT_WAYPOINT" value="0.2"/>
   </section>
   
-  <section name="SWARM_POTENTIAL" prefix="SWARM_">
-	<define name="HOVER" value="FALSE"/>
-    <define name="PHI_PGAIN" value="300"/>
-    <define name="PHI_IGAIN" value="0"/>
-    <define name="THETA_PGAIN" value="300"/>
-    <define name="THETA_IGAIN" value="0"/>
-  </section>
+  <!--section name="SWARM_POTENTIAL" prefix="">
+  </section-->
 
  <section name="SIMULATOR" prefix="NPS_">
    <define name="ACTUATOR_NAMES" value="ne_motor, se_motor, sw_motor, nw_motor" type="string[]"/>
@@ -220,6 +215,7 @@
       <configure name="USE_MAGNETOMETER" value="0"/>
       <configure name="AHRS_PROPAGATE_FREQUENCY" value="500"/>
       <define name="USE_PERSISTENT_SETTINGS" value="TRUE"/>
+      <configure name="USE_BARO_BOARD" value="FALSE"/>
     </target>
 
     <subsystem name="motor_mixing"/>

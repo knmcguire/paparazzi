@@ -41,6 +41,7 @@ extern struct force_ potential_force;
 extern float force_hor_gain;
 extern float force_climb_gain;
 extern float target_dist3;
+extern bool use_waypoint;
 
 extern void swarm_potential_init(void);
 extern void swarm_potential_periodic(void);

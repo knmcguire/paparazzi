@@ -32,7 +32,10 @@
 #include "state.h"
 #include "navigation.h"
 
+
 #include "generated/flight_plan.h"
+
+#include "math/pprz_geodetic_int.h"
 
 //#include "math/pprz_algebra_float.h"
 //#include "math/pprz_algebra_int.h"
@@ -55,17 +58,22 @@ struct force_ potential_force;
 float force_hor_gain;
 float force_climb_gain;
 float target_dist3;
+bool use_waypoint;
 
 #ifndef FORCE_HOR_GAIN
-#define FORCE_HOR_GAIN 1.
+#define FORCE_HOR_GAIN 0.1
 #endif
 
 #ifndef FORCE_CLIMB_GAIN
-#define FORCE_CLIMB_GAIN 1.
+#define FORCE_CLIMB_GAIN 0.1
 #endif
 
 #ifndef TARGET_DIST3
 #define TARGET_DIST3 1.
+#endif
+
+#ifndef USE_WAYPOINT
+#define USE_WAYPOINT FALSE
 #endif
 
 #ifndef SP_WP
@@ -78,6 +86,30 @@ void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _
 void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi) {
   tx_strength[the_acs_id[_ac_id]] = _tx_strength;
   rssi[the_acs_id[_ac_id]] = _rssi;
+}
+
+/*
+ * return sign of input with bias 1 for an input of zero
+ */
+float sign(float x);
+float sign(float x)
+{
+//  return (x < 0) ? -1 : (x > 0);
+  return (x < 0) ? -1 : 1;
+}
+
+/*
+ * Set the potential force
+ * attractive - repulsive
+ * potential force equation: x^2 - d0^3/x
+ */
+void set_force(float* force, float dist);
+void set_force(float* force, float dist){
+  if (dist != 0.){
+      *force = sign(dist)*dist*dist - TARGET_DIST3/dist;
+    } else {
+      *force = 0.;
+    }
 }
 
 #if PERIODIC_TELEMETRY
@@ -101,6 +133,7 @@ void swarm_potential_init(void)
   force_hor_gain = FORCE_HOR_GAIN;
   force_climb_gain = FORCE_CLIMB_GAIN;
   target_dist3 = TARGET_DIST3;
+  use_waypoint = USE_WAYPOINT;
 
   AbiBindMsgRSSI(ABI_BROADCAST, &ev, rssi_cb);
 
@@ -108,7 +141,9 @@ void swarm_potential_init(void)
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_POTENTIAL, send_periodic);
 #endif
 }
-
+/*
+ * Send my gps position to the other members of the swarm
+ */
 void swarm_potential_periodic(void) {
   /* The GPS messages are most likely too large to be send over either the datalink
    * The local position is an int32 and the 11 LSBs of the x and y axis are compressed into
@@ -121,10 +156,10 @@ void swarm_potential_periodic(void) {
 
   multiplex_speed = sys_time.nb_sec;
 
-  struct UtmCoor_i utm = utm_int_from_gps(&gps, 0);
+  /*struct UtmCoor_i utm = utm_int_from_gps(&gps, 0);
 
-  //DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &utm.east,
-   //                         &utm.north, &utm.alt);
+  DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &utm.east,
+                           &utm.north, &utm.alt);*/
 }
 
 int swarm_potential_task(void)
@@ -134,6 +169,9 @@ int swarm_potential_task(void)
   // compute desired velocity
   int8_t nb = 0;
   uint8_t i;
+
+  struct UtmCoor_f my_pos = utm_float_from_gps(&gps, 0);
+
   for (i = 0; i < acs_idx; i++) {
     if (the_acs[i].ac_id == 0 || the_acs[i].ac_id == AC_ID) { continue; }
     struct ac_info_ * ac = get_ac_info(the_acs[i].ac_id);
@@ -141,33 +179,66 @@ int swarm_potential_task(void)
     // if AC not responding for too long, continue, else compute force
     //if(delta_t > 5) { continue; }
     //else {
-      float sha = sinf(ac->course);
-      float cha = cosf(ac->course);
-
-      struct UtmCoor_f my_pos = utm_float_from_gps(&gps, 0);
-
       float de = ac->east - my_pos.east; // + sha * delta_t
       float dn = ac->north - my_pos.north; // cha * delta_t
-      float da = ac->alt - my_pos.alt; // ac->climb * delta_t
-      //float dist2 = de * de + dn * dn + da * da;
-      if (de == 0. || dn == 0. || da == 0.) { continue; }
+      float da = ac->alt - my_pos.alt; // ac->climb * delta_t   // currently wrong reference in other aircraft
+      float dist2 = de * de + dn * dn;// + da * da;
+      if (dist2 == 0.) {continue;}
 
-      // attractive - repulsive
-      // potential force equation: x^2 - d0^3/x
-      potential_force.east = de*de - TARGET_DIST3/de;
-      potential_force.north = dn*dn - TARGET_DIST3/dn;
-      potential_force.alt = da*da - TARGET_DIST3/da;
+      float dist = sqrtf(dist2);
+      float force = dist2 - TARGET_DIST3/dist;
 
-      // carrot
-      speed_sp.x += -force_hor_gain * potential_force.east + ac->gspeed * sha;   // add other speed for cohesion
-      speed_sp.y += -force_hor_gain * potential_force.north + ac->gspeed * cha;
-      speed_sp.z += -force_climb_gain * potential_force.alt + ac->climb;
+      potential_force.east = (de*force)/dist;
+      potential_force.north= (dn*force)/dist;
+      potential_force.alt = (da*force)/dist;
 
-      ++nb;
-      potential_force.east = my_pos.east;
+      // set carrot
+      // include speed of other vehicles for swarm cohesion
+      speed_sp.x += force_hor_gain * potential_force.east;// + ac->gspeed * sinf(ac->course);
+      speed_sp.y += force_hor_gain * potential_force.north;// + ac->gspeed * cosf(ac->course);
+      speed_sp.z += force_climb_gain * potential_force.alt;// + ac->climb;
+
+      nb++;
+
+      // debug
+      potential_force.east = ac->north;
       potential_force.north = my_pos.north;
-      potential_force.alt = my_pos.alt;
+      potential_force.alt = ac->alt;
    // }
+  }
+
+  // add waypoint force to get vehicle to waypoint
+  if (use_waypoint){
+    struct UtmCoor_f wp_pos;
+    struct LlaCoor_f lla;
+
+    struct LlaCoor_i* lla_i = waypoint_get_lla(SP_WP);
+    if (lla_i == NULL){
+      waypoint_globalize(SP_WP);
+      lla_i = waypoint_get_lla(SP_WP);
+    }
+    LLA_FLOAT_OF_BFP(lla, *lla_i);
+
+    wp_pos.zone = (lla_i->lon / 1e7 + 180) / 6 + 1;
+    utm_of_lla_f(&wp_pos, &lla);
+
+    float de = wp_pos.east - my_pos.east; // + sha * delta_t
+    float dn = wp_pos.north - my_pos.north; // cha * delta_t
+    float da = wp_pos.alt - my_pos.alt; // ac->climb * delta_t
+
+    float dist2 = de * de + dn * dn;// + da * da;
+    if (dist2 > 0.01) {   // add deadzone of 10cm from goal
+      float dist = sqrtf(dist2);
+      float force = dist2;
+
+      potential_force.east = (de*force)/dist;
+      potential_force.north= (dn*force)/dist;
+      potential_force.alt = (da*force)/dist;
+
+      speed_sp.x += force_hor_gain * potential_force.east;
+      speed_sp.y += force_hor_gain * potential_force.north;
+      speed_sp.z += force_climb_gain * potential_force.alt;
+    }
   }
 
   potential_force.speed = speed_sp.x;
@@ -180,7 +251,7 @@ int swarm_potential_task(void)
   BoundAbs(speed_sp.z, GUIDANCE_H_REF_MAX_SPEED);
 #endif
 
-  autopilot_guided_move_ned(speed_sp.x, speed_sp.y, 0, 0);
+  autopilot_guided_move_ned(speed_sp.y, speed_sp.x, 0, 0);
   /*
   struct EnuCoor_f delta_pos;
   VECT3_SDIV(delta_pos, speed_sp, NAV_FREQ);

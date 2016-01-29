@@ -573,7 +573,7 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
 	uint8 i = 0;
     	while(i++ < MAX_DEVICES)
     	{
-    	  if (!cmp_addr(msg->sender.addr, connected_addr[i].addr) || (msg->sender.addr[0] != 0xdf && msg->sender.addr[0] != 0x43))
+    	  if (!cmp_addr(msg->sender.addr, connected_addr[i].addr) || (msg->sender.addr[0] != 0xdf && msg->sender.addr[0] != 0x43 && msg->sender.addr[0] != 0x54))
     	    return;
     	}
     
@@ -887,7 +887,7 @@ void *send_msg()
         }
         device++;
       } // next device
-      usleep(connection_interval * 1000*2); // send messages at max intervals of the connection interval, 2 safety factor
+      usleep(connection_interval * 1000*1.5); // send messages at max intervals of the connection interval, 2 safety factor
     } // repeat
   }
   pthread_exit(NULL);
@@ -930,7 +930,7 @@ void *recv_paparazzi_comms()
         }
       }
     }
-    usleep(connection_interval * 1000 * 2);  // assuming connection interval 10ms, give a bit of overhead
+    usleep(connection_interval * 1000 * 1.5);  // assuming connection interval 10ms, give a bit of overhead
   }
   pthread_exit(NULL);
 }
