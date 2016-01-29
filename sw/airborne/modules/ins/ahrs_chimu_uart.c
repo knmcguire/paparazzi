@@ -16,7 +16,7 @@
 
 #if CHIMU_DOWNLINK_IMMEDIATE
 #include "mcu_periph/uart.h"
-#include "messages.h"
+#include "pprzlink/messages.h"
 #include "subsystems/datalink/downlink.h"
 #endif
 
@@ -29,8 +29,6 @@ CHIMU_PARSER_DATA CHIMU_DATA;
 
 INS_FORMAT ins_roll_neutral;
 INS_FORMAT ins_pitch_neutral;
-
-static uint8_t ahrs_chimu_id = AHRS_COMP_ID_CHIMU;
 
 struct AhrsChimu ahrs_chimu;
 
@@ -106,6 +104,7 @@ void parse_ins_msg(void)
         }
 
 #if CHIMU_DOWNLINK_IMMEDIATE
+        static uint8_t ahrs_chimu_id = AHRS_COMP_ID_CHIMU;
         DOWNLINK_SEND_AHRS_EULER(DefaultChannel, DefaultDevice,
                                  &CHIMU_DATA.m_attitude.euler.phi,
                                  &CHIMU_DATA.m_attitude.euler.theta,
