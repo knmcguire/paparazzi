@@ -59,7 +59,7 @@
 #define TxStrengthOfSender(x) (x[1])
 #define RssiOfSender(x)       (x[2])
 #define Pprz_StxOfMsg(x)      (x[3])
-#define SenderIdOfMsg(x)      (x[5])
+#define SenderIdOfBGMsg(x)    (x[5])
 
 enum BlueGigaStatus coms_status;
 struct bluegiga_periph bluegiga_p;
@@ -293,7 +293,7 @@ void bluegiga_receive(struct spi_transaction *trans)
 
           int8_t tx_strength = TxStrengthOfSender(trans->input_buf);
           int8_t rssi = RssiOfSender(trans->input_buf);
-          uint8_t ac_id = SenderIdOfMsg(trans->input_buf);
+          uint8_t ac_id = SenderIdOfBGMsg(trans->input_buf);
 
           if (Pprz_StxOfMsg(trans->input_buf) == PPRZ_STX) {
             AbiSendMsgRSSI(RSSI_BLUEGIGA_ID, ac_id, tx_strength, rssi);

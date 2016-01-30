@@ -182,8 +182,6 @@ let print_process_send = fun out_h xml freq modules ->
       let modes = Xml.children process in
 
       fprintf out_h "\n/* Periodic telemetry (type %s): %s process */\n" telem_type process_name;
-      let nb_modes = List.length modes in
-      fprintf out_h "#define NB_TELEMETRY_MODES %s\n" (string_of_int nb_modes);
       let p_id = ref 0 in
       Xml2h.define (sprintf "TELEMETRY_PROCESS_%s" process_name) (string_of_int !p_id);
       incr p_id;
