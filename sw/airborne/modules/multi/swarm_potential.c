@@ -98,20 +98,6 @@ float sign(float x)
   return (x < 0) ? -1 : 1;
 }
 
-/*
- * Set the potential force
- * attractive - repulsive
- * potential force equation: x^2 - d0^3/x
- */
-void set_force(float* force, float dist);
-void set_force(float* force, float dist){
-  if (dist != 0.){
-      *force = sign(dist)*dist*dist - TARGET_DIST3/dist;
-    } else {
-      *force = 0.;
-    }
-}
-
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
 
@@ -121,6 +107,7 @@ static void send_periodic(struct transport_tx *trans, struct link_device *dev) {
 }
 
 #endif
+
 void swarm_potential_init(void)
 {
   potential_force.east = 0.;
@@ -186,6 +173,8 @@ int swarm_potential_task(void)
       if (dist2 == 0.) {continue;}
 
       float dist = sqrtf(dist2);
+
+      // potential force equation: x^2 - d0^3/x
       float force = dist2 - TARGET_DIST3/dist;
 
       potential_force.east = (de*force)/dist;
@@ -229,11 +218,18 @@ int swarm_potential_task(void)
     float dist2 = de * de + dn * dn;// + da * da;
     if (dist2 > 0.01) {   // add deadzone of 10cm from goal
       float dist = sqrtf(dist2);
-      float force = dist2;
+      float force;
 
-      potential_force.east = (de*force)/dist;
-      potential_force.north= (dn*force)/dist;
-      potential_force.alt = (da*force)/dist;
+      // higher attractive potential to get to goal when close by
+      if (dist > 1){
+        force = dist2;
+      } else {
+        force = dist;
+      }
+
+      potential_force.east  = (de*force)/dist;
+      potential_force.north = (dn*force)/dist;
+      potential_force.alt   = (da*force)/dist;
 
       speed_sp.x += force_hor_gain * potential_force.east;
       speed_sp.y += force_hor_gain * potential_force.north;
