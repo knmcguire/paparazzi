@@ -33,5 +33,7 @@
   <periodic fun="swarm_potential_task()" freq="10" autorun="TRUE"/>
   <makefile>
     <file name="swarm_potential.c"/>
+    <define name="TRAFFIC_INFO"/>
   </makefile>
+  
 </module>

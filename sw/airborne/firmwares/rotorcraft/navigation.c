@@ -547,3 +547,38 @@ bool_t nav_set_heading_current(void)
   nav_heading = stateGetNedToBodyEulers_i()->psi;
   return FALSE;
 }
+
+/**
+ *  \brief Computes \a desired_x, \a desired_y and \a desired_course.
+ */
+//static inline void fly_to_xy(float x, float y) {
+
+/*void fly_to_xy(float x, float y)
+{
+  struct EnuCoor_f *pos = stateGetPositionEnu_f();
+  desired_x = x;
+  desired_y = y;
+  if (nav_mode == NAV_MODE_COURSE) {
+    h_ctl_course_setpoint = atan2f(x - pos->x, y - pos->y);
+    if (h_ctl_course_setpoint < 0.) {
+      h_ctl_course_setpoint += 2 * M_PI;
+    }
+  }
+}
+
+void nav_follow(uint8_t _ac_id, uint32_t distance, uint32_t height)
+{
+  struct ac_info_ * ac = get_ac_info(_ac_id);
+  NavVerticalAltitudeMode(POS_FLOAT_OF_BFP(Max(ac->alt + height, ground_alt + SECURITY_HEIGHT)), 0.);
+  float alpha = M_PI / 2 - ac->course;
+  float ca = cosf(alpha), sa = sinf(alpha);
+  float x = ac->east - distance * ca;
+  float y = ac->north - distance * sa;
+  fly_to_xy(x, y);
+#ifdef NAV_FOLLOW_PGAIN
+  float s = (stateGetPositionEnu_f()->x - x) * ca + (stateGetPositionEnu_f()->y - y) * sa;
+  nav_ground_speed_setpoint = ac->gspeed + NAV_FOLLOW_PGAIN * s;
+  nav_ground_speed_loop();
+#endif
+*/
+}

@@ -3,7 +3,7 @@
 <module name="follow" dir="multi">
   <doc>
     <description>
-      Follow a certain AC_ID trough remote GPS.
+      Follow a certain AC_ID through remote GPS.
       Only for rotorcraft firmware.
     </description>
     <define name="FOLLOW_AC_ID"               description="the aircraft ID which it has to follow"/>
@@ -18,9 +18,10 @@
   </header>
 
   <init fun="follow_init()"/>
-  <datalink message="REMOTE_GPS" fun="ParseRemoteGps()"/>
+  <periodic fun="follow_wp()" freq="5" autorun="FALSE"/>
 
   <makefile>
     <file name="follow.c"/>
+    <define name="TRAFFIC_INFO"/>
   </makefile>
 </module>

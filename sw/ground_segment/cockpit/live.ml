@@ -830,7 +830,7 @@ let ask_config = fun confirm_kill alert geomap fp_notebook strips ac ->
     if not (Hashtbl.mem aircrafts ac) then
       create_ac ~confirm_kill alert geomap fp_notebook strips ac values
   in
-  Ground_Pprz.message_req "gcs" "CONFIG" ["ac_id", PprzLink.String ac] get_config
+  ignore(Ground_Pprz.message_req "gcs" "CONFIG" ["ac_id", PprzLink.String ac] get_config)
 
 
 
@@ -1480,7 +1480,7 @@ let listen_intruders = fun (geomap:G.widget) ->
 let listen_acs_and_msgs = fun geomap ac_notebook strips confirm_kill my_alert auto_center_new_ac alt_graph timestamp ->
   (** Probe live A/Cs *)
   let probe = fun () ->
-    message_request "gcs" "AIRCRAFTS" [] (fun _sender vs -> _req_aircrafts := false; aircrafts_msg confirm_kill my_alert geomap ac_notebook strips vs) in
+    ignore(message_request "gcs" "AIRCRAFTS" [] (fun _sender vs -> _req_aircrafts := false; aircrafts_msg confirm_kill my_alert geomap ac_notebook strips vs)) in
   let _ = GMain.Timeout.add 1000 (fun () -> probe (); !_req_aircrafts) in
 
   (** New aircraft message *)

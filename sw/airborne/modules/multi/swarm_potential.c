@@ -198,22 +198,12 @@ int swarm_potential_task(void)
 
   // add waypoint force to get vehicle to waypoint
   if (use_waypoint){
-    struct UtmCoor_f wp_pos;
-    struct LlaCoor_f lla;
+    struct EnuCoor_i my_enu = stateGetPositionEnu_i();
+    struct EnuCoor_i wp_enu = waypoints[SP_WP].enu_i;
 
-    struct LlaCoor_i* lla_i = waypoint_get_lla(SP_WP);
-    if (lla_i == NULL){
-      waypoint_globalize(SP_WP);
-      lla_i = waypoint_get_lla(SP_WP);
-    }
-    LLA_FLOAT_OF_BFP(lla, *lla_i);
-
-    wp_pos.zone = (lla_i->lon / 1e7 + 180) / 6 + 1;
-    utm_of_lla_f(&wp_pos, &lla);
-
-    float de = wp_pos.east - my_pos.east; // + sha * delta_t
-    float dn = wp_pos.north - my_pos.north; // cha * delta_t
-    float da = wp_pos.alt - my_pos.alt; // ac->climb * delta_t
+    float de = wp_enu.x - my_enu.x; // + sha * delta_t
+    float dn = wp_enu.y - my_enu.y; // cha * delta_t
+    float da = wp_enu.z - my_enu.z; // ac->climb * delta_t
 
     float dist2 = de * de + dn * dn;// + da * da;
     if (dist2 > 0.01) {   // add deadzone of 10cm from goal
