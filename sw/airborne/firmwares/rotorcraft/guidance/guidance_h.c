@@ -62,7 +62,7 @@
 #endif
 
 #ifndef GUIDANCE_H_MAX_BANK
-#define GUIDANCE_H_MAX_BANK RadOfDeg(20)
+#define GUIDANCE_H_MAX_BANK RadOfDeg(15)
 #endif
 
 PRINT_CONFIG_VAR(GUIDANCE_H_USE_REF)
@@ -470,7 +470,7 @@ static void guidance_h_update_reference(void)
 
 
 #define MAX_POS_ERR   POS_BFP_OF_REAL(16.)
-#define MAX_SPEED_ERR SPEED_BFP_OF_REAL(16.)
+#define MAX_SPEED_ERR SPEED_BFP_OF_REAL(30.)
 
 #ifndef GUIDANCE_H_THRUST_CMD_FILTER
 #define GUIDANCE_H_THRUST_CMD_FILTER 10

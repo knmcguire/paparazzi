@@ -104,6 +104,10 @@ PRINT_CONFIG_MSG("INS_SONAR_UPDATE_ON_AGL defaulting to FALSE")
 #define INS_VFF_R_GPS 2.0
 #endif
 
+#ifndef USE_ONLY_GPS_ALT
+#define USE_ONLY_GPS_ALT FALSE
+#endif USE_ONLY_GPS_ALT
+
 /** maximum number of propagation steps without any updates in between */
 #ifndef INS_MAX_PROPAGATION_STEPS
 #define INS_MAX_PROPAGATION_STEPS 200
@@ -137,7 +141,7 @@ static void baro_cb(uint8_t sender_id, float pressure);
 #define INS_INT_IMU_ID ABI_BROADCAST
 #endif
 #ifndef INS_INT_GPS_ID
-#define INS_INT_GPS_ID ABI_BROADCAST
+#define INS_INT_GPS_ID ABI_DISABLE
 #endif
 static abi_event accel_ev;
 static abi_event gps_ev;
@@ -403,6 +407,7 @@ void ins_int_update_gps(struct GpsState *gps_s)
   ins_update_from_hff();
 
 #else  /* hff not used */
+
   /* simply copy horizontal pos/speed from gps */
   INT32_VECT2_SCALE_2(ins_int.ltp_pos, gps_pos_cm_ned,
                       INT32_POS_OF_CM_NUM, INT32_POS_OF_CM_DEN);
@@ -544,6 +549,8 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
   if (last_stamp > 0) {
     dt = (float)(stamp - last_stamp) * 1e-6;
   }
+
+  last_stamp = stamp;
 
 
 #if USE_HFF

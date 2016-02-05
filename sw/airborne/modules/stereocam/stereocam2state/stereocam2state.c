@@ -15,6 +15,8 @@
 #include "subsystems/abi.h"
 #include "subsystems/datalink/telemetry.h"
 
+#include "filters/median_filter.h"
+
 //#include "subsystems/gps.h"
 
 #ifndef SENDER_ID
@@ -40,6 +42,8 @@ static float prev_phi;
 static float prev_theta;
 
 struct GpsStereoCam gps_stereocam;
+struct MedianFilterInt filter_x, filter_y;
+
 
 void stereocam_to_state(float dphi, float dtheta);
 
@@ -62,6 +66,8 @@ void stereo_to_state_init(void)
 {
   //subscribe to GPS abi-messages for state measurements
   AbiBindMsgGPS(STEREOCAM_GPS_ID, &gps_ev, stereocam_gps_cb);
+  init_median_filter(&filter_x);
+  init_median_filter(&filter_y);
 
 }
 void stereo_to_state_periodic(void)
@@ -146,8 +152,8 @@ void stereocam_to_state(float dphi, float dtheta)
   float_rmat_vmult(&velocity_rot_state , stateGetNedToBodyRMat_f(), (struct FloatVect3 *)&coordinates_speed_state);
   float_rmat_vmult(&velocity_rot_gps , stateGetNedToBodyRMat_f(), (struct FloatVect3 *)&opti_vel);
 
-  float vel_x_opti = -((float)(velocity_rot_gps.y));
-  float vel_y_opti = -((float)(velocity_rot_gps.x));
+  float vel_x_opti = ((float)(velocity_rot_gps.x));
+  float vel_y_opti = -((float)(velocity_rot_gps.y));
 
   // Calculate velocity error
   float vel_x_error = vel_x_opti - vel_x;
@@ -171,6 +177,9 @@ void stereocam_to_state(float dphi, float dtheta)
   int16_t pos_x_opti_int = (int16_t)(opti_pos.x * 100);
   int16_t pos_y_opti_int = (int16_t)(opti_pos.y * 100);
 
+  //vel_x_int = (int16_t)update_median_filter(&filter_x,(int32_t)vel_x_int);
+  //vel_y_int = (int16_t)update_median_filter(&filter_y,(int32_t)vel_y_int);
+
   //Send measurement values in same structure as stereocam message for state measurements
   DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &frequency, &(stereocam_data.len), &vel_x_int, &vel_y_int,
                            &vel_x_opti_int, &vel_y_opti_int, &pos_x_opti_int, &pos_y_opti_int ,&vel_x_state,&vel_y_state, stereocam_data.len,
@@ -182,14 +191,14 @@ void stereocam_to_state(float dphi, float dtheta)
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
   uint32_t now_ts = get_sys_time_usec();
 
-  if (!(abs(vel_y_int) > 100 || abs(vel_x_int) > 100)) {
+  //if (!(abs(vel_y_int) > 50 || abs(vel_x_int) > 50)) {
     AbiSendMsgVELOCITY_ESTIMATE(SENDER_ID, now_ts,
                                 (float)vel_x_int / 100,
                                 (float)vel_y_int / 100,
                                 0.0f,
                                 0.3f
                                );
-  }
+ // }
 
  // if (stateGetPositionNed_f()->z < -0.5)
   AbiSendMsgAGL(SENDER_ID, alt_stereo);
