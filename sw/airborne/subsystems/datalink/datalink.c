@@ -70,7 +70,6 @@ void dl_parse_msg(void)
   /* parse telemetry messages coming from other AC */
   if (sender_id != 0) {
     switch (msg_id) {
-#if 0   // TODO waiting for telemetry macros to be made in pprzlink
 #ifdef TRAFFIC_INFO
       case DL_GPS_SMALL: {
         uint32_t multiplex_speed = DL_GPS_SMALL_multiplex_speed(dl_buffer);
@@ -132,7 +131,6 @@ void dl_parse_msg(void)
         }
       }
 #endif /* TCAS */
-#endif
       default: {
         break;
       }

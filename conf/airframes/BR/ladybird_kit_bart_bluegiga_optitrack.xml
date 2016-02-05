@@ -193,6 +193,11 @@
  <modules main_freq="512">
    <load name="send_imu_mag_current.xml"/>
    <load name="swarm_potential.xml"/>
+   <load name="stereocam.xml">
+     <configure name="STEREO_UART" value="UART1"/>
+     <configure name="STEREO_BAUD" value="B115200"/>
+     <define name="SEND_STEREO" value="TRUE"/>
+   </load>
  </modules>
 
   <firmware name="rotorcraft">
