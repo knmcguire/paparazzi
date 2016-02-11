@@ -397,3 +397,68 @@ void ecef_of_lla_i(struct EcefCoor_i *out, struct LlaCoor_i *in)
 #endif
 
 }
+
+void lla_of_utm_i(struct LlaCoor_i *lla, struct UtmCoor_i *utm)
+{
+
+#if USE_SINGLE_PRECISION_LLA_UTM
+  /* convert our input to floating point */
+  struct LlaCoor_f lla_f;
+  lla_f.lon = RAD_OF_EM7DEG((float)lla->lon);
+  lla_f.lat = RAD_OF_EM7DEG((float)lla->lat);
+  lla_f.alt = M_OF_MM((float)lla->alt);
+  /* calls the floating point transformation */
+  struct UtmCoor_f utm_f;
+  ecef_of_lla_f(&utm_f, &lla_f);
+  /* convert the output to fixed point       */
+  utm->east = (int32_t)CM_OF_M(utm_f.east);
+  utm->north = (int32_t)CM_OF_M(utm_f.north);
+  utm->alt = (int32_t)CM_OF_M(utm_f.alt);
+#else // use double precision by default
+  /* convert our input to floating point */
+  struct LlaCoor_d lla_d;
+  lla_d.lon = RAD_OF_EM7DEG((double)lla->lon);
+  lla_d.lat = RAD_OF_EM7DEG((double)lla->lat);
+  lla_d.alt = M_OF_MM((double)lla->alt);
+  /* calls the floating point transformation */
+  struct UtmCoor_d utm_d;
+  utm_of_lla_d(&utm_d, &lla_d);
+  /* convert the output to fixed point       */
+  utm->east = (int32_t)CM_OF_M(utm_d.east);
+  utm->north = (int32_t)CM_OF_M(utm_d.east);
+  utm->alt = (int32_t)MM_OF_M(utm_d.alt);
+#endif
+
+}
+void utm_of_lla_i(struct UtmCoor_i *utm, struct LlaCoor_i *lla)
+{
+
+#if USE_SINGLE_PRECISION_LLA_UTM
+  /* convert our input to floating point */
+  struct UtmCoor_f utm_f;
+  utm_f.east = M_OF_CM((float)utm->east);
+  utm_f.north = M_OF_CM((float)utm->north);
+  utm_f.alt = M_OF_CM((float)utm->alt);
+  /* calls the floating point transformation */
+  struct LlaCoor_f lla_f;
+  lla_of_ecef_f(&lla_f, &utm_f);
+  /* convert the output to fixed point       */
+  lla->lon = (int32_t)rint(EM7DEG_OF_RAD(lla_f.lon));
+  lla->lat = (int32_t)rint(EM7DEG_OF_RAD(lla_f.lat));
+  lla->alt = (int32_t)MM_OF_M(lla_f.alt);
+#else // use double precision by default
+  /* convert our input to floating point */
+  struct UtmCoor_d utm_d;
+  utm_d.east = M_OF_CM((double)utm->east);
+  utm_d.north = M_OF_CM((double)utm->east);
+  utm_d.alt = M_OF_CM((double)utm->alt);
+  /* calls the floating point transformation */
+  struct LlaCoor_d lla_d;
+  lla_of_ecef_d(&lla_d, &utm_d);
+  /* convert the output to fixed point       */
+  lla->lon = (int32_t)rint(EM7DEG_OF_RAD(lla_d.lon));
+  lla->lat = (int32_t)rint(EM7DEG_OF_RAD(lla_d.lat));
+  lla->alt = (int32_t)MM_OF_M(lla_d.alt);
+#endif
+
+}

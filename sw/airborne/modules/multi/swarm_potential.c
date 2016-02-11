@@ -198,7 +198,7 @@ int swarm_potential_task(void)
 
   // add waypoint force to get vehicle to waypoint
   if (use_waypoint){
-    struct EnuCoor_i my_enu = stateGetPositionEnu_i();
+    struct EnuCoor_i my_enu = *stateGetPositionEnu_i();
     struct EnuCoor_i wp_enu = waypoints[SP_WP].enu_i;
 
     float de = wp_enu.x - my_enu.x; // + sha * delta_t

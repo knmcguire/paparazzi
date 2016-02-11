@@ -551,9 +551,9 @@ bool_t nav_set_heading_current(void)
 /**
  *  \brief Computes \a desired_x, \a desired_y and \a desired_course.
  */
-//static inline void fly_to_xy(float x, float y) {
+/*static inline void fly_to_xy(float x, float y) {
 
-/*void fly_to_xy(float x, float y)
+void fly_to_xy(float x, float y)
 {
   struct EnuCoor_f *pos = stateGetPositionEnu_f();
   desired_x = x;
@@ -580,5 +580,6 @@ void nav_follow(uint8_t _ac_id, uint32_t distance, uint32_t height)
   nav_ground_speed_setpoint = ac->gspeed + NAV_FOLLOW_PGAIN * s;
   nav_ground_speed_loop();
 #endif
-*/
+
 }
+*/

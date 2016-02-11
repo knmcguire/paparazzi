@@ -57,6 +57,7 @@
 #endif
 
 #define MOfCm(_x) (((float)(_x))/100.)
+#define MOfMm(_x) (((float)(_x))/1000.)
 
 #if USE_NPS
 bool_t datalink_enabled = TRUE;
@@ -71,6 +72,7 @@ void dl_parse_msg(void)
   if (sender_id != 0) {
     switch (msg_id) {
 #ifdef TRAFFIC_INFO
+#if 0
       case DL_GPS_SMALL: {
         uint32_t multiplex_speed = DL_GPS_SMALL_multiplex_speed(dl_buffer);
 
@@ -98,13 +100,13 @@ void dl_parse_msg(void)
                     gps_tow_from_sys_ticks(sys_time.nb_tick));
       }
       break;
-
+#endif
       case DL_GPS: {
         set_ac_info(sender_id,
           MOfCm(DL_GPS_utm_east(dl_buffer)),    /*m*/
           MOfCm(DL_GPS_utm_north(dl_buffer)),   /*m*/
           RadOfDeg(((float)DL_GPS_course(dl_buffer)) / 10.), /*rad(CW)*/
-          MOfCm(DL_GPS_alt(dl_buffer)),        /*m*/
+          MOfMm(DL_GPS_alt(dl_buffer)),        /*m*/
           MOfCm(DL_GPS_speed(dl_buffer)),       /*m/s*/
           MOfCm(DL_GPS_climb(dl_buffer)),       /*m/s*/
           (uint32_t)DL_GPS_itow(dl_buffer));

@@ -303,6 +303,12 @@ static inline float inverse_isometric_latitude_f(float lat, float e, float epsil
 
 void utm_of_lla_f(struct UtmCoor_f *utm, struct LlaCoor_f *lla)
 {
+
+  // compute zone if not initialised
+  if (utm->zone == 0) {
+    utm->zone = (lla->lon + 180) / 6 + 1;
+  }
+
   float lambda_c = LambdaOfUtmZone(utm->zone);
   float ll = isometric_latitude_f(lla->lat , E);
   float dl = lla->lon - lambda_c;
