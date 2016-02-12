@@ -272,30 +272,30 @@ struct complex { float re; float im; };
 #define CExp(z) { float e = exp(z.re); z.re = e*cos(z.im); z.im = e*sin(z.im); }
 /* Expanded #define CSin(z) { CI(z); struct complex _z = {-z.re, -z.im}; CExp(z); CExp(_z); CSub(_z, z); CScal(-0.5, z); CI(z); } */
 
-#define CSin(z) { CI(z); struct complex _z = {-z.re, -z.im}; float e = exp(z.re); float cos_z_im = cos(z.im); z.re = e*cos_z_im; float sin_z_im = sin(z.im); z.im = e*sin_z_im; _z.re = cos_z_im/e; _z.im = -sin_z_im/e; CSub(_z, z); CScal(-0.5, z); CI(z); }
+#define CSin(z) { CI(z); struct complex _z = {-z.re, -z.im}; float e = exp(z.re); float cos_z_im = cosf(z.im); z.re = e*cos_z_im; float sin_z_im = sinf(z.im); z.im = e*sin_z_im; _z.re = cos_z_im/e; _z.im = -sin_z_im/e; CSub(_z, z); CScal(-0.5, z); CI(z); }
 
 
-static inline float isometric_latitude_f(float phi, float e)
+static inline float UNUSED isometric_latitude_f(float phi, float e)
 {
-  return log(tan(M_PI_4 + phi / 2.0)) - e / 2.0 * log((1.0 + e * sin(phi)) / (1.0 - e * sin(phi)));
+  return logf(tanf(M_PI_4 + phi / 2.0)) - e / 2.0 * logf((1.0 + e * sinf(phi)) / (1.0 - e * sinf(phi)));
 }
 
-static inline float isometric_latitude_fast_f(float phi)
+static inline float UNUSED isometric_latitude_fast_f(float phi)
 {
-  return log(tan(M_PI_4 + phi / 2.0));
+  return logf(tanf(M_PI_4 + phi / 2.0));
 }
 
-static inline float inverse_isometric_latitude_f(float lat, float e, float epsilon)
+static inline float UNUSED inverse_isometric_latitude_f(float lat, float e, float epsilon)
 {
-  float exp_l = exp(lat);
-  float phi0 = 2 * atan(exp_l) - M_PI_2;
+  float exp_l = expf(lat);
+  float phi0 = 2 * atanf(exp_l) - M_PI_2;
   float phi_;
   uint8_t max_iter = 3; /* To be sure to return */
 
   do {
     phi_ = phi0;
-    float sin_phi = e * sin(phi_);
-    phi0 = 2 * atan(pow((1 + sin_phi) / (1. - sin_phi), e / 2.) * exp_l) - M_PI_2;
+    float sin_phi = e * sinf(phi_);
+    phi0 = 2 * atanf(powf((1 + sin_phi) / (1. - sin_phi), e / 2.) * exp_l) - M_PI_2;
     max_iter--;
   } while (max_iter && fabs(phi_ - phi0) > epsilon);
   return phi0;
@@ -303,24 +303,24 @@ static inline float inverse_isometric_latitude_f(float lat, float e, float epsil
 
 void utm_of_lla_f(struct UtmCoor_f *utm, struct LlaCoor_f *lla)
 {
-
   // compute zone if not initialised
   if (utm->zone == 0) {
-    utm->zone = (lla->lon + 180) / 6 + 1;
+    utm->zone = UtmZoneOfLlaLon_f(lla->lon);
   }
 
+#if USE_SINGLE_PRECISION_LLA_UTM
   float lambda_c = LambdaOfUtmZone(utm->zone);
   float ll = isometric_latitude_f(lla->lat , E);
   float dl = lla->lon - lambda_c;
-  float phi_ = asin(sin(dl) / cosh(ll));
+  float phi_ = asinf(sinf(dl) / coshf(ll));
   float ll_ = isometric_latitude_fast_f(phi_);
-  float lambda_ = atan(sinh(ll) / cos(dl));
+  float lambda_ = atanf(sinhf(ll) / cosf(dl));
   struct complex z_ = { lambda_,  ll_ };
   CScal(serie_coeff_proj_mercator[0], z_);
-  uint8_t k;
+  int8_t k;
   for (k = 1; k < 3; k++) {
-    struct complex z = { lambda_,  ll_ };
-    CScal(2 * k, z);
+    struct complex z = { lambda_, ll_ };
+    CScal(2.*k, z);
     CSin(z);
     CScal(serie_coeff_proj_mercator[k], z);
     CAdd(z, z_);
@@ -331,30 +331,54 @@ void utm_of_lla_f(struct UtmCoor_f *utm, struct LlaCoor_f *lla)
 
   // copy alt above reference ellipsoid
   utm->alt = lla->alt;
+
+#else // use double precision by default
+  /* convert our input to floating point */
+  struct LlaCoor_d lla_d;
+  LLA_COPY(lla_d, *lla);
+  /* calls the floating point transformation */
+  struct UtmCoor_d utm_d;
+  utm_d.zone = utm->zone;
+  utm_of_lla_d(&utm_d, &lla_d);
+  /* convert the output to fixed point       */
+  UTM_COPY(*utm, utm_d);
+#endif
+
 }
 
 void lla_of_utm_f(struct LlaCoor_f *lla, struct UtmCoor_f *utm)
 {
+#if USE_SINGLE_PRECISION_LLA_UTM
   float scale = 1 / N / serie_coeff_proj_mercator[0];
   float real = (utm->north - DELTA_NORTH) * scale;
   float img = (utm->east - DELTA_EAST) * scale;
   struct complex z = { real, img };
 
-  uint8_t k;
+  int8_t k;
   for (k = 1; k < 2; k++) {
     struct complex z_ = { real, img };
-    CScal(2 * k, z_);
+    CScal(2. * k, z_);
     CSin(z_);
     CScal(serie_coeff_proj_mercator_inverse[k], z_);
     CSub(z_, z);
   }
 
   float lambda_c = LambdaOfUtmZone(utm->zone);
-  lla->lon = lambda_c + atan(sinh(z.im) / cos(z.re));
-  float phi_ = asin(sin(z.re) / cosh(z.im));
+  lla->lon = lambda_c + atanf(sinhf(z.im) / cosf(z.re));
+  float phi_ = asinf(sinf(z.re) / coshf(z.im));
   float il = isometric_latitude_fast_f(phi_);
   lla->lat = inverse_isometric_latitude_f(il, E, 1e-8);
 
   // copy alt above reference ellipsoid
   lla->alt = utm->alt;
+#else
+  /* convert our input to floating point */
+  struct UtmCoor_d utm_d;
+  UTM_COPY(utm_d, *utm);
+  /* calls the floating point transformation */
+  struct LlaCoor_d lla_d;
+  lla_of_utm_d(&lla_d, &utm_d);
+  /* convert the output to fixed point       */
+  LLA_COPY(*lla, lla_d);
+#endif
 }

@@ -78,13 +78,12 @@ void set_ac_info_lla(uint8_t id, int32_t lat, int32_t lon, int32_t alt,
     }
 
     struct LlaCoor_i lla_i = {.lat = lat, .lon = lon, .alt = alt};
-    struct LlaCoor_f lla_f;
-    LLA_FLOAT_OF_BFP(lla_f, lla_i);
+    struct UtmCoor_i utm_i;
+
+    utm_of_lla_i(&utm_i, &lla_i);
 
     struct UtmCoor_f utm_f;
-    utm_f.zone = (lla_i.lon / 1e7 + 180) / 6 + 1;
-
-    utm_of_lla_f(&utm_f, &lla_f);
+    UTM_FLOAT_OF_BFP(utm_f, utm_i);
 
     the_acs[the_acs_id[id]].east = utm_f.east;
     the_acs[the_acs_id[id]].north = utm_f.north;

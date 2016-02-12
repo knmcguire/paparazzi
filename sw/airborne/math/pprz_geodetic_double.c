@@ -224,57 +224,32 @@ static inline double inverse_isometric_latitude_d(double lat, double e, double e
 }
 
 #define CI(v) {         \
-    double tmp = v.x;       \
+    double tmp = v.x;   \
     v.x = -v.y;         \
     v.y = tmp;          \
   }
 
 #define CExp(v) {       \
-    double e = exp(v.x);      \
-    v.x = e*cosf(v.y);        \
-    v.y = e*sinf(v.y);        \
+    double e = exp(v.x);\
+    v.x = e*cos(v.y);   \
+    v.y = e*sin(v.y);   \
   }
 
 #define CSin(v) {       \
-    CI(v);          \
+    CI(v);              \
     struct DoubleVect2 vstar = {-v.x, -v.y};  \
-    CExp(v);          \
+    CExp(v);            \
     CExp(vstar);        \
-    VECT2_SUB(v, vstar);      \
+    VECT2_SUB(v, vstar);\
     VECT2_SMUL(v, v, -0.5);     \
-    CI(v);          \
+    CI(v);              \
   }
-
-void lla_of_utm_d(struct LlaCoor_d *lla, struct UtmCoor_d *utm)
-{
-
-  struct DoubleVect2 z = {utm->north - DELTA_NORTH, utm->east - DELTA_EAST};
-  double scale = 1 / N / serie_coeff_proj_mercator[0];
-  VECT2_SMUL(z, z, scale);
-
-  // first order taylor serie of something ?
-  struct DoubleVect2 z_;
-  VECT2_SMUL(z_, z, 2.);
-  CSin(z_);
-  VECT2_SMUL(z_, z_, serie_coeff_proj_mercator[1]);
-  VECT2_SUB(z, z_);
-
-  double lambda_c = LambdaOfUtmZone(utm->zone);
-  lla->lon = lambda_c + atan(sinh(z.y) / cos(z.x));
-  double phi = asin(sin(z.x) / cosh(z.y));
-  double il = isometric_latitude_fast_d(phi);
-  lla->lat = inverse_isometric_latitude_d(il, E, 1e-8);
-
-  // copy alt above reference ellipsoid
-  lla->alt = utm->alt;
-
-}
 
 void utm_of_lla_d(struct UtmCoor_d *utm, struct LlaCoor_d *lla)
 {
   // compute zone if not initialised
   if (utm->zone == 0) {
-    utm->zone = (lla->lon + 180) / 6 + 1;
+    utm->zone = UtmZoneOfLlaLon_f(lla->lon);
   }
 
   double lambda_c = LambdaOfUtmZone(utm->zone);
@@ -285,18 +260,44 @@ void utm_of_lla_d(struct UtmCoor_d *utm, struct LlaCoor_d *lla)
   double lambda_ = atan(sinh(ll) / cos(dl));
   struct DoubleVect2 z_ = { lambda_,  ll_ };
   VECT2_SMUL(z_, z_, serie_coeff_proj_mercator[0]);
-  uint8_t k;
+  int8_t k;
   for (k = 1; k < 3; k++) {
     struct DoubleVect2 z = { lambda_,  ll_ };
     VECT2_SMUL(z, z, 2. * k);
     CSin(z);
-    VECT2_SMUL(z, z, serie_coeff_proj_mercator[1]);
+    VECT2_SMUL(z, z, serie_coeff_proj_mercator[k]);
     VECT2_ADD(z_, z);
   }
   VECT2_SMUL(z_, z_, N);
-  utm->east = DELTA_EAST + z_.x;
-  utm->north = DELTA_NORTH + z_.y;
+  utm->east = DELTA_EAST + z_.y;
+  utm->north = DELTA_NORTH + z_.x;
 
   // copy alt above reference ellipsoid
   utm->alt = lla->alt;
+}
+
+void lla_of_utm_d(struct LlaCoor_d *lla, struct UtmCoor_d *utm)
+{
+  struct DoubleVect2 z = {utm->north - DELTA_NORTH, utm->east - DELTA_EAST};
+  double scale = 1 / N / serie_coeff_proj_mercator[0];
+  VECT2_SMUL(z, z, scale);
+
+  int8_t k;
+  for(k = 1; k<2; k++)
+  {
+    struct DoubleVect2 z_;
+    VECT2_SMUL(z_, z, 2.*k);
+    CSin(z_);
+    VECT2_SMUL(z_, z_, serie_coeff_proj_mercator_inverse[k]);
+    VECT2_SUB(z, z_);
+  }
+
+  double lambda_c = LambdaOfUtmZone(utm->zone);
+  lla->lon = lambda_c + atan(sinh(z.y) / cos(z.x));
+  double phi = asin(sin(z.x) / cosh(z.y));
+  double il = isometric_latitude_fast_d(phi);
+  lla->lat = inverse_isometric_latitude_d(il, E, 1e-8);
+
+  // copy alt above reference ellipsoid
+  lla->alt = utm->alt;
 }

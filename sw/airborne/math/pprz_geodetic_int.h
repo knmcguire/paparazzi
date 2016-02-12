@@ -242,6 +242,27 @@ extern void ecef_of_ned_vect_i(struct EcefCoor_i *ecef, struct LtpDef_i *def, st
     (_ef).m[8] = DOUBLE_OF_BFP((_ei).m[8], HIGH_RES_TRIG_FRAC); \
   }
 
+#define UTM_FLOAT_OF_BFP(_o, _i) {            \
+    (_o).east  = (float)M_OF_CM((_i).east);   \
+    (_o).north = (float)M_OF_CM((_i).north);  \
+    (_o).alt   = (float)M_OF_MM((_i).alt);    \
+    (_o).zone  = (_i).zone;                   \
+  }
+
+#define UTM_DOUBLE_OF_BFP(_o, _i) {           \
+    (_o).east  = (double)M_OF_CM((_i).east);  \
+    (_o).north = (double)M_OF_CM((_i).north); \
+    (_o).alt   = (double)M_OF_MM((_i).alt);   \
+    (_o).zone  = (_i).zone;                   \
+  }
+
+#define UTM_BFP_OF_REAL(_o, _i) {              \
+    (_o).east  = (int32_t)CM_OF_M((_i).east);  \
+    (_o).north = (int32_t)CM_OF_M((_i).north); \
+    (_o).alt   = (int32_t)MM_OF_M((_i).alt);   \
+    (_o).zone  = (_i).zone;                    \
+  }
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

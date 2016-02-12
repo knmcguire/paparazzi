@@ -36,6 +36,7 @@
 #include "generated/flight_plan.h"
 
 #include "math/pprz_geodetic_int.h"
+#include "math/pprz_geodetic_double.h"
 
 //#include "math/pprz_algebra_float.h"
 //#include "math/pprz_algebra_int.h"
@@ -157,43 +158,51 @@ int swarm_potential_task(void)
   int8_t nb = 0;
   uint8_t i;
 
-  struct UtmCoor_f my_pos = utm_float_from_gps(&gps, 0);
+  if (gps.fix == 0){return 1;}
+  struct UtmCoor_f my_pos;
+  struct UtmCoor_i utm;
+
+  utm_of_lla_i(&utm, &gps.lla_pos);
+  UTM_FLOAT_OF_BFP(my_pos, utm);
 
   for (i = 0; i < acs_idx; i++) {
     if (the_acs[i].ac_id == 0 || the_acs[i].ac_id == AC_ID) { continue; }
     struct ac_info_ * ac = get_ac_info(the_acs[i].ac_id);
-    float delta_t = Max((int)(gps.tow - ac->itow) / 1000., 0.);
+    //float delta_t = Max((int)(gps.tow - ac->itow) / 1000., 0.);
     // if AC not responding for too long, continue, else compute force
     //if(delta_t > 5) { continue; }
-    //else {
-      float de = ac->east - my_pos.east; // + sha * delta_t
-      float dn = ac->north - my_pos.north; // cha * delta_t
-      float da = ac->alt - my_pos.alt; // ac->climb * delta_t   // currently wrong reference in other aircraft
-      float dist2 = de * de + dn * dn;// + da * da;
-      if (dist2 == 0.) {continue;}
 
-      float dist = sqrtf(dist2);
+    float de = ac->east - my_pos.east; // + sha * delta_t
+    float dn = ac->north - my_pos.north; // cha * delta_t
+    float da = ac->alt - my_pos.alt; // ac->climb * delta_t   // currently wrong reference in other aircraft
+    float dist2 = de * de + dn * dn;// + da * da;
+    if (dist2 == 0.) {continue;}
 
-      // potential force equation: x^2 - d0^3/x
-      float force = dist2 - TARGET_DIST3/dist;
+    float dist = sqrtf(dist2);
 
-      potential_force.east = (de*force)/dist;
-      potential_force.north= (dn*force)/dist;
-      potential_force.alt = (da*force)/dist;
+    // potential force equation: x^2 - d0^3/x
+    float force = dist2 - TARGET_DIST3/dist;
 
-      // set carrot
-      // include speed of other vehicles for swarm cohesion
-      speed_sp.x += force_hor_gain * potential_force.east;// + ac->gspeed * sinf(ac->course);
-      speed_sp.y += force_hor_gain * potential_force.north;// + ac->gspeed * cosf(ac->course);
-      speed_sp.z += force_climb_gain * potential_force.alt;// + ac->climb;
+    potential_force.east = (de*force)/dist;
+    potential_force.north= (dn*force)/dist;
+    potential_force.alt = (da*force)/dist;
 
-      nb++;
+    // set carrot
+    // include speed of other vehicles for swarm cohesion
+    speed_sp.x += force_hor_gain * potential_force.east;// + ac->gspeed * sinf(ac->course);
+    speed_sp.y += force_hor_gain * potential_force.north;// + ac->gspeed * cosf(ac->course);
+    speed_sp.z += force_climb_gain * potential_force.alt;// + ac->climb;
 
-      // debug
-      potential_force.east = ac->north;
-      potential_force.north = my_pos.north;
-      potential_force.alt = ac->alt;
-   // }
+    nb++;
+
+    // debug
+    potential_force.east = ac->east - 594535;
+    potential_force.north = ac->north - 5760891;
+    potential_force.alt = ac->alt;
+
+    potential_force.speed = my_pos.zone;
+    potential_force.climb = ac->itow/1000.;
+
   }
 
   // add waypoint force to get vehicle to waypoint
@@ -227,8 +236,8 @@ int swarm_potential_task(void)
     }
   }
 
-  potential_force.speed = speed_sp.x;
-  potential_force.climb = speed_sp.y;
+  //potential_force.speed = speed_sp.x;
+  //potential_force.climb = speed_sp.y;
 
   // limit commands
 #ifdef GUIDANCE_H_REF_MAX_SPEED

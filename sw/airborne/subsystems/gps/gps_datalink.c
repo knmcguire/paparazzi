@@ -53,9 +53,7 @@ void gps_impl_init(void)
   /* NAV_ALT0 = ground alt above msl, NAV_MSL0 = geoid-height (msl) over ellipsoid */
   llh_nav0.alt = NAV_ALT0 + NAV_MSL0;
 
-  struct EcefCoor_i ecef_nav0;
-  ecef_of_lla_i(&ecef_nav0, &llh_nav0);
-  ltp_def_from_ecef_i(&ltp_def, &ecef_nav0);
+  ltp_def_from_lla_i(&ltp_def, &llh_nav0);
 
   gps_time_sync.t0_ticks = sys_time.nb_tick;
   gps_time_sync.t0_tow = 0;
