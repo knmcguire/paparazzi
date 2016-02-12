@@ -69,7 +69,7 @@
       </program>
       <program name="NatNet">
         <arg flag="-ac" constant="7"/>
-        <arg flag="114"/>
+        <arg flag="115"/>
         <arg flag="-small"/>
         <arg flag="-tf" constant="5"/>
       </program>

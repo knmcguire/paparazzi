@@ -20,6 +20,7 @@
 #include "math/pprz_orientation_conversion.h"
 #include <std.h>
 #include "modules/stereocam/stereocam.h"
+#include "firmwares/rotorcraft/guidance/guidance_h_ref.h"
 
 struct GpsStereoCam {
   struct EcefCoor_i ecef_vel;

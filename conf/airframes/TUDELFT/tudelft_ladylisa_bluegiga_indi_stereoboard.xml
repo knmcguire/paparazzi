@@ -78,8 +78,8 @@
  <section name="AUTOPILOT">
    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
-   <define name="MODE_AUTO1" value="AP_MODE_HOVER_Z_HOLD"/>
-   <define name="MODE_AUTO2" value="AP_MODE_HOVER_Z_HOLD"/>
+   <define name="MODE_AUTO1" value="AP_MODE_HOVER_DIRECT"/>
+   <define name="MODE_AUTO2" value="AP_MODE_HOVER_DIRECT"/>
 
     <define name="USE_THROTTLE_FOR_MOTOR_ARMING" value="TRUE"/>
     <define name="NO_RC_THRUST_LIMIT" value="TRUE"/>
@@ -196,12 +196,14 @@
  <define name="USE_GPS_HEADING" value="FALSE"/>
 
  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-   <define name="PGAIN" value="95"/>
+   <define name="PGAIN" value="0"/>
    <define name="DGAIN" value="40"/>
-   <define name="IGAIN" value="0"/>
+   <define name="IGAIN" value="40"/>
    <define name="REF_MAX_SPEED" value="0.5"/>
-   <define name="USE_REF" value="FALSE"/>
-   <define name="USE_REF_SPEED" value="FALSE"/>
+   <define name="USE_REF" value="TRUE"/>
+   <define name="USE_REF_SPEED" value="TRUE"/>
+   <define name="MAX_BANK" value="0.35"/>
+   <define name="MAX_SPEED_ERR" value="SPEED_BFP_OF_REAL(50.)"/>
  </section>
 
   <section name="NAVIGATION" prefix="NAV_">
