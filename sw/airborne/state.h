@@ -671,7 +671,7 @@ static inline struct LlaCoor_i *stateGetPositionLla_i(void)
   return &state.lla_pos_i;
 }
 
-/// Get position in UTM coordinates (float).
+/// Get position in UTM coordinates (float). Only works if using float ins, else use gps
 static inline struct UtmCoor_f *stateGetPositionUtm_f(void)
 {
   if (!bit_is_set(state.pos_status, POS_UTM_F)) {

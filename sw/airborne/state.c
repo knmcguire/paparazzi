@@ -310,19 +310,20 @@ void stateCalcPositionLla_i(void)
   SetBit(state.pos_status, POS_LLA_I);
 }
 
+/**
+ * Calculate UTM (float) from any other available representation.
+ * Note that since LLA in float has bad precision this is the last choice.
+ */
 void stateCalcPositionUtm_f(void)
 {
   if (bit_is_set(state.pos_status, POS_UTM_F)) {
     return;
   }
 
-  if (bit_is_set(state.pos_status, POS_LLA_F)) {
-    utm_of_lla_f(&state.utm_pos_f, &state.lla_pos_f);
-  } else if (bit_is_set(state.pos_status, POS_LLA_I)) {
-    /* transform lla_i -> lla_f -> utm_f, set status bits */
-    LLA_FLOAT_OF_BFP(state.lla_pos_f, state.lla_pos_i);
-    SetBit(state.pos_status, POS_LLA_F);
-    utm_of_lla_f(&state.utm_pos_f, &state.lla_pos_f);
+  if (bit_is_set(state.pos_status, POS_LLA_I)) {
+    struct UtmCoor_i utm;
+    utm_of_lla_i(&utm, &state.lla_pos_i);
+    UTM_FLOAT_OF_BFP(state.utm_pos_f, utm);
   } else if (state.utm_initialized_f) {
     if (bit_is_set(state.pos_status, POS_ENU_F)) {
       UTM_OF_ENU_ADD(state.utm_pos_f, state.enu_pos_f, state.utm_origin_f);
@@ -337,6 +338,8 @@ void stateCalcPositionUtm_f(void)
       SetBit(state.pos_status, POS_NED_F);
       UTM_OF_NED_ADD(state.utm_pos_f, state.ned_pos_f, state.utm_origin_f);
     }
+  } else if (bit_is_set(state.pos_status, POS_LLA_F)) {
+    utm_of_lla_f(&state.utm_pos_f, &state.lla_pos_f);
   } else {
     /* could not get this representation,  set errno */
     //struct EcefCoor_f _ecef_zero = {0.0f};

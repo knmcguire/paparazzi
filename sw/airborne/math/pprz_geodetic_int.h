@@ -156,15 +156,15 @@ extern void ecef_of_ned_vect_i(struct EcefCoor_i *ecef, struct LtpDef_i *def, st
   }
 
 #define ECEF_FLOAT_OF_BFP(_o, _i) {           \
-    (_o).x = (float)M_OF_CM((_i).x);          \
-    (_o).y = (float)M_OF_CM((_i).y);          \
-    (_o).z = (float)M_OF_CM((_i).z);          \
+    (_o).x = M_OF_CM((float)(_i).x);          \
+    (_o).y = M_OF_CM((float)(_i).y);          \
+    (_o).z = M_OF_CM((float)(_i).z);          \
   }
 
-#define ECEF_DOUBLE_OF_BFP(_o, _i) {           \
-    (_o).x = (double)M_OF_CM((_i).x);          \
-    (_o).y = (double)M_OF_CM((_i).y);          \
-    (_o).z = (double)M_OF_CM((_i).z);          \
+#define ECEF_DOUBLE_OF_BFP(_o, _i) {          \
+    (_o).x = M_OF_CM((double)(_i).x);         \
+    (_o).y = M_OF_CM((double)(_i).y);         \
+    (_o).z = M_OF_CM((double)(_i).z);         \
   }
 #define LLA_BFP_OF_REAL(_o, _i) {                \
     (_o).lat = (int32_t)EM7DEG_OF_RAD((_i).lat); \
@@ -172,21 +172,21 @@ extern void ecef_of_ned_vect_i(struct EcefCoor_i *ecef, struct LtpDef_i *def, st
     (_o).alt = (int32_t)MM_OF_M((_i).alt);       \
   }
 
-#define LLA_FLOAT_OF_BFP(_o, _i) {                \
-    (_o).lat = RAD_OF_EM7DEG((float)(_i).lat);   \
-    (_o).lon = RAD_OF_EM7DEG((float)(_i).lon);   \
-    (_o).alt = M_OF_MM((float)(_i).alt);   \
+#define LLA_FLOAT_OF_BFP(_o, _i) {              \
+    (_o).lat = RAD_OF_EM7DEG((float)(_i).lat);  \
+    (_o).lon = RAD_OF_EM7DEG((float)(_i).lon);  \
+    (_o).alt = M_OF_MM((float)(_i).alt);        \
   }
 
-#define LLA_DOUBLE_OF_BFP(_o, _i) {                \
+#define LLA_DOUBLE_OF_BFP(_o, _i) {             \
     (_o).lat = RAD_OF_EM7DEG((double)(_i).lat); \
     (_o).lon = RAD_OF_EM7DEG((double)(_i).lon); \
     (_o).alt = M_OF_MM((double)(_i).alt);       \
   }
 #define NED_BFP_OF_REAL(_o, _i) {       \
-    (_o).x = POS_BFP_OF_REAL((_i).x);   \
-    (_o).y = POS_BFP_OF_REAL((_i).y);   \
-    (_o).z = POS_BFP_OF_REAL((_i).z);   \
+    (_o).x = (int32_t)POS_BFP_OF_REAL((_i).x);   \
+    (_o).y = (int32_t)POS_BFP_OF_REAL((_i).y);   \
+    (_o).z = (int32_t)POS_BFP_OF_REAL((_i).z);   \
   }
 
 #define ENU_BFP_OF_REAL(_o, _i) NED_BFP_OF_REAL(_o, _i)
@@ -243,16 +243,16 @@ extern void ecef_of_ned_vect_i(struct EcefCoor_i *ecef, struct LtpDef_i *def, st
   }
 
 #define UTM_FLOAT_OF_BFP(_o, _i) {            \
-    (_o).east  = (float)M_OF_CM((_i).east);   \
-    (_o).north = (float)M_OF_CM((_i).north);  \
-    (_o).alt   = (float)M_OF_MM((_i).alt);    \
+    (_o).east  = M_OF_CM((float)(_i).east);   \
+    (_o).north = M_OF_CM((float)(_i).north);  \
+    (_o).alt   = M_OF_MM((float)(_i).alt);    \
     (_o).zone  = (_i).zone;                   \
   }
 
 #define UTM_DOUBLE_OF_BFP(_o, _i) {           \
-    (_o).east  = (double)M_OF_CM((_i).east);  \
-    (_o).north = (double)M_OF_CM((_i).north); \
-    (_o).alt   = (double)M_OF_MM((_i).alt);   \
+    (_o).east  = M_OF_CM((double)(_i).east);  \
+    (_o).north = M_OF_CM((double)(_i).north); \
+    (_o).alt   = M_OF_MM((double)(_i).alt);   \
     (_o).zone  = (_i).zone;                   \
   }
 

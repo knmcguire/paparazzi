@@ -28,7 +28,7 @@
       <message name="SURVEY"                 period="4.5"/>
       <message name="OPTIC_FLOW_EST"         period="0.5"/>
       <message name="VECTORNAV_INFO"         period="0.5"/>
-      <message name="POTENTIAL"              period="2.1"/>
+      <message name="POTENTIAL"              period="0.21"/>
     </mode>
 
     <mode name="ppm">

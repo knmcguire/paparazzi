@@ -34,16 +34,16 @@
 void ltp_of_ecef_rmat_from_lla_i(struct Int32RMat *ltp_of_ecef, struct LlaCoor_i *lla)
 {
 
-#if USE_DOUBLE_PRECISION_TRIG
-  int32_t sin_lat = rint(BFP_OF_REAL(sin(RAD_OF_EM7DEG((double)lla->lat)), HIGH_RES_TRIG_FRAC));
-  int32_t cos_lat = rint(BFP_OF_REAL(cos(RAD_OF_EM7DEG((double)lla->lat)), HIGH_RES_TRIG_FRAC));
-  int32_t sin_lon = rint(BFP_OF_REAL(sin(RAD_OF_EM7DEG((double)lla->lon)), HIGH_RES_TRIG_FRAC));
-  int32_t cos_lon = rint(BFP_OF_REAL(cos(RAD_OF_EM7DEG((double)lla->lon)), HIGH_RES_TRIG_FRAC));
-#else
+#if USE_SINGLE_PRECISION_TRIG
   int32_t sin_lat = rint(BFP_OF_REAL(sinf(RAD_OF_EM7DEG((float)lla->lat)), HIGH_RES_TRIG_FRAC));
   int32_t cos_lat = rint(BFP_OF_REAL(cosf(RAD_OF_EM7DEG((float)lla->lat)), HIGH_RES_TRIG_FRAC));
   int32_t sin_lon = rint(BFP_OF_REAL(sinf(RAD_OF_EM7DEG((float)lla->lon)), HIGH_RES_TRIG_FRAC));
   int32_t cos_lon = rint(BFP_OF_REAL(cosf(RAD_OF_EM7DEG((float)lla->lon)), HIGH_RES_TRIG_FRAC));
+#else // use double precision by default
+  int32_t sin_lat = rint(BFP_OF_REAL(sin(RAD_OF_EM7DEG((double)lla->lat)), HIGH_RES_TRIG_FRAC));
+  int32_t cos_lat = rint(BFP_OF_REAL(cos(RAD_OF_EM7DEG((double)lla->lat)), HIGH_RES_TRIG_FRAC));
+  int32_t sin_lon = rint(BFP_OF_REAL(sin(RAD_OF_EM7DEG((double)lla->lon)), HIGH_RES_TRIG_FRAC));
+  int32_t cos_lon = rint(BFP_OF_REAL(cos(RAD_OF_EM7DEG((double)lla->lon)), HIGH_RES_TRIG_FRAC));
 #endif
 
   ltp_of_ecef->m[0] = -sin_lon;
@@ -338,29 +338,21 @@ void lla_of_ecef_i(struct LlaCoor_i *out, struct EcefCoor_i *in)
 #if USE_SINGLE_PRECISION_LLA_ECEF
   /* convert our input to floating point */
   struct EcefCoor_f in_f;
-  in_f.x = M_OF_CM((float)in->x);
-  in_f.y = M_OF_CM((float)in->y);
-  in_f.z = M_OF_CM((float)in->z);
+  ECEF_FLOAT_OF_BFP(in_f, *in);
   /* calls the floating point transformation */
   struct LlaCoor_f out_f;
   lla_of_ecef_f(&out_f, &in_f);
   /* convert the output to fixed point       */
-  out->lon = (int32_t)rint(EM7DEG_OF_RAD(out_f.lon));
-  out->lat = (int32_t)rint(EM7DEG_OF_RAD(out_f.lat));
-  out->alt = (int32_t)MM_OF_M(out_f.alt);
+  LLA_BFP_OF_REAL(*out, out_f);
 #else // use double precision by default
   /* convert our input to floating point */
   struct EcefCoor_d in_d;
-  in_d.x = M_OF_CM((double)in->x);
-  in_d.y = M_OF_CM((double)in->y);
-  in_d.z = M_OF_CM((double)in->z);
+  ECEF_DOUBLE_OF_BFP(in_d, *in);
   /* calls the floating point transformation */
   struct LlaCoor_d out_d;
   lla_of_ecef_d(&out_d, &in_d);
   /* convert the output to fixed point       */
-  out->lon = (int32_t)rint(EM7DEG_OF_RAD(out_d.lon));
-  out->lat = (int32_t)rint(EM7DEG_OF_RAD(out_d.lat));
-  out->alt = (int32_t)MM_OF_M(out_d.alt);
+  LLA_BFP_OF_REAL(*out, out_d);
 #endif
 
 }
@@ -371,29 +363,21 @@ void ecef_of_lla_i(struct EcefCoor_i *out, struct LlaCoor_i *in)
 #if USE_SINGLE_PRECISION_LLA_ECEF
   /* convert our input to floating point */
   struct LlaCoor_f in_f;
-  in_f.lon = RAD_OF_EM7DEG((float)in->lon);
-  in_f.lat = RAD_OF_EM7DEG((float)in->lat);
-  in_f.alt = M_OF_MM((float)in->alt);
+  LLA_FLOAT_OF_BFP(in_d, *in);
   /* calls the floating point transformation */
   struct EcefCoor_f out_f;
   ecef_of_lla_f(&out_f, &in_f);
   /* convert the output to fixed point       */
-  out->x = (int32_t)CM_OF_M(out_f.x);
-  out->y = (int32_t)CM_OF_M(out_f.y);
-  out->z = (int32_t)CM_OF_M(out_f.z);
+  ECEF_BFP_OF_REAL(*out, out_d);
 #else // use double precision by default
   /* convert our input to floating point */
   struct LlaCoor_d in_d;
-  in_d.lon = RAD_OF_EM7DEG((double)in->lon);
-  in_d.lat = RAD_OF_EM7DEG((double)in->lat);
-  in_d.alt = M_OF_MM((double)in->alt);
+  LLA_DOUBLE_OF_BFP(in_d, *in);
   /* calls the floating point transformation */
   struct EcefCoor_d out_d;
   ecef_of_lla_d(&out_d, &in_d);
   /* convert the output to fixed point       */
-  out->x = (int32_t)CM_OF_M(out_d.x);
-  out->y = (int32_t)CM_OF_M(out_d.y);
-  out->z = (int32_t)CM_OF_M(out_d.z);
+  ECEF_BFP_OF_REAL(*out, out_d);
 #endif
 
 }
@@ -402,18 +386,13 @@ void ecef_of_lla_i(struct EcefCoor_i *out, struct LlaCoor_i *in)
 
 void utm_of_lla_i(struct UtmCoor_i *utm, struct LlaCoor_i *lla)
 {
-  // Initialise utm if not yet initialised
-  if (utm->zone == 0) {
-    utm->zone = UtmZoneOfLlaLon_i(lla->lon);
-  }
-
 #if USE_SINGLE_PRECISION_LLA_UTM
   /* convert our input to floating point */
   struct LlaCoor_f lla_f;
-  LLA_FLOAT_OF_BPF(lla_f, *lla);
+  LLA_FLOAT_OF_BFP(lla_f, *lla);
   /* calls the floating point transformation */
   struct UtmCoor_f utm_f;
-  utm_f.zone = utm_f->zone;
+  utm_f.zone = utm->zone;
   utm_of_lla_f(&utm_f, &lla_f);
   /* convert the output to fixed point       */
   UTM_BFP_OF_REAL(*utm, utm_f);
@@ -428,7 +407,6 @@ void utm_of_lla_i(struct UtmCoor_i *utm, struct LlaCoor_i *lla)
   /* convert the output to fixed point       */
   UTM_BFP_OF_REAL(*utm, utm_d);
 #endif
-
 }
 
 void lla_of_utm_i(struct LlaCoor_i *lla, struct UtmCoor_i *utm)

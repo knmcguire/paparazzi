@@ -160,10 +160,20 @@ int swarm_potential_task(void)
 
   if (gps.fix == 0){return 1;}
   struct UtmCoor_f my_pos;
-  struct UtmCoor_i utm;
+  struct UtmCoor_d utm;
 
-  utm_of_lla_i(&utm, &gps.lla_pos);
-  UTM_FLOAT_OF_BFP(my_pos, utm);
+  utm.zone = 0;
+  //utm_of_lla_i(&utm, &gps.lla_pos);
+  //UTM_FLOAT_OF_BFP(my_pos, utm);
+
+  struct LlaCoor_d lla;
+  LLA_DOUBLE_OF_BFP(lla, gps.lla_pos);
+  utm_of_lla_d(&utm, &lla);
+
+  my_pos.east = (float)utm.east;
+  my_pos.north = (float)utm.north;
+  my_pos.alt = (float)utm.alt;
+  my_pos.zone = utm.zone;
 
   for (i = 0; i < acs_idx; i++) {
     if (the_acs[i].ac_id == 0 || the_acs[i].ac_id == AC_ID) { continue; }
@@ -235,6 +245,13 @@ int swarm_potential_task(void)
       speed_sp.z += force_climb_gain * potential_force.alt;
     }
   }
+
+  potential_force.east = my_pos.east - 594535;
+  potential_force.north = my_pos.north - 5760891;
+  potential_force.alt = my_pos.alt;
+
+  potential_force.speed = my_pos.zone;
+  potential_force.climb = gps.tow/1000.;
 
   //potential_force.speed = speed_sp.x;
   //potential_force.climb = speed_sp.y;

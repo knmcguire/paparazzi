@@ -249,7 +249,7 @@ void utm_of_lla_d(struct UtmCoor_d *utm, struct LlaCoor_d *lla)
 {
   // compute zone if not initialised
   if (utm->zone == 0) {
-    utm->zone = UtmZoneOfLlaLon_f(lla->lon);
+    utm->zone = UtmZoneOfLlaLonRad(lla->lon);
   }
 
   double lambda_c = LambdaOfUtmZone(utm->zone);
@@ -263,7 +263,7 @@ void utm_of_lla_d(struct UtmCoor_d *utm, struct LlaCoor_d *lla)
   int8_t k;
   for (k = 1; k < 3; k++) {
     struct DoubleVect2 z = { lambda_,  ll_ };
-    VECT2_SMUL(z, z, 2. * k);
+    VECT2_SMUL(z, z, 2.*k);
     CSin(z);
     VECT2_SMUL(z, z, serie_coeff_proj_mercator[k]);
     VECT2_ADD(z_, z);

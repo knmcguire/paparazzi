@@ -275,17 +275,17 @@ struct complex { float re; float im; };
 #define CSin(z) { CI(z); struct complex _z = {-z.re, -z.im}; float e = exp(z.re); float cos_z_im = cosf(z.im); z.re = e*cos_z_im; float sin_z_im = sinf(z.im); z.im = e*sin_z_im; _z.re = cos_z_im/e; _z.im = -sin_z_im/e; CSub(_z, z); CScal(-0.5, z); CI(z); }
 
 
-static inline float UNUSED isometric_latitude_f(float phi, float e)
+static inline float isometric_latitude_f(float phi, float e)
 {
   return logf(tanf(M_PI_4 + phi / 2.0)) - e / 2.0 * logf((1.0 + e * sinf(phi)) / (1.0 - e * sinf(phi)));
 }
 
-static inline float UNUSED isometric_latitude_fast_f(float phi)
+static inline float isometric_latitude_fast_f(float phi)
 {
   return logf(tanf(M_PI_4 + phi / 2.0));
 }
 
-static inline float UNUSED inverse_isometric_latitude_f(float lat, float e, float epsilon)
+static inline float inverse_isometric_latitude_f(float lat, float e, float epsilon)
 {
   float exp_l = expf(lat);
   float phi0 = 2 * atanf(exp_l) - M_PI_2;
@@ -297,7 +297,7 @@ static inline float UNUSED inverse_isometric_latitude_f(float lat, float e, floa
     float sin_phi = e * sinf(phi_);
     phi0 = 2 * atanf(powf((1 + sin_phi) / (1. - sin_phi), e / 2.) * exp_l) - M_PI_2;
     max_iter--;
-  } while (max_iter && fabs(phi_ - phi0) > epsilon);
+  } while (max_iter && fabsf(phi_ - phi0) > epsilon);
   return phi0;
 }
 
@@ -305,7 +305,7 @@ void utm_of_lla_f(struct UtmCoor_f *utm, struct LlaCoor_f *lla)
 {
   // compute zone if not initialised
   if (utm->zone == 0) {
-    utm->zone = UtmZoneOfLlaLon_f(lla->lon);
+    utm->zone = UtmZoneOfLlaLonRad(lla->lon);
   }
 
 #if USE_SINGLE_PRECISION_LLA_UTM
@@ -332,17 +332,18 @@ void utm_of_lla_f(struct UtmCoor_f *utm, struct LlaCoor_f *lla)
   // copy alt above reference ellipsoid
   utm->alt = lla->alt;
 
-#else // use double precision by default
-  /* convert our input to floating point */
-  struct LlaCoor_d lla_d;
-  LLA_COPY(lla_d, *lla);
-  /* calls the floating point transformation */
-  struct UtmCoor_d utm_d;
-  utm_d.zone = utm->zone;
-  utm_of_lla_d(&utm_d, &lla_d);
-  /* convert the output to fixed point       */
-  UTM_COPY(*utm, utm_d);
-#endif
+  #else // use double precision by default
+    /* convert our input to floating point */
+    struct LlaCoor_d lla_d;
+    LLA_COPY(lla_d, *lla);
+    /* calls the floating point transformation */
+    struct UtmCoor_d utm_d;
+    utm_d.zone = utm->zone;
+    utm_of_lla_d(&utm_d, &lla_d);
+    /* convert the output to fixed point       */
+    UTM_COPY(*utm, utm_d);
+  #endif
+
 
 }
 
@@ -357,7 +358,7 @@ void lla_of_utm_f(struct LlaCoor_f *lla, struct UtmCoor_f *utm)
   int8_t k;
   for (k = 1; k < 2; k++) {
     struct complex z_ = { real, img };
-    CScal(2. * k, z_);
+    CScal(2.*k, z_);
     CSin(z_);
     CScal(serie_coeff_proj_mercator_inverse[k], z_);
     CSub(z_, z);
@@ -371,14 +372,15 @@ void lla_of_utm_f(struct LlaCoor_f *lla, struct UtmCoor_f *utm)
 
   // copy alt above reference ellipsoid
   lla->alt = utm->alt;
+
 #else
-  /* convert our input to floating point */
-  struct UtmCoor_d utm_d;
-  UTM_COPY(utm_d, *utm);
-  /* calls the floating point transformation */
-  struct LlaCoor_d lla_d;
-  lla_of_utm_d(&lla_d, &utm_d);
-  /* convert the output to fixed point       */
-  LLA_COPY(*lla, lla_d);
+    /* convert our input to floating point */
+    struct UtmCoor_d utm_d;
+    UTM_COPY(utm_d, *utm);
+    /* calls the floating point transformation */
+    struct LlaCoor_d lla_d;
+    lla_of_utm_d(&lla_d, &utm_d);
+    /* convert the output to fixed point       */
+    LLA_COPY(*lla, lla_d);
 #endif
 }
