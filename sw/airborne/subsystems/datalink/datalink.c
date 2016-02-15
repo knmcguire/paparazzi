@@ -91,10 +91,10 @@ void dl_parse_msg(void)
         }
 
         set_ac_info(sender_id,
-                    MOfCm(DL_GPS_SMALL_utm_east(dl_buffer)),    /*m*/
-                    MOfCm(DL_GPS_SMALL_utm_north(dl_buffer)),   /*m*/
-                    RadOfDeg(((float)course) / 10.),            /*rad(CW)*/
+                    MOfCm(DL_GPS_SMALL_lat(dl_buffer)),         /*1e7deg*/
+                    MOfCm(DL_GPS_SMALL_lon(dl_buffer)),         /*1e7deg*/
                     MOfCm(DL_GPS_SMALL_alt(dl_buffer)),         /*m*/
+                    RadOfDeg(((float)course) / 10.),            /*rad(CW)*/
                     MOfCm(gspeed),                              /*m/s*/
                     MOfCm(climb),                               /*m/s*/
                     gps_tow_from_sys_ticks(sys_time.nb_tick));
@@ -105,8 +105,9 @@ void dl_parse_msg(void)
         set_ac_info(sender_id,
           MOfCm(DL_GPS_utm_east(dl_buffer)),    /*m*/
           MOfCm(DL_GPS_utm_north(dl_buffer)),   /*m*/
-          RadOfDeg(((float)DL_GPS_course(dl_buffer)) / 10.), /*rad(CW)*/
           MOfMm(DL_GPS_alt(dl_buffer)),        /*m*/
+          DL_GPS_utm_zone(dl_buffer),
+          RadOfDeg(((float)DL_GPS_course(dl_buffer)) / 10.), /*rad(CW)*/
           MOfCm(DL_GPS_speed(dl_buffer)),       /*m/s*/
           MOfCm(DL_GPS_climb(dl_buffer)),       /*m/s*/
           (uint32_t)DL_GPS_itow(dl_buffer));
@@ -242,15 +243,15 @@ void dl_parse_msg(void)
 #ifdef TRAFFIC_INFO
     case DL_ACINFO: {
       if (DL_ACINFO_ac_id(dl_buffer) == AC_ID) { break; }
-      uint8_t id = DL_ACINFO_ac_id(dl_buffer);
-      float ux = MOfCm(DL_ACINFO_utm_east(dl_buffer));
-      float uy = MOfCm(DL_ACINFO_utm_north(dl_buffer));
-      float a = MOfCm(DL_ACINFO_alt(dl_buffer));
-      float c = RadOfDeg(((float)DL_ACINFO_course(dl_buffer)) / 10.);
-      float s = MOfCm(DL_ACINFO_speed(dl_buffer));
-      float cl = MOfCm(DL_ACINFO_climb(dl_buffer));
-      uint32_t t = DL_ACINFO_itow(dl_buffer);
-      set_ac_info(id, ux, uy, c, a, s, cl, t);
+      set_ac_info(DL_ACINFO_ac_id(dl_buffer),
+          MOfCm(DL_ACINFO_utm_east(dl_buffer),
+          MOfCm(DL_ACINFO_utm_north(dl_buffer)),
+          MOfCm(DL_ACINFO_alt(dl_buffer)),
+          MOfCm(DL_ACINFO_utm_zone(dl_buffer)),
+          RadOfDeg(((float)DL_ACINFO_course(dl_buffer)) / 10.),
+          MOfCm(DL_ACINFO_speed(dl_buffer)),
+          MOfCm(DL_ACINFO_climb(dl_buffer)),
+          DL_ACINFO_itow(dl_buffer));
     }
     break;
 #endif

@@ -50,7 +50,7 @@ struct ac_info_ *get_ac_info(uint8_t _id)
   return &the_acs[the_acs_id[_id]];
 }
 
-void set_ac_info(uint8_t id, float utm_east, float utm_north, float course, float alt,
+void set_ac_info(uint8_t id, float utm_east, float utm_north, uint16_t utm_zone, float course, float alt,
                  float gspeed, float climb, uint32_t itow)
 {
   if (acs_idx < NB_ACS) {
@@ -58,13 +58,24 @@ void set_ac_info(uint8_t id, float utm_east, float utm_north, float course, floa
       the_acs_id[id] = acs_idx++;
       the_acs[the_acs_id[id]].ac_id = id;
     }
-    the_acs[the_acs_id[id]].east = utm_east;// -  nav_utm_east0;
-    the_acs[the_acs_id[id]].north = utm_north;// - nav_utm_north0;
-    the_acs[the_acs_id[id]].course = course;
-    the_acs[the_acs_id[id]].alt = alt;// +- NAV_MSL0;
-    the_acs[the_acs_id[id]].gspeed = gspeed;
-    the_acs[the_acs_id[id]].climb = climb;
-    the_acs[the_acs_id[id]].itow = itow;
+    if (utm_zone == UtmZoneOfLlaLonDeg(gps.lla_pos.lon)) {
+      the_acs[the_acs_id[id]].east = utm_east;
+      the_acs[the_acs_id[id]].north = utm_north;
+      the_acs[the_acs_id[id]].course = course;
+      the_acs[the_acs_id[id]].alt = alt;
+      the_acs[the_acs_id[id]].gspeed = gspeed;
+      the_acs[the_acs_id[id]].climb = climb;
+      the_acs[the_acs_id[id]].itow = itow;
+    } else { // store other uav in utm extended zone
+      struct UtmCoor_f utm_f = {.east = utm_east, .north = utm_north, .alt = alt, .zone = UtmZoneOfLlaLonDeg(gps.lla_pos.lon)};
+      struct UtmCoor_i utm_i;
+      UTM_BFP_OF_REAL(utm_i, utm_f);
+
+      struct LlaCoor_i lla;
+      lla_of_utm_i(lla, utm_i);
+
+      set_ac_info_lla(id, lla.lat, lla.lon, lla.alt, course, gspeed, climb, itow);
+    }
   }
 }
 
@@ -79,6 +90,7 @@ void set_ac_info_lla(uint8_t id, int32_t lat, int32_t lon, int32_t alt,
 
     struct LlaCoor_i lla_i = {.lat = lat, .lon = lon, .alt = alt};
     struct UtmCoor_i utm_i;
+    utm_i.zone = UtmZoneOfLlaLonDeg(gps.lla_pos.lon);   // use current zone as reference, i.e zone extend
 
     utm_of_lla_i(&utm_i, &lla_i);
 

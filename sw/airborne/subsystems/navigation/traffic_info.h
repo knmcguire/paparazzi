@@ -36,8 +36,8 @@
 
 struct ac_info_ {
   uint8_t ac_id;
-  float east;   ///< m relative to nav_utm_east0
-  float north;  ///< m relative to nav_utm_north0
+  float east;   ///< m, zone extended from my zone
+  float north;  ///< m, zone extended from my zone
   float course; ///< rad (CW)
   float alt;    ///< m
   float gspeed; ///< m/s
@@ -55,15 +55,16 @@ extern struct ac_info_ *get_ac_info(uint8_t id);
 /**
  * Set Aircraft info.
  * @param[in] id aircraft id, 0 is reserved for GCS, 1 for this aircraft (id=AC_ID)
- * @param[in] utm_east UTM east in m relative to nav_utm_east0
- * @param[in] utm_north UTM north in m relative to nav_utm_north0
+ * @param[in] utm_east UTM east on m
+ * @param[in] utm_north UTM north in m
+ * @param[in] utm_zone UTM zone
  * @param[in] course Course in rad (CW)
  * @param[in] alt Altitude in m above MSL
  * @param[in] gspeed Ground speed in m/s
  * @param[in] climb Climb rate in m/s
  * @param[in] itow GPS time of week in ms
  */
-extern void set_ac_info(uint8_t id, float utm_east, float utm_north, float course, float alt,
+extern void set_ac_info(uint8_t id, float utm_east, float utm_north, float alt, uint16_t utm_zone, float course,
                         float gspeed, float climb, uint32_t itow);
 
 /**
