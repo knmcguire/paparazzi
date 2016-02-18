@@ -32,6 +32,9 @@
 #include "generated/airframe.h"     // AC_ID
 #include "math/pprz_geodetic_int.h"
 #include "math/pprz_geodetic_float.h"
+#include "math/pprz_geodetic_utm.h"
+
+#include "subsystems/gps.h"
 
 uint8_t acs_idx;
 uint8_t the_acs_id[NB_ACS_ID];
@@ -50,29 +53,28 @@ struct ac_info_ *get_ac_info(uint8_t _id)
   return &the_acs[the_acs_id[_id]];
 }
 
-void set_ac_info(uint8_t id, float utm_east, float utm_north, uint16_t utm_zone, float course, float alt,
-                 float gspeed, float climb, uint32_t itow)
+void set_ac_info(uint8_t id, uint32_t utm_east, uint32_t utm_north, uint32_t alt, uint8_t utm_zone, uint16_t course,
+                uint16_t gspeed, uint16_t climb, uint32_t itow)
 {
   if (acs_idx < NB_ACS) {
     if (id > 0 && the_acs_id[id] == 0) {
       the_acs_id[id] = acs_idx++;
       the_acs[the_acs_id[id]].ac_id = id;
     }
-    if (utm_zone == UtmZoneOfLlaLonDeg(gps.lla_pos.lon)) {
-      the_acs[the_acs_id[id]].east = utm_east;
-      the_acs[the_acs_id[id]].north = utm_north;
+    uint16_t my_zone = UtmZoneOfLlaLonDeg(gps.lla_pos.lon);
+    if (utm_zone == my_zone) {
+      the_acs[the_acs_id[id]].utm.east = utm_east;
+      the_acs[the_acs_id[id]].utm.north = utm_north;
+      the_acs[the_acs_id[id]].utm.alt = alt;
+      the_acs[the_acs_id[id]].utm.zone = utm_zone;
       the_acs[the_acs_id[id]].course = course;
-      the_acs[the_acs_id[id]].alt = alt;
       the_acs[the_acs_id[id]].gspeed = gspeed;
       the_acs[the_acs_id[id]].climb = climb;
       the_acs[the_acs_id[id]].itow = itow;
     } else { // store other uav in utm extended zone
-      struct UtmCoor_f utm_f = {.east = utm_east, .north = utm_north, .alt = alt, .zone = UtmZoneOfLlaLonDeg(gps.lla_pos.lon)};
-      struct UtmCoor_i utm_i;
-      UTM_BFP_OF_REAL(utm_i, utm_f);
-
+      struct UtmCoor_i utm = {.east = utm_east, .north = utm_north, .alt = alt, .zone = my_zone};
       struct LlaCoor_i lla;
-      lla_of_utm_i(lla, utm_i);
+      lla_of_utm_i(&lla, &utm);
 
       set_ac_info_lla(id, lla.lat, lla.lon, lla.alt, course, gspeed, climb, itow);
     }
@@ -82,27 +84,26 @@ void set_ac_info(uint8_t id, float utm_east, float utm_north, uint16_t utm_zone,
 void set_ac_info_lla(uint8_t id, int32_t lat, int32_t lon, int32_t alt,
                      int16_t course, uint16_t gspeed, int16_t climb, uint32_t itow)
 {
+
   if (acs_idx < NB_ACS) {
     if (id > 0 && the_acs_id[id] == 0) {
       the_acs_id[id] = acs_idx++;
       the_acs[the_acs_id[id]].ac_id = id;
     }
 
-    struct LlaCoor_i lla_i = {.lat = lat, .lon = lon, .alt = alt};
-    struct UtmCoor_i utm_i;
-    utm_i.zone = UtmZoneOfLlaLonDeg(gps.lla_pos.lon);   // use current zone as reference, i.e zone extend
+    struct LlaCoor_i lla = {.lat = lat, .lon = lon, .alt = alt};
+    struct UtmCoor_i utm;
+    utm.zone = UtmZoneOfLlaLonDeg(gps.lla_pos.lon);   // use current zone as reference, i.e zone extend
 
-    utm_of_lla_i(&utm_i, &lla_i);
+    utm_of_lla_i(&utm, &lla);
 
-    struct UtmCoor_f utm_f;
-    UTM_FLOAT_OF_BFP(utm_f, utm_i);
-
-    the_acs[the_acs_id[id]].east = utm_f.east;
-    the_acs[the_acs_id[id]].north = utm_f.north;
-    the_acs[the_acs_id[id]].alt = utm_f.alt;
-    the_acs[the_acs_id[id]].course = RadOfDeg((float)course / 10.);
-    the_acs[the_acs_id[id]].gspeed = (float)gspeed * 100;
-    the_acs[the_acs_id[id]].climb = (float)climb * 100;
+    the_acs[the_acs_id[id]].utm.east = lat;
+    the_acs[the_acs_id[id]].utm.north = lon;
+    the_acs[the_acs_id[id]].utm.alt = alt;
+    //UTM_COPY(the_acs[the_acs_id[id]].utm, utm);
+    the_acs[the_acs_id[id]].course = course;
+    the_acs[the_acs_id[id]].gspeed = gspeed;
+    the_acs[the_acs_id[id]].climb = climb;
     the_acs[the_acs_id[id]].itow = itow;
   }
 }

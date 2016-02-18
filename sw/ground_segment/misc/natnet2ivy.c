@@ -602,6 +602,11 @@ gboolean timeout_transmit_callback(gpointer data)
               (int)cur_time.tv_sec,
               (int)cur_time.tv_usec);
     } else {
+      struct timeval  tv;
+      gettimeofday(&tv, NULL);
+
+      uint32_t time_in_ms = (uint32_t)((tv.tv_sec) * 1000 + (tv.tv_usec) / 1000); // convert tv_sec & tv_usec to millisecond
+         
       IvySendMsg("0 REMOTE_GPS %d %d %d %d %d %d %d %d %d %d %d %d %d %d", aircrafts[rigidBodies[i].id].ac_id,
                  rigidBodies[i].nMarkers,                //uint8 Number of markers (sv_num)
                  (int)(ecef_pos.x * 100.0),              //int32 ECEF X in CM
@@ -614,7 +619,7 @@ gboolean timeout_transmit_callback(gpointer data)
                  (int)(rigidBodies[i].ecef_vel.x * 100.0), //int32 ECEF velocity X in m/s
                  (int)(rigidBodies[i].ecef_vel.y * 100.0), //int32 ECEF velocity Y in m/s
                  (int)(rigidBodies[i].ecef_vel.z * 100.0), //int32 ECEF velocity Z in m/s
-                 0,
+                 time_in_ms,
                  (int)(heading * 10000000.0));           //int32 Course in rad*1e7
     }
 

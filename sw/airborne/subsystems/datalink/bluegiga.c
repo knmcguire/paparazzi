@@ -121,6 +121,7 @@ void bluegiga_increment_buf(uint8_t *buf_idx, uint8_t len)
   *buf_idx = (*buf_idx + len) % BLUEGIGA_BUFFER_SIZE;
 }
 
+uint32_t a2a_msgs = 0;
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
 
@@ -131,8 +132,9 @@ static void send_bluegiga(struct transport_tx *trans, struct link_device *dev)
 
   if (now_ts > last_ts) {
     uint32_t rate = 1000 * bluegiga_p.bytes_recvd_since_last / (now_ts - last_ts);
-    pprz_msg_send_BLUEGIGA(trans, dev, AC_ID, &rate);
+    pprz_msg_send_BLUEGIGA(trans, dev, AC_ID, &rate, &a2a_msgs);
 
+    a2a_msgs = 0;
     bluegiga_p.bytes_recvd_since_last = 0;
     last_ts = now_ts;
   }
@@ -290,6 +292,11 @@ void bluegiga_receive(struct spi_transaction *trans)
       LED_TOGGLE(MODEM_LED);
 #endif
           packet_len = 0xff - trans->input_buf[0];
+
+          if (packet_len > 3)
+          {
+            a2a_msgs++;
+          }
 
           int8_t tx_strength = TxStrengthOfSender(trans->input_buf);
           int8_t rssi = RssiOfSender(trans->input_buf);

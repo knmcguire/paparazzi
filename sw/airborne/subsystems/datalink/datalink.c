@@ -50,6 +50,7 @@
 
 #ifdef TRAFFIC_INFO
 #include "subsystems/navigation/traffic_info.h"
+#include "generated/flight_plan.h"  // NAV_MSL0
 #endif
 
 #ifdef RADIO_CONTROL_DATALINK_LED
@@ -72,56 +73,57 @@ void dl_parse_msg(void)
   if (sender_id != 0) {
     switch (msg_id) {
 #ifdef TRAFFIC_INFO
-#if 0
+#if 0 // #ifdef DL_GPS_SMALL
       case DL_GPS_SMALL: {
         uint32_t multiplex_speed = DL_GPS_SMALL_multiplex_speed(dl_buffer);
 
-        // Position in ENU coordinates
+        // decode compressed values
         int16_t course = (int16_t)((multiplex_speed >> 21) & 0x7FF); // bits 31-21 course in decideg
         if (course & 0x400) {
-          course |= 0xFFFFF800;  // fix for twos complements
+          course |= 0xF800;  // fix for twos complements
         }
+        course *= 2; // scale course by resolution
         int16_t gspeed = (int16_t)((multiplex_speed >> 10) & 0x7FF); // bits 20-10 ground speed cm/s
         if (gspeed & 0x400) {
-          gspeed |= 0xFFFFF800;  // fix for twos complements
+          gspeed |= 0xF800;  // fix for twos complements
         }
-        int16_t climb = (int16_t)(multiplex_speed >> 2 & 0x7FF); // bits 9-0 z climb speed in cm/s
-        if (climb & 0x400) {
-          climb |= 0xFFFFF800;  // fix for twos complements
+        int16_t climb = (int16_t)(multiplex_speed & 0x3FF); // bits 9-0 z climb speed in cm/s
+        if (climb & 0x200) {
+          climb |= 0xFC00;  // fix for twos complements
         }
 
-        set_ac_info(sender_id,
-                    MOfCm(DL_GPS_SMALL_lat(dl_buffer)),         /*1e7deg*/
-                    MOfCm(DL_GPS_SMALL_lon(dl_buffer)),         /*1e7deg*/
-                    MOfCm(DL_GPS_SMALL_alt(dl_buffer)),         /*m*/
-                    RadOfDeg(((float)course) / 10.),            /*rad(CW)*/
-                    MOfCm(gspeed),                              /*m/s*/
-                    MOfCm(climb),                               /*m/s*/
+        set_ac_info_lla(sender_id,
+                    DL_GPS_SMALL_lla_lat(dl_buffer),
+                    DL_GPS_SMALL_lla_lon(dl_buffer),
+                    (int32_t)DL_GPS_SMALL_alt(dl_buffer)*10,
+                    course,
+                    gspeed,
+                    climb,
                     gps_tow_from_sys_ticks(sys_time.nb_tick));
       }
       break;
 #endif
       case DL_GPS: {
         set_ac_info(sender_id,
-          MOfCm(DL_GPS_utm_east(dl_buffer)),    /*m*/
-          MOfCm(DL_GPS_utm_north(dl_buffer)),   /*m*/
-          MOfMm(DL_GPS_alt(dl_buffer)),        /*m*/
+          DL_GPS_utm_east(dl_buffer),
+          DL_GPS_utm_north(dl_buffer),
+          DL_GPS_alt(dl_buffer),
           DL_GPS_utm_zone(dl_buffer),
-          RadOfDeg(((float)DL_GPS_course(dl_buffer)) / 10.), /*rad(CW)*/
-          MOfCm(DL_GPS_speed(dl_buffer)),       /*m/s*/
-          MOfCm(DL_GPS_climb(dl_buffer)),       /*m/s*/
-          (uint32_t)DL_GPS_itow(dl_buffer));
+          DL_GPS_course(dl_buffer),
+          DL_GPS_speed(dl_buffer),
+          DL_GPS_climb(dl_buffer),
+          DL_GPS_itow(dl_buffer));
       }
       break;
       case DL_GPS_LLA: {
         set_ac_info_lla(sender_id,
-                        DL_GPS_LLA_lat(dl_buffer),    /*1e7deg*/
-                        DL_GPS_LLA_lon(dl_buffer),    /*1e7deg*/
-                        DL_GPS_LLA_alt(dl_buffer),    /*mm*/
-                        DL_GPS_LLA_course(dl_buffer), /*decideg*/
-                        DL_GPS_LLA_speed(dl_buffer),  /*cm/s*/
-                        DL_GPS_LLA_climb(dl_buffer),  /*cm/s*/
-                        DL_GPS_LLA_itow(dl_buffer));  /*ms*/
+                        DL_GPS_LLA_lat(dl_buffer),
+                        DL_GPS_LLA_lon(dl_buffer),
+                        DL_GPS_LLA_alt(dl_buffer),
+                        DL_GPS_LLA_course(dl_buffer),
+                        DL_GPS_LLA_speed(dl_buffer),
+                        DL_GPS_LLA_climb(dl_buffer),
+                        DL_GPS_LLA_itow(dl_buffer));
       }
       break;
 #endif /* TRAFFIC_INFO */
@@ -244,13 +246,13 @@ void dl_parse_msg(void)
     case DL_ACINFO: {
       if (DL_ACINFO_ac_id(dl_buffer) == AC_ID) { break; }
       set_ac_info(DL_ACINFO_ac_id(dl_buffer),
-          MOfCm(DL_ACINFO_utm_east(dl_buffer),
-          MOfCm(DL_ACINFO_utm_north(dl_buffer)),
-          MOfCm(DL_ACINFO_alt(dl_buffer)),
-          MOfCm(DL_ACINFO_utm_zone(dl_buffer)),
-          RadOfDeg(((float)DL_ACINFO_course(dl_buffer)) / 10.),
-          MOfCm(DL_ACINFO_speed(dl_buffer)),
-          MOfCm(DL_ACINFO_climb(dl_buffer)),
+          DL_ACINFO_utm_east(dl_buffer),
+          DL_ACINFO_utm_north(dl_buffer),
+          DL_ACINFO_alt(dl_buffer)*10 + NAV_MSL0, // hack cause ground station sends hmsl
+          DL_ACINFO_utm_zone(dl_buffer),
+          DL_ACINFO_course(dl_buffer),
+          DL_ACINFO_speed(dl_buffer),
+          DL_ACINFO_climb(dl_buffer),
           DL_ACINFO_itow(dl_buffer));
     }
     break;

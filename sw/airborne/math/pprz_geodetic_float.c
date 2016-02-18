@@ -308,7 +308,6 @@ void utm_of_lla_f(struct UtmCoor_f *utm, struct LlaCoor_f *lla)
     utm->zone = UtmZoneOfLlaLonRad(lla->lon);
   }
 
-#if USE_SINGLE_PRECISION_LLA_UTM
   float lambda_c = LambdaOfUtmZone(utm->zone);
   float ll = isometric_latitude_f(lla->lat , E);
   float dl = lla->lon - lambda_c;
@@ -331,25 +330,10 @@ void utm_of_lla_f(struct UtmCoor_f *utm, struct LlaCoor_f *lla)
 
   // copy alt above reference ellipsoid
   utm->alt = lla->alt;
-
-  #else // use double precision by default
-    /* convert our input to floating point */
-    struct LlaCoor_d lla_d;
-    LLA_COPY(lla_d, *lla);
-    /* calls the floating point transformation */
-    struct UtmCoor_d utm_d;
-    utm_d.zone = utm->zone;
-    utm_of_lla_d(&utm_d, &lla_d);
-    /* convert the output to fixed point       */
-    UTM_COPY(*utm, utm_d);
-  #endif
-
-
 }
 
 void lla_of_utm_f(struct LlaCoor_f *lla, struct UtmCoor_f *utm)
 {
-#if USE_SINGLE_PRECISION_LLA_UTM
   float scale = 1 / N / serie_coeff_proj_mercator[0];
   float real = (utm->north - DELTA_NORTH) * scale;
   float img = (utm->east - DELTA_EAST) * scale;
@@ -372,15 +356,4 @@ void lla_of_utm_f(struct LlaCoor_f *lla, struct UtmCoor_f *utm)
 
   // copy alt above reference ellipsoid
   lla->alt = utm->alt;
-
-#else
-    /* convert our input to floating point */
-    struct UtmCoor_d utm_d;
-    UTM_COPY(utm_d, *utm);
-    /* calls the floating point transformation */
-    struct LlaCoor_d lla_d;
-    lla_of_utm_d(&lla_d, &utm_d);
-    /* convert the output to fixed point       */
-    LLA_COPY(*lla, lla_d);
-#endif
 }

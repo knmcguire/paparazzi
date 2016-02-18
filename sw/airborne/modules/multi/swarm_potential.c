@@ -32,7 +32,6 @@
 #include "state.h"
 #include "navigation.h"
 
-
 #include "generated/flight_plan.h"
 
 #include "math/pprz_geodetic_int.h"
@@ -104,7 +103,7 @@ float sign(float x)
 
 static void send_periodic(struct transport_tx *trans, struct link_device *dev) {
   pprz_msg_send_POTENTIAL(trans, dev, AC_ID, &potential_force.east, &potential_force.north,
-                              &potential_force.alt, &potential_force.speed, &potential_force.climb);
+                                &potential_force.alt, &potential_force.speed, &potential_force.climb);
 }
 
 #endif
@@ -138,16 +137,14 @@ void swarm_potential_periodic(void) {
    * a single integer. The z axis is considered unsigned and only the latter 10 LSBs are
    * used.
    */
-  uint32_t multiplex_speed = (((uint32_t)(gps.course*10.0)) & 0x7FF) << 21; // bits 31-21 x position in cm
-  multiplex_speed |= (((uint32_t)(gps.gspeed*100.0)) & 0x7FF) << 10;         // bits 20-10 y position in cm
-  multiplex_speed |= (((uint32_t)(-gps.ned_vel.z*100.0)) & 0x3FF);               // bits 9-0 z position in cm
+  uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(gps.course)/1e7)/2)) & 0x7FF) << 21; // bits 31-21 x position in cm
+  multiplex_speed |= (((uint32_t)(gps.gspeed)) & 0x7FF) << 10;         // bits 20-10 y position in cm
+  multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);               // bits 9-0 z position in cm
 
-  multiplex_speed = sys_time.nb_sec;
+  int16_t alt = (int16_t)(gps.lla_pos.alt/10);
 
-  /*struct UtmCoor_i utm = utm_int_from_gps(&gps, 0);
-
-  DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &utm.east,
-                           &utm.north, &utm.alt);*/
+  DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.lla_pos.lat,
+                           &gps.lla_pos.lon, &alt);
 }
 
 int swarm_potential_task(void)
@@ -159,32 +156,20 @@ int swarm_potential_task(void)
   uint8_t i;
 
   if (gps.fix == 0){return 1;}
-  struct UtmCoor_f my_pos;
-  struct UtmCoor_d utm;
-
-  utm.zone = 0;
-  //utm_of_lla_i(&utm, &gps.lla_pos);
-  //UTM_FLOAT_OF_BFP(my_pos, utm);
-
-  struct LlaCoor_d lla;
-  LLA_DOUBLE_OF_BFP(lla, gps.lla_pos);
-  utm_of_lla_d(&utm, &lla);
-
-  my_pos.east = (float)utm.east;
-  my_pos.north = (float)utm.north;
-  my_pos.alt = (float)utm.alt;
-  my_pos.zone = utm.zone;
+  struct UtmCoor_i my_pos;
+  my_pos.zone = 0;
+  utm_of_lla_i(&my_pos, &gps.lla_pos);
 
   for (i = 0; i < acs_idx; i++) {
     if (the_acs[i].ac_id == 0 || the_acs[i].ac_id == AC_ID) { continue; }
     struct ac_info_ * ac = get_ac_info(the_acs[i].ac_id);
-    //float delta_t = Max((int)(gps.tow - ac->itow) / 1000., 0.);
+    //float delta_t = ABS((int32_t)(gps.tow - ac->itow) / 1000.);
     // if AC not responding for too long, continue, else compute force
     //if(delta_t > 5) { continue; }
 
-    float de = ac->east - my_pos.east; // + sha * delta_t
-    float dn = ac->north - my_pos.north; // cha * delta_t
-    float da = ac->alt - my_pos.alt; // ac->climb * delta_t   // currently wrong reference in other aircraft
+    float de = (ac->utm.east - my_pos.east)/100.; // + sha * delta_t
+    float dn = (ac->utm.north - my_pos.north)/100.; // cha * delta_t
+    float da = (ac->utm.alt - my_pos.alt)/1000.; // ac->climb * delta_t   // currently wrong reference in other aircraft
     float dist2 = de * de + dn * dn;// + da * da;
     if (dist2 == 0.) {continue;}
 
@@ -205,53 +190,52 @@ int swarm_potential_task(void)
 
     nb++;
 
-    // debug
-    potential_force.east = ac->east - 594535;
-    potential_force.north = ac->north - 5760891;
-    potential_force.alt = ac->alt;
+    //debug
+    //potential_force.east  = de;
+    //potential_force.north = dn;
+    //potential_force.alt   = da;
 
-    potential_force.speed = my_pos.zone;
-    potential_force.climb = ac->itow/1000.;
+    potential_force.east  = (float)(floor(DeciDegOfRad(gps.course)/1e7));
+    potential_force.north = (float)gps.gspeed;
+    potential_force.alt   = (float)-gps.ned_vel.z;
 
+    potential_force.speed   = (float)ac->course;
+    potential_force.climb   = (float)ac->gspeed;
   }
 
   // add waypoint force to get vehicle to waypoint
   if (use_waypoint){
-    struct EnuCoor_i my_enu = *stateGetPositionEnu_i();
-    struct EnuCoor_i wp_enu = waypoints[SP_WP].enu_i;
+    struct EnuCoor_f my_enu = *stateGetPositionEnu_f();
 
-    float de = wp_enu.x - my_enu.x; // + sha * delta_t
-    float dn = wp_enu.y - my_enu.y; // cha * delta_t
-    float da = wp_enu.z - my_enu.z; // ac->climb * delta_t
+    float de = waypoint_get_x(SP_WP) - my_enu.x;
+    float dn = waypoint_get_y(SP_WP) - my_enu.y;
+    float da = waypoint_get_alt(SP_WP) - my_enu.z;
 
     float dist2 = de * de + dn * dn;// + da * da;
     if (dist2 > 0.01) {   // add deadzone of 10cm from goal
       float dist = sqrtf(dist2);
-      float force;
+      float force = dist2;
 
       // higher attractive potential to get to goal when close by
-      if (dist > 1){
-        force = dist2;
-      } else {
+      if (dist < 1.){
         force = dist;
       }
 
-      potential_force.east  = (de*force)/dist;
-      potential_force.north = (dn*force)/dist;
-      potential_force.alt   = (da*force)/dist;
+      potential_force.east  = force*de/dist;
+      potential_force.north = force*dn/dist;
+      potential_force.alt   = force*da/dist;
 
       speed_sp.x += force_hor_gain * potential_force.east;
       speed_sp.y += force_hor_gain * potential_force.north;
       speed_sp.z += force_climb_gain * potential_force.alt;
+
+      potential_force.east  = de;
+      potential_force.north = dn;
+      potential_force.alt   = force;
+      potential_force.speed   = speed_sp.x;
+      potential_force.climb   = speed_sp.y;
     }
   }
-
-  potential_force.east = my_pos.east - 594535;
-  potential_force.north = my_pos.north - 5760891;
-  potential_force.alt = my_pos.alt;
-
-  potential_force.speed = my_pos.zone;
-  potential_force.climb = gps.tow/1000.;
 
   //potential_force.speed = speed_sp.x;
   //potential_force.climb = speed_sp.y;

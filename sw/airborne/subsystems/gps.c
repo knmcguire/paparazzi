@@ -344,8 +344,7 @@ struct UtmCoor_f utm_float_from_gps(struct GpsState *gps_s, uint8_t zone)
   struct UtmCoor_f utm;
   utm.zone = zone;
 
-  // TODO: for some reason the GPS_VALID_POS_UTM_BIT is set every now and then but its actually empty
-  if (0){//bit_is_set(gps_s->valid_fields, GPS_VALID_POS_UTM_BIT)) {
+  if (bit_is_set(gps_s->valid_fields, GPS_VALID_POS_UTM_BIT)) {
     // A real UTM position is available, use the correct zone
     utm.zone = gps_s->utm_pos.zone;
     utm.east = gps_s->utm_pos.east / 100.0f;

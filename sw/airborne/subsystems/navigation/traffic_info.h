@@ -33,16 +33,15 @@
 #define NB_ACS 24
 
 #include <inttypes.h>
+#include <math/pprz_geodetic_int.h>
 
 struct ac_info_ {
   uint8_t ac_id;
-  float east;   ///< m, zone extended from my zone
-  float north;  ///< m, zone extended from my zone
-  float course; ///< rad (CW)
-  float alt;    ///< m
-  float gspeed; ///< m/s
-  float climb;  ///< m/s
-  uint32_t itow;///< ms
+  struct UtmCoor_i utm;
+  uint16_t course; ///< decideg (CW)
+  uint16_t gspeed; ///< cm/s
+  uint16_t climb;  ///< cm/s
+  uint32_t itow;   ///< ms
 };
 
 extern uint8_t acs_idx;
@@ -55,24 +54,24 @@ extern struct ac_info_ *get_ac_info(uint8_t id);
 /**
  * Set Aircraft info.
  * @param[in] id aircraft id, 0 is reserved for GCS, 1 for this aircraft (id=AC_ID)
- * @param[in] utm_east UTM east on m
- * @param[in] utm_north UTM north in m
+ * @param[in] utm_east UTM east on cm
+ * @param[in] utm_north UTM north in cm
+ * @param[in] alt Altitude in mm above the geoid
  * @param[in] utm_zone UTM zone
- * @param[in] course Course in rad (CW)
- * @param[in] alt Altitude in m above MSL
+ * @param[in] course Course in decideg (CW)
  * @param[in] gspeed Ground speed in m/s
  * @param[in] climb Climb rate in m/s
  * @param[in] itow GPS time of week in ms
  */
-extern void set_ac_info(uint8_t id, float utm_east, float utm_north, float alt, uint16_t utm_zone, float course,
-                        float gspeed, float climb, uint32_t itow);
+extern void set_ac_info(uint8_t id, uint32_t utm_east, uint32_t utm_north, uint32_t alt, uint8_t utm_zone, uint16_t course,
+    uint16_t gspeed, uint16_t climb, uint32_t itow);
 
 /**
  * Set Aircraft info.
  * @param[in] id aircraft id, 0 is reserved for GCS, 1 for this aircraft (id=AC_ID)
  * @param[in] lat Latitude in 1e7deg
  * @param[in] lon Longitude in 1e7deg
- * @param[in] alt Altitude in mm above MSL
+ * @param[in] alt Altitude in mm above the gedoi
  * @param[in] course Course in decideg (CW)
  * @param[in] gspeed Ground speed in cm/s
  * @param[in] climb Climb rate in cm/s
