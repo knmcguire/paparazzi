@@ -61,11 +61,11 @@ float target_dist3;
 bool use_waypoint;
 
 #ifndef FORCE_HOR_GAIN
-#define FORCE_HOR_GAIN 0.1
+#define FORCE_HOR_GAIN 0.5
 #endif
 
 #ifndef FORCE_CLIMB_GAIN
-#define FORCE_CLIMB_GAIN 0.1
+#define FORCE_CLIMB_GAIN 0.5
 #endif
 
 #ifndef TARGET_DIST3

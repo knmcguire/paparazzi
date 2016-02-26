@@ -590,7 +590,7 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
       //  - 48 = 16*1.25ms = 20ms maximum connection interval
       //  - 100 = 100*10ms = 1000ms supervision timeout
       //  - 9 = 9 connection interval max slave latency
-      ble_cmd_gap_connect_direct(&msg->sender.addr, gap_address_type_public, 12, 16, 100, 0);
+      ble_cmd_gap_connect_direct(&msg->sender.addr, gap_address_type_public, 8, 16, 100, 0);
     }
   }
 }
@@ -821,7 +821,7 @@ void ble_evt_connection_disconnected(const struct ble_msg_connection_disconnecte
   //change_state(state_disconnected);
   fprintf(stderr, "Connection %d terminated\n" , msg->connection);
   if (!connect_all) {
-    ble_cmd_gap_connect_direct(&connect_addr, gap_address_type_public, 12, 16, 100, 0);
+    ble_cmd_gap_connect_direct(&connect_addr, gap_address_type_public, 8, 16, 100, 0);
     fprintf(stderr, "Trying to reconnection to ");
     print_bdaddr(connect_addr);
   }
@@ -1097,7 +1097,7 @@ int main(int argc, char *argv[])
   } else if (action == action_connect) {
     fprintf(stderr, "Trying to connect\n");
     change_state(state_connecting);
-    ble_cmd_gap_connect_direct(&connect_addr, gap_address_type_public, 12, 16, 100, 0);
+    ble_cmd_gap_connect_direct(&connect_addr, gap_address_type_public, 8, 16, 100, 0);
   }
 
   pthread_create(&threads[0], NULL, send_msg, NULL);
