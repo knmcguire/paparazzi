@@ -18,12 +18,12 @@
  * <http://www.gnu.org/licenses/>.
  */
 /**
- * @file "modules/multi/swarm_potential.c"
+ * @file "modules/multi/swarm_nn.c"
  * @author Kirk Scheper
  * This module is generates a command to avoid other vehicles based on their relative gps location
  */
 
-#include "modules/multi/swarm_potential.h"
+#include "modules/multi/swarm_nn.h"
 #include "subsystems/gps.h"
 #include "subsystems/gps/gps_datalink.h"
 #include "subsystems/datalink/downlink.h"
@@ -69,7 +69,7 @@ bool use_waypoint;
 #endif
 
 #ifndef TARGET_DIST3
-#define TARGET_DIST3 1.
+#define TARGET_DIST3 0.5
 #endif
 
 #ifndef USE_WAYPOINT
@@ -108,7 +108,7 @@ static void send_periodic(struct transport_tx *trans, struct link_device *dev) {
 
 #endif
 
-void swarm_potential_init(void)
+void swarm_nn_init(void)
 {
   potential_force.east = 0.;
   potential_force.north = 0.;
@@ -125,13 +125,13 @@ void swarm_potential_init(void)
   AbiBindMsgRSSI(ABI_BROADCAST, &ev, rssi_cb);
 
 #if PERIODIC_TELEMETRY
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_POTENTIAL, send_periodic);
+  //register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_POTENTIAL, send_periodic);
 #endif
 }
 /*
  * Send my gps position to the other members of the swarm
  */
-void swarm_potential_periodic(void) {
+void swarm_nn_periodic(void) {
   /* The GPS messages are most likely too large to be send over either the datalink
    * The local position is an int32 and the 11 LSBs of the x and y axis are compressed into
    * a single integer. The z axis is considered unsigned and only the latter 10 LSBs are
@@ -144,21 +144,41 @@ void swarm_potential_periodic(void) {
   int16_t alt = (int16_t)(gps.lla_pos.alt/10);
 
   //DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.lla_pos.lat,
-  //                        &gps.lla_pos.lon, &alt);
+  //                         &gps.lla_pos.lon, &alt);
 }
+float layer1_out[6];
+const float layer1_weights[4][5] = {
+    {0.53,  -0.292,  0.553344,  0.122, 1.67},
+    {-0.312,  -0.166,  -0.0762323,  0.568, -0.62},
+    {0.548, 0.088, 0.989708,  0.98,  3.1},
+    {-0.781943, -0.575229, -0.363866, 0.610577,  0.77547}};
 
-int swarm_potential_task(void)
+float layer2_out[2];
+const float layer2_weights[6][2] = {
+    {-0.048,  -0.66 },
+    {-0.692,  -0.439091 },
+    {-0.712438, 0.967283},
+    {-0.624,  -0.57},
+    {-0.052,  0.39646},
+    {0.882447,  -0.668099 }};
+
+int swarm_nn_task(void)
 {
   struct EnuCoor_f speed_sp = {.x=0., .y=0., .z=0.};
 
   // compute desired velocity
   int8_t nb = 0;
-  uint8_t i;
+  uint8_t i, j;
 
   if (gps.fix == 0){return 1;}
   struct UtmCoor_i my_pos;
   my_pos.zone = 0;
   utm_of_lla_i(&my_pos, &gps.lla_pos);
+
+  float rx = 0.;
+  float ry = 0.;
+  float rz = 0.;
+  float d  = 0.;
 
   for (i = 0; i < acs_idx; i++) {
     if (the_acs[i].ac_id == 0 || the_acs[i].ac_id == AC_ID) { continue; }
@@ -170,96 +190,62 @@ int swarm_potential_task(void)
     float de = (ac->utm.east - my_pos.east)/100.; // + sha * delta_t
     float dn = (ac->utm.north - my_pos.north)/100.; // cha * delta_t
     float da = (ac->utm.alt - my_pos.alt)/1000.; // ac->climb * delta_t   // currently wrong reference in other aircraft
+
     float dist2 = de * de + dn * dn;// + da * da;
-    if (dist2 == 0.) {continue;}
 
-    float dist = sqrtf(dist2);
-
-    // potential force equation: x^2 - d0^3/x
-    float force = dist2 - TARGET_DIST3/dist;
-
-    potential_force.east = (de*force)/dist;
-    potential_force.north= (dn*force)/dist;
-    potential_force.alt = (da*force)/dist;
-
-    // set carrot
-    // include speed of other vehicles for swarm cohesion
-    speed_sp.x += force_hor_gain * potential_force.east;// + ac->gspeed * sinf(ac->course);
-    speed_sp.y += force_hor_gain * potential_force.north;// + ac->gspeed * cosf(ac->course);
-    speed_sp.z += force_climb_gain * potential_force.alt;// + ac->climb;
-
-    nb++;
-
-    //debug
-    //potential_force.east  = de;
-    //potential_force.north = dn;
-    //potential_force.alt   = da;
-
-    potential_force.east  = (float)(floor(DeciDegOfRad(gps.course)/1e7));
-    potential_force.north = (float)gps.gspeed;
-    potential_force.alt   = (float)-gps.ned_vel.z;
-
-    potential_force.speed   = (float)ac->course;
-    potential_force.climb   = (float)ac->gspeed;
+    rx += de;
+    ry += dn;
+    rz += da;
+    d += sqrtf(dist2);
   }
 
-  // add waypoint force to get vehicle to waypoint
-  if (use_waypoint){
-    struct EnuCoor_f my_enu = *stateGetPositionEnu_f();
+  memset(layer1_out, 0, 5);
+  for (j = 0; j < 5; j++)
+  {
+    layer1_out[j] += rx*layer1_weights[0][j];
+    layer1_out[j] += ry*layer1_weights[1][j];
+    layer1_out[j] += d *layer1_weights[2][j];
+    layer1_out[j] += 1.*layer1_weights[3][j];
 
-    float de = waypoint_get_x(SP_WP) - my_enu.x;
-    float dn = waypoint_get_y(SP_WP) - my_enu.y;
-    float da = waypoint_get_alt(SP_WP) - my_enu.z;
+    layer1_out[j] = tanh(layer1_out[j]);
+  }
 
-    float dist2 = de * de + dn * dn;// + da * da;
-    if (dist2 > 0.01) {   // add deadzone of 10cm from goal
-      float dist = sqrtf(dist2);
-      float force = dist2;
-
-      // higher attractive potential to get to goal when close by
-      if (dist < 1.){
-        force = dist;
-      }
-
-      potential_force.east  = force*de/dist;
-      potential_force.north = force*dn/dist;
-      potential_force.alt   = force*da/dist;
-
-      speed_sp.x += force_hor_gain * potential_force.east;
-      speed_sp.y += force_hor_gain * potential_force.north;
-      speed_sp.z += force_climb_gain * potential_force.alt;
-
-      potential_force.east  = de;
-      potential_force.north = dn;
-      potential_force.alt   = force;
-      potential_force.speed   = speed_sp.x;
-      potential_force.climb   = speed_sp.y;
+  memset(layer2_out, 0, 2);
+  layer1_out[5] = 1;  // set bias node
+  for (i = 0; i < 2; i++)
+  {
+    for (j = 0; j < 6; j++)
+    {
+      layer2_out[i] += layer1_out[j]*layer2_weights[j][i];
     }
+    layer2_out[i] = tanh(layer2_out[i]);
   }
 
-  //potential_force.speed = speed_sp.x;
-  //potential_force.climb = speed_sp.y;
+  speed_sp.x = layer2_out[0];
+  speed_sp.y = layer2_out[1];
+  speed_sp.z = 0;
+
+  potential_force.east = speed_sp.x;
+  potential_force.north = speed_sp.y;
+  potential_force.alt = rx;
+
+  potential_force.speed = ry;
+  potential_force.climb = d;
 
   // limit commands
-#ifdef GUIDANCE_H_REF_MAX_SPEED
-  BoundAbs(speed_sp.x, GUIDANCE_H_REF_MAX_SPEED);
-  BoundAbs(speed_sp.y, GUIDANCE_H_REF_MAX_SPEED);
-  BoundAbs(speed_sp.z, GUIDANCE_H_REF_MAX_SPEED);
-#endif
+  BoundAbs(speed_sp.x, 1);
+  BoundAbs(speed_sp.y, 1);
+  BoundAbs(speed_sp.z, 1);
 
   autopilot_guided_move_ned(speed_sp.y, speed_sp.x, 0, 0);
-  /*
-  struct EnuCoor_f delta_pos;
-  VECT3_SDIV(delta_pos, speed_sp, NAV_FREQ);
 
-  struct EnuCoor_f new_wp;
-  new_wp.x = waypoint_get_x(SP_WP) + delta_pos.x;
-  new_wp.y = waypoint_get_y(SP_WP) + delta_pos.y;
-  new_wp.z = waypoint_get_alt(SP_WP) + delta_pos.z;
+  struct ac_info_ * ac1 = get_ac_info(the_acs[2].ac_id);
+  struct ac_info_ * ac2 = get_ac_info(the_acs[3].ac_id);
+  DOWNLINK_SEND_AC_INFO(DefaultChannel, DefaultDevice, &ac1->ac_id, &ac1->utm.east, &ac1->utm.north,
+                          &ac2->ac_id, &ac2->utm.east, &ac2->utm.north);
 
-
-  waypoint_set_enu(SP_WP, &new_wp);*/
-  //navigation_update_wp_from_speed(, speed_sp, 0);
+  DOWNLINK_SEND_POTENTIAL(DefaultChannel, DefaultDevice, &potential_force.east, &potential_force.north,
+                                  &potential_force.alt, &potential_force.speed, &potential_force.climb);
 
   return 1;
 }

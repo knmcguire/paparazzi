@@ -119,6 +119,10 @@ tid_t telemetry_tid;     ///< id for telemetry_periodic() timer
 tid_t baro_tid;          ///< id for baro_periodic() timer
 #endif
 
+#ifdef TRAFFIC_INFO
+#include "subsystems/navigation/traffic_info.h"
+#endif
+
 #ifndef SITL
 int main(void)
 {
@@ -232,6 +236,12 @@ STATIC_INLINE void main_init(void)
 #if USE_IMU
   // send body_to_imu from here for now
   AbiSendMsgBODY_TO_IMU_QUAT(1, orientationGetQuat_f(&imu.body_to_imu));
+#endif
+
+  /************ Multi-uavs status ***************/
+
+#ifdef TRAFFIC_INFO
+  traffic_info_init();
 #endif
 
   // Do a failsafe check first

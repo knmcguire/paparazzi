@@ -84,7 +84,7 @@
    telemetry="telemetry/default_rotorcraft_slow.xml"
    flight_plan="flight_plans/rotorcraft_optitrack_swarm.xml"
    settings="settings/rotorcraft_basic.xml settings/control/stabilization_att_int.xml settings/control/rotorcraft_guidance.xml"
-   settings_modules="modules/swarm_potential.xml"
+   settings_modules="modules/swarm_nn.xml"
    gui_color="blue"
   />
   <aircraft
@@ -95,10 +95,10 @@
    telemetry="telemetry/default_rotorcraft_slow.xml"
    flight_plan="flight_plans/rotorcraft_optitrack_swarm.xml"
    settings="settings/rotorcraft_basic.xml settings/control/stabilization_att_int.xml settings/control/rotorcraft_guidance.xml"
-   settings_modules="modules/swarm_potential.xml"
+   settings_modules="modules/swarm_nn.xml"
    gui_color="red"
   />
-    <aircraft
+  <aircraft
    name="LadyLisaBartBluegiga2"
    ac_id="3"
    airframe="airframes/BR/ladybird_kit_bart_bluegiga_optitrack.xml"
@@ -106,7 +106,7 @@
    telemetry="telemetry/default_rotorcraft_slow.xml"
    flight_plan="flight_plans/rotorcraft_optitrack_swarm.xml"
    settings="settings/rotorcraft_basic.xml settings/control/stabilization_att_int.xml settings/control/rotorcraft_guidance.xml"
-   settings_modules="modules/swarm_potential.xml"
+   settings_modules="modules/swarm_nn.xml"
    gui_color="green"
   />
   <aircraft

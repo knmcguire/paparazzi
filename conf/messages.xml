@@ -2162,7 +2162,15 @@
       <field name="yaw_c"  type="float"/>
   </message>
 
-  <!-- 251 is free -->
+  <message name="AC_INFO" id="251">
+    <field name="ac_id1" type="uint8" ></field>
+    <field name="pox1x"  type="int32" unit="cm" alt_unit="m" alt_unit_coef="0.01"></field>
+    <field name="pox1y"  type="int32" unit="cm" alt_unit="m" alt_unit_coef="0.01"></field>
+    <field name="ac_id2" type="uint8" ></field>
+    <field name="pox2x"  type="int32" unit="cm" alt_unit="m" alt_unit_coef="0.01"></field>
+    <field name="pox2y"  type="int32" unit="cm" alt_unit="m" alt_unit_coef="0.01"></field>
+  </message>
+  
    <message name="GPS_SMALL" id="252">
     <field name="multiplex_speed"  type="uint32">bits 31-21 course in decideg : bits 20-10 ground speed in cm/s : bits 9-0 climb speed in cm/s</field>
     <field name="lla_lat"  type="int32" unit="1e7deg" alt_unit="deg" alt_unit_coef="0.0000001"></field>

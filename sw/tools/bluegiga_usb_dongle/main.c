@@ -887,7 +887,7 @@ void *send_msg()
         }
         device++;
       } // next device
-      usleep(connection_interval * 1000*1.5); // send messages at max intervals of the connection interval, 2 safety factor
+      usleep(connection_interval * 1000 * 1.5); // send messages at max intervals of the connection interval, 2 safety factor
     } // repeat
   }
   pthread_exit(NULL);
@@ -930,7 +930,7 @@ void *recv_paparazzi_comms()
         }
       }
     }
-    usleep(connection_interval * 1000 * 1.5);  // assuming connection interval 10ms, give a bit of overhead
+    usleep(connection_interval * 1000 * 1.5);  // read data from pprz slower than we can send it
   }
   pthread_exit(NULL);
 }
