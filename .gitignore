@@ -33,6 +33,10 @@
 /build.properties
 /META-INF
 
+# kdev4 IDE project files
+*.kdev4
+.kdev4/*
+
 paparazzi.sublime-workspace
 
 # JetBrains (PyCharm, etc) IDE project files
