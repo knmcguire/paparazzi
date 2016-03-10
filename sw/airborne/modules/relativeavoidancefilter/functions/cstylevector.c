@@ -4,7 +4,11 @@ void vector_init(vectorstruct *v)
 {
     v->capacity = VECTOR_INIT_CAPACITY;
     v->total = 0;
-    v->items = malloc(sizeof(void *) * v->capacity);
+    // void *s;
+    // s = malloc(sizeof(void *) * v->capacity);
+    // v->items = &s;
+    memset(v->items, 0, v->capacity);
+    // v->items = malloc(sizeof(void *) * v->capacity);
 }
 
 int vector_total(vectorstruct *v)
@@ -14,21 +18,24 @@ int vector_total(vectorstruct *v)
 
 void vector_resize(vectorstruct *v, int capacity)
 {
-    #ifdef DEBUG_ON
-    printf("vector_resize: %d to %d\n", v->capacity, capacity);
-    #endif
+    // void **s;
+    // s = realloc(v->items, sizeof(void *) * capacity);
+    // void **items = realloc(v->items, sizeof(void *) * capacity);
+    
+    // if (items)
+    // {
+    //     v->items = items;
+    //     v->capacity = capacity;
+    // }
 
-    void **items = realloc(v->items, sizeof(void *) * capacity);
-    if (items) {
-        v->items = items;
-        v->capacity = capacity;
-    }
 }
 
 void vector_add(vectorstruct *v, void *item)
 {
     if (v->capacity == v->total)
+    {
         vector_resize(v, v->capacity * 2);
+    }
     v->items[v->total++] = item;
 }
 

@@ -12,15 +12,15 @@
     <!-- Main file -->
     <file name="relativeavoidancefilter.h"/>
     <!-- Functions files -->
-    <!-- <file name="functions/arrayfunctions.h"/> -->
-    <!-- <file name="functions/collisioncone.h"/> -->
-    <!-- <file name="functions/coordinateconversions.h"/> -->
-    <file name="functions/cstylevector.h"/>
+    <file name="functions/arrayfunctions.h"/>
+    <file name="functions/collisioncone.h"/>
+    <file name="functions/coordinateconversions.h"/>
+    <!-- <file name="functions/cstylevector.h"/> -->
     <file name="functions/discreteekf.h"/>
     <file name="functions/filterfunctions.h"/>
     <file name="functions/fmatrix.h"/>
-    <!-- <file name="functions/PID.h"/> -->
-    <!-- <file name="functions/shape.h"/> -->
+    <file name="functions/PID.h"/>
+    <file name="functions/shape.h"/>
         <!-- <file name="functions/randomgenerator.h"/> -->
 
   </header>
@@ -33,15 +33,15 @@
     <!-- Main file -->
     <file name="relativeavoidancefilter.c"/>
     <!-- Functions files -->
-    <!-- <file name="functions/arrayfunctions.c"/> -->
-    <!-- <file name="functions/collisioncone.c"/> -->
-    <!-- <file name="functions/coordinateconversions.c"/> -->
+    <file name="functions/arrayfunctions.c"/>
+    <file name="functions/collisioncone.c"/>
+    <file name="functions/coordinateconversions.c"/>
     <file name="functions/cstylevector.c"/>
     <file name="functions/discreteekf.c"/>
     <file name="functions/filterfunctions.c"/>
     <file name="functions/fmatrix.c"/>
-    <!-- <file name="functions/PID.c"/> -->
-    <!-- <file name="functions/shape.c"/> -->
+    <file name="functions/PID.c"/>
+    <file name="functions/shape.c"/>
         <!-- <file name="functions/randomgenerator.c"/> -->
 
   </makefile>

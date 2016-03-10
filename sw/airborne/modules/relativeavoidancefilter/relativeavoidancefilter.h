@@ -27,8 +27,9 @@
 #define RELATIVEAVOIDANCEFILTER_H
 
 /* Standard Includes */
-#include "math.h"
+// #include "math.h"
 #include "stdlib.h"
+#include "stdio.h"
 
 /* Paparazzi -- Controller data */
 #include "../../state.h" // To get state (pos/vel/acc/...) 
@@ -51,11 +52,11 @@
 
 #include "functions/cstylevector.h" // Vector "object" in C
 #include "functions/fmatrix.h" // Matrix of float values functions
-// #include "functions/shape.h" // Functions for shape (polygon) manipulation in cartesian plane
-// #include "functions/arrayfunctions.h" // Functions for array manipulation
+#include "functions/shape.h" // Functions for shape (polygon) manipulation in cartesian plane
+#include "functions/arrayfunctions.h" // Functions for array manipulation
 
-// // #include "functions/humanlike.h" // Functions for human-like obstacle avoidance
-// #include "functions/collisioncone.h" // Collision cone functions
+// #include "functions/humanlike.h" // Functions for human-like obstacle avoidance
+#include "functions/collisioncone.h" // Collision cone functions
 
 #include "functions/filterfunctions.h" // Process + Measurement functions of EKF
 

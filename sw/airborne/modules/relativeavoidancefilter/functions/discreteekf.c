@@ -59,47 +59,69 @@ struct ekf_filter* ekf_filter_new(
 				  filter_function ffun,
 				  measure_function mfun) {
 
-  struct ekf_filter* ekf = malloc(sizeof(struct ekf_filter));
+  struct ekf_filter* ekf; //= malloc(sizeof(struct ekf_filter));
+  memset(ekf, 0, 1);
   ekf->state_dim = state_dim;
   ekf->measure_dim = measure_dim;
 
   int n = ekf->state_dim;
-  ekf->X = malloc( n * sizeof(float));
-  ekf->dX = malloc( n * sizeof(float));
-  ekf->Xp = malloc( n * sizeof(float));
+  memset(ekf->X, 0, n);
+  memset(ekf->dX, 0, n);
+  memset(ekf->Xp, 0, n);
+
+  // ekf->X = malloc( n * sizeof(float));
+  // ekf->dX = malloc( n * sizeof(float));
+  // ekf->Xp = malloc( n * sizeof(float));
 
   n = ekf->measure_dim;
-  ekf->Z = malloc( n * sizeof(float));
-  ekf->Zp = malloc( n * sizeof(float));
-  ekf->err = malloc( n * sizeof(float));
+  memset(ekf->Z, 0, n);
+  memset(ekf->Zp, 0, n);
+  memset(ekf->err, 0, n);
+ 
+  // ekf->Z = malloc( n * sizeof(float));
+  // ekf->Zp = malloc( n * sizeof(float));
+  // ekf->err = malloc( n * sizeof(float));
 
   n = ekf->state_dim * ekf->state_dim;
-  ekf->P = malloc( n * sizeof(float));
-  ekf->Pdot = malloc( n * sizeof(float));
-  ekf->tmp1 = malloc( n * sizeof(float));
-  ekf->tmp2 = malloc( n * sizeof(float));
-  ekf->tmp3 = malloc( n * sizeof(float));
-
-  ekf->Q = malloc( n * sizeof(float));
+  // ekf->P = malloc( n * sizeof(float));
+  // ekf->Pdot = malloc( n * sizeof(float));
+  // ekf->tmp1 = malloc( n * sizeof(float));
+  // ekf->tmp2 = malloc( n * sizeof(float));
+  // ekf->tmp3 = malloc( n * sizeof(float));
+  memset(ekf->P, 0, n);
+  memset(ekf->Pdot, 0, n);
+  memset(ekf->tmp1, 0, n);
+  memset(ekf->tmp2, 0, n);
+  memset(ekf->tmp3, 0, n);
+ 
+  // ekf->Q = malloc( n * sizeof(float));
+  memset(ekf->Q, 0, n);
   memcpy(ekf->Q, Q, n * sizeof(float));
 
   n = ekf->measure_dim * ekf->measure_dim;
-  ekf->R = malloc( n * sizeof(float));
+  // ekf->R = malloc( n * sizeof(float));
+  memset(ekf->R, 0, n);  
   memcpy(ekf->R, R, n * sizeof(float));
 
   n = ekf->state_dim * ekf->state_dim;
-  ekf->A = malloc( n * sizeof(float));
+  memset(ekf->A, 0, n);
+  // ekf->A = malloc( n * sizeof(float));
 
   n = ekf->measure_dim * ekf->state_dim;
-  ekf->H = malloc( n * sizeof(float));
+
+  memset(ekf->H, 0, n);
+  // ekf->H = malloc( n * sizeof(float));
 
   n = ekf->measure_dim * ekf->measure_dim;
-  ekf->E = malloc( n * sizeof(float));
-  ekf->invE = malloc( n * sizeof(float));
-
+  // ekf->E = malloc( n * sizeof(float));
+  // ekf->invE = malloc( n * sizeof(float));
+  memset(ekf->E, 0, n);
+  memset(ekf->invE, 0, n);
+  
   n = ekf->state_dim * ekf->measure_dim;
-  ekf->K = malloc( n * sizeof(float));
-
+  // ekf->K = malloc( n * sizeof(float));
+  memset(ekf->K, 0, n);
+  
   ekf->ffun = ffun;
   ekf->mfun = mfun;
 
