@@ -4,8 +4,6 @@
 #include "math.h"
 #include "shape.h"
 
-#define PI 3.141592653589793
-
 void collisioncone_update( float *cc,
 	float bearing, float range, float radius,
 	float relvx, float relvy );

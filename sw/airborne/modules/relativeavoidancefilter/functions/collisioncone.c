@@ -44,20 +44,16 @@ void collisioncone_update( float *cc,
 void collisioncone_fuse( float *cc0, float *cc1)
 {
 
-	float b0_1 = atan2(cc0[3], cc0[2]);
-	float b0_2 = atan2(cc0[5], cc0[4]);
-
-	float b1_1 = atan2(cc1[3], cc1[2]);
-	float b1_2 = atan2(cc1[5], cc1[4]);
-
 	// 2*PI is added everywhere to avoid the issue where a boundary is in between -ang and +ang
-	if ((b1_1+2*M_PI > b0_1+2*M_PI) && (b1_1+2*M_PI < b0_2+2*M_PI))
+	if ((atan2(cc1[3], cc1[2]) + 2*M_PI > atan2(cc0[3], cc0[2]) + 2*M_PI) 
+		&& (atan2(cc1[3], cc1[2]) + 2*M_PI < atan2(cc0[5], cc0[4]) + 2*M_PI))
 	{
 		cc1[2] = cc0[2];
 		cc1[3] = cc0[3];
 	}
 
-	if ((b1_2+2*M_PI > b0_1+2*M_PI) && (b1_2+2*M_PI < b0_2+2*M_PI))
+	if ((atan2(cc1[5], cc1[4]) + 2*M_PI > atan2(cc0[3], cc0[2]) + 2*M_PI)
+		&& (atan2(cc1[5], cc1[4]) + 2*M_PI < atan2(cc0[5], cc0[4]) + 2*M_PI))
 	{
 		cc1[4] = cc0[4];
 		cc1[5] = cc0[5];

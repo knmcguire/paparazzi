@@ -4,51 +4,32 @@
 #include "fmatrix.h"
 #include "stdlib.h"
 #include "string.h"
-#include "string.h"
 #include "math.h"
 
-#define NSTATES 9
-#define NMEASUREMENTS 8
-#define UNUSEDVAR(x) (void)(x)
+#define N 9
+#define M 8
 
 typedef struct ekf_filter {
 
-  // unsigned state_dim;
-  // unsigned measure_dim;
-
   /* state                           */
-  float X[NSTATES];
+  float X[N];
   /* state prediction                */
-  float Xp[NSTATES];
+  float Xp[N];
   /* measurement prediction          */
-  float Z[NMEASUREMENTS];
-  /* measurement prediction          */
-  float Zp[NMEASUREMENTS];
+  float Zp[M];
   /* state covariance matrix         */
-  float P[NSTATES*NSTATES];
+  float P[N*N];
   /* process covariance noise        */
-  float Q[NSTATES*NSTATES];
+  float Q[N*N];
   /* measurement covariance noise    */
-  float R[NMEASUREMENTS*NMEASUREMENTS];
-  /* jacobian of Xdot wrt X          */
-  float A[NSTATES*NSTATES];
+  float R[M*M];
   /* jacobian of the measure wrt X   */
-  float H[NSTATES*NMEASUREMENTS];
-  /* error matrix                    */
-  float E[NMEASUREMENTS*NMEASUREMENTS];
-  /* inverse error matrix            */
-  float invE[NMEASUREMENTS*NMEASUREMENTS];
-  /* kalman gain                     */
-  float K[NSTATES*NMEASUREMENTS];
-  /* Error vector                    */
-  float err[NMEASUREMENTS];
+  float H[N*M];
 
-  /* temps */
-  float dX[NSTATES];
-  float Pdot[NSTATES*NSTATES];
-  float tmp1[NSTATES*NSTATES];
-  float tmp2[NSTATES*NSTATES];
-  float tmp3[NSTATES*NSTATES];
+  /* Temp matrices */
+  float tmp1[N*N];
+  float tmp2[N*N];
+  float tmp3[N*N];
 
 } ekf_filter;
 
@@ -56,8 +37,6 @@ typedef struct ekf_filter {
  * Basic functions describing evolution and measure
  */
 
-extern void zero(float *matrix, int row, int col);
-extern void identity(float *matrix, int n);
 extern void linear_filter(float* X, float* dt, float *dX, float* A);
 extern void linear_measure(float*X, float* Y, float *H);
 
