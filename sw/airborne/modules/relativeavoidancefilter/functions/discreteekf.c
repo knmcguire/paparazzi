@@ -1,145 +1,28 @@
 #include "discreteekf.h"
 
 
-#include "fmatrix.h"
-
-#include "stdlib.h"
-#include "string.h"
-
-
-struct ekf_filter {
-  unsigned state_dim;
-  unsigned measure_dim;
-
-  /* state                           */
-  float* X;
-  /* state prediction                */
-  float* Xp;
-  /* measurement prediction          */
-  float* Z;
-  /* measurement prediction          */
-  float* Zp;
-  /* state covariance matrix         */
-  float* P;
-  /* process covariance noise        */
-  float* Q;
-  /* measurement covariance noise    */
-  float* R;
-  /* jacobian of Xdot wrt X          */
-  float* A;
-  /* jacobian of the measure wrt X   */
-  float* H;
-  /* error matrix                    */
-  float* E;
-  /* inverse error matrix            */
-  float* invE;
-  /* kalman gain                     */
-  float* K;
-  /* Error vector                    */
-  float* err;
-
-  filter_function ffun;
-  measure_function mfun;
-
-  /* temps */
-  float* dX;
-  float* Pdot;
-  float* tmp1;
-  float* tmp2;
-  float* tmp3;
-
-};
-
-
-struct ekf_filter* ekf_filter_new(
-          unsigned state_dim,
-				  unsigned measure_dim,
+void ekf_filter_setup(
+  ekf_filter *filter,
 				  float* Q,
-				  float* R,
-				  filter_function ffun,
-				  measure_function mfun) {
-
-  struct ekf_filter* ekf; //= malloc(sizeof(struct ekf_filter));
-  memset(ekf, 0, 1);
-  ekf->state_dim = state_dim;
-  ekf->measure_dim = measure_dim;
-
-  int n = ekf->state_dim;
-  memset(ekf->X, 0, n);
-  memset(ekf->dX, 0, n);
-  memset(ekf->Xp, 0, n);
-
-  // ekf->X = malloc( n * sizeof(float));
-  // ekf->dX = malloc( n * sizeof(float));
-  // ekf->Xp = malloc( n * sizeof(float));
-
-  n = ekf->measure_dim;
-  memset(ekf->Z, 0, n);
-  memset(ekf->Zp, 0, n);
-  memset(ekf->err, 0, n);
- 
-  // ekf->Z = malloc( n * sizeof(float));
-  // ekf->Zp = malloc( n * sizeof(float));
-  // ekf->err = malloc( n * sizeof(float));
-
-  n = ekf->state_dim * ekf->state_dim;
-  // ekf->P = malloc( n * sizeof(float));
-  // ekf->Pdot = malloc( n * sizeof(float));
-  // ekf->tmp1 = malloc( n * sizeof(float));
-  // ekf->tmp2 = malloc( n * sizeof(float));
-  // ekf->tmp3 = malloc( n * sizeof(float));
-  memset(ekf->P, 0, n);
-  memset(ekf->Pdot, 0, n);
-  memset(ekf->tmp1, 0, n);
-  memset(ekf->tmp2, 0, n);
-  memset(ekf->tmp3, 0, n);
- 
-  // ekf->Q = malloc( n * sizeof(float));
-  memset(ekf->Q, 0, n);
-  memcpy(ekf->Q, Q, n * sizeof(float));
-
-  n = ekf->measure_dim * ekf->measure_dim;
-  // ekf->R = malloc( n * sizeof(float));
-  memset(ekf->R, 0, n);  
-  memcpy(ekf->R, R, n * sizeof(float));
-
-  n = ekf->state_dim * ekf->state_dim;
-  memset(ekf->A, 0, n);
-  // ekf->A = malloc( n * sizeof(float));
-
-  n = ekf->measure_dim * ekf->state_dim;
-
-  memset(ekf->H, 0, n);
-  // ekf->H = malloc( n * sizeof(float));
-
-  n = ekf->measure_dim * ekf->measure_dim;
-  // ekf->E = malloc( n * sizeof(float));
-  // ekf->invE = malloc( n * sizeof(float));
-  memset(ekf->E, 0, n);
-  memset(ekf->invE, 0, n);
-  
-  n = ekf->state_dim * ekf->measure_dim;
-  // ekf->K = malloc( n * sizeof(float));
-  memset(ekf->K, 0, n);
-  
-  ekf->ffun = ffun;
-  ekf->mfun = mfun;
-
-  return ekf;
+				  float* R)
+{
+  memcpy(filter->Q, Q, NSTATES*NSTATES * sizeof(float));
+  memcpy(filter->R, R, NMEASUREMENTS*NMEASUREMENTS * sizeof(float));
 }
 
 
-void ekf_filter_reset(struct ekf_filter *filter, float *x0, float *P0) {
-  memcpy(filter->X, x0, filter->state_dim * sizeof(float));
-  memcpy(filter->P, P0, filter->state_dim * filter->state_dim * sizeof(float));
+void ekf_filter_reset(ekf_filter *filter, float *x0, float *P0)
+{
+  memcpy(filter->X, x0, NSTATES * sizeof(float));
+  memcpy(filter->P, P0, NSTATES * NSTATES * sizeof(float));
 }
 
-void ekf_filter_get_state(struct ekf_filter* filter, float *X, float* P){
-  memcpy(X, filter->X, filter->state_dim * sizeof(float));
-  memcpy(P, filter->P, filter->state_dim * filter->state_dim * sizeof(float));
+void ekf_filter_get_state(ekf_filter* filter, float *X, float* P){
+  memcpy(X, filter->X, NSTATES * sizeof(float));
+  memcpy(P, filter->P, NSTATES * NSTATES * sizeof(float));
 }
 
-void ekf_filter_predict(struct ekf_filter* filter, float *u) {
+void ekf_filter_predict(ekf_filter* filter) {
 
   /*
     PREDICT:
@@ -156,16 +39,16 @@ void ekf_filter_predict(struct ekf_filter* filter, float *u) {
   */  
 
   float dt;
-  int n = filter->state_dim; // Number of states
+  int n = NSTATES; // Number of states
 
   // Fetch dt, dX and A given the current state X and input u
-  filter->ffun(u, filter->X, &dt, filter->dX, filter->A);
+  linear_filter(filter->X, &dt, filter->dX, filter->A);
 
   // Get state prediction Xp = X + dX
-  fmat_add(n,1, filter->Xp, filter->X, filter->dX); 
+  fmat_add(n, 1, filter->Xp, filter->X, filter->dX); 
 
   // Get measurement prediction Zp based on Xp and get Jacobian H
-  filter->mfun(filter->Xp, filter->Zp, filter->H);
+  linear_measure(filter->Xp, filter->Zp, filter->H);
 
   /*
       discrete update
@@ -178,7 +61,7 @@ void ekf_filter_predict(struct ekf_filter* filter, float *u) {
 
 }
 
-void ekf_filter_update(struct ekf_filter* filter, float *y) {
+void ekf_filter_update(ekf_filter* filter, float *y) {
 
   /*
     UPDATE:
@@ -193,8 +76,8 @@ void ekf_filter_update(struct ekf_filter* filter, float *y) {
         P = (eye(numel(x)) - K * H) * P;
   */
 
-  int n = filter->state_dim;
-  int m = filter->measure_dim;
+  int n = NSTATES;
+  int m = NMEASUREMENTS;
   // The problem is that H is not updating!
   /*  E = H * P * H' + R */
   fmat_transpose(m, n, filter->tmp2, filter->H); // H'
@@ -216,9 +99,104 @@ void ekf_filter_update(struct ekf_filter* filter, float *y) {
   /*  X = X + err * K */
   memcpy(filter->Z, y, m * sizeof(float));
   fmat_sub(m, 1, filter->err, filter->Z, filter->Zp);
-
   fmat_mult( n, m, 1, filter->tmp1, filter->K,filter->err);
-
   fmat_add(n, 1, filter->X, filter->Xp, filter->tmp1);
 
 }
+
+void linear_filter(float* X, float* dt, float *dX, float* A)
+{
+
+  *dt = 0.2;
+
+  /* dX */
+  // Make a zero vector
+  fmat_make_zeroes(dX,9,1);
+  dX[0] = -(X[2] - X[4])*(*dt);
+  dX[1] = -(X[3] - X[5])*(*dt);
+  
+  /* F'(x) */
+  // make an identity matrix
+  fmat_make_identity(A,9);
+  A[0*9+2] = -*dt;
+  A[0*9+4] =  *dt;
+
+  A[1*9+3] = -*dt;
+  A[1*9+5] =  *dt;
+};
+
+void linear_measure(float*X, float* Y, float *H)
+{
+  float Pn = -65.0;
+  float gamma = 2.5;
+
+  // RSSI measurement
+  Y[0] = Pn - (10.0 * gamma * log10(sqrt(pow(X[0],2.0) + pow(X[1],2.0) + pow(X[8],2.0))));
+
+  // x velocity of i wrt i body frame
+  Y[1] = X[2];
+
+  // y velocity of i wrt i body frame
+  Y[2] = X[3];
+
+  // Orientation of i wrt north
+  Y[3] = X[6];
+
+  // x velocity of j wrt j body frame
+  Y[4] = cos( X[6] - X[7] ) * X[4] - sin( X[6] - X[7] ) * X[5];
+
+  // y velocity of j wrt  j body frame
+  Y[5] = sin( X[6] - X[7] ) * X[4] + cos( X[6] - X[7] ) * X[5];
+
+  // Orientation of j wrt north
+  Y[6] = X[7];
+
+  // Height difference
+  Y[7] = X[8];
+
+  int n = 9;
+  int m = 8;  
+  int row, col;
+
+  // Generate the Jacobian Matrix
+  for (row = 0 ; row < m ; row++ )
+  {
+    for (col = 0 ; col < n ; col++ )
+    {
+      if ((row == 0) && (col == 0 || col == 1 || col == 8 ))
+        H[ row*n+col ] = (-gamma*10/log(10))*(X[col]/(pow(X[0],2.0) + pow(X[1],2.0) + pow(X[8],2.0)));
+      
+      else if (((row == 1) && (col == 2)) ||
+        ((row == 2) && (col == 3)) ||
+        ((row == 3) && (col == 6)) ||
+        ((row == 6) && (col == 7)) ||
+        ((row == 7) && (col == 8)))
+      { 
+        H[ row*n+col ] = 1.0;
+      }
+
+      else if ((row == 4) && (col == 4))
+        H[ row*n+col ] = cos(X[6]-X[7]);
+      else if ((row == 4) && (col == 5))
+        H[ row*n+col ] = -sin(X[6]-X[7]);
+      else if ((row == 4) && (col == 6))
+        H[ row*n+col ] = X[4]*sin(X[7]-X[6]) - X[5] * cos(X[7] - X[6]);
+      else if ((row == 4) && (col == 7))
+        H[ row*n+col ] = X[4]*sin(X[6]-X[7]) + X[5] * cos(X[6] - X[7]);
+      
+
+      else if ((row == 5) && (col == 4))
+        H[ row*n+col ] = sin(X[6]-X[7]);
+      else if ((row == 5) && (col == 5))
+        H[ row*n+col ] = cos(X[6]-X[7]);
+      else if ((row == 5) && (col == 6))
+        H[ row*n+col ] = X[4]*cos(X[7]-X[6]) + X[5] * sin(X[7] - X[6]);
+      else if ((row == 5) && (col == 7))
+        H[ row*n+col ] = -X[4]*cos(X[6]-X[7]) + X[5] * sin(X[6] - X[7]);
+
+      else 
+        H[ row*n+col ] = 0.0;
+    }
+  }
+
+};

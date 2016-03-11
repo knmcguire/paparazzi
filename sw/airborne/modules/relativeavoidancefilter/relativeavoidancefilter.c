@@ -25,21 +25,19 @@
 
 #include "modules/relativeavoidancefilter/relativeavoidancefilter.h"
 
-vectorstruct ekf_vec;
 int nfilters, ntargets, ntargets0, nstates, nmeasurements;
-// static struct ekf_filter* ek;
-float P[9*9];
-float Q[9*9];
-float R[8*8];
-float X[9];
-float Y[8];
-float U[1];
+
+float P[NSTATES*NSTATES];
+float Q[NSTATES*NSTATES];
+float R[NMEASUREMENTS*NMEASUREMENTS];
+float X[NSTATES];
+float Y[NMEASUREMENTS];
 float arenaside;
-struct ekf_filter *ekf;
+
+ekf_filter ekf[2];
+
 void rafilter_init(void)
 {
-	nstates = 9;
-	nmeasurements = 8;
 	ntargets = 2;
 	ntargets0 = 1;
 	nfilters = 0;
@@ -53,24 +51,19 @@ void rafilter_init(void)
 	// float Y[nmeasurements];
 	// float U[1]; // Irrelevant but just needs to be defined for compiling
 
-	identity(P,nstates);
-	identity(Q,nstates);
-	identity(R,nmeasurements);
+	fmat_make_identity(P,NSTATES);
+	fmat_make_identity(Q,NSTATES);
+	fmat_make_identity(R,NMEASUREMENTS);
 
-	fmat_scal_mult(nstates,nstates,Q,pow(0.5,2),Q);
-	fmat_scal_mult(nmeasurements,nmeasurements,R,pow(0.2,2),R);
+	fmat_scal_mult(NSTATES,NSTATES,Q,pow(0.5,2),Q);
+	fmat_scal_mult(NMEASUREMENTS,NMEASUREMENTS,R,pow(0.2,2),R);
 	Q[0] = 0.01;
-	Q[nstates+1] = 0.01;
+	Q[NSTATES+1] = 0.01;
 	R[0] = 10.0;
 
-	zero(X, nstates, 1); // Initial state
+	fmat_make_zeroes(X, NSTATES, 1); // Initial state
 	X[0] = 1.0; // These cannot be zero or else you'll divide by zero
 	X[1] = 1.0;
-
-	/* The ekf functions are made for C and for integration with Paparazzi, 
-	so we cannot use classes and we must make an ekf structure that we manipulate */
-	
-	// vector_init(&ekf_vec);
 
 };
 
@@ -106,30 +99,15 @@ void rafilter_periodic(void)
 	deg2rad(30.0,&psi_add);
 	int i;
 
-
-
 	if (nfilters < 2)
 	{
-
 		for (i = 0; i < ntargets-ntargets0; i++)
 		{
 		/* Initialize an ekf filter for each target tracker */
-			// vector_add(&ekf_vec,
-				ekf = ekf_filter_new(
-					nstates, nmeasurements, 
-					Q, R,
-					linear_filter,
-					linear_measure);
-				// );
-
-			ekf_filter_reset(ekf, X, P);
-
+			ekf_filter_setup(&ekf[i], Q, R);
+			ekf_filter_reset(&ekf[i], X, P);
 			nfilters++;
-
-			// cout << name << " initiated a new EKF" << endl;
-
 		}
-
 	}
 
 
@@ -152,11 +130,11 @@ void rafilter_periodic(void)
 		// TODO: Add online parameter estimation
 
 		// Run the steps of the EKF
-		ekf_filter_predict(ekf, U);
-		ekf_filter_update(ekf, Y);
+		ekf_filter_predict(&ekf[i]);
+		ekf_filter_update(&ekf[i], Y);
 
 		// Get the outputs of the ekf into the main
-		ekf_filter_get_state(ekf, X, P);
+		ekf_filter_get_state(&ekf[i], X, P);
 
 
 		// if (extremetest(X[0], X[1], X[2], X[3], X[4], X[5], 5))

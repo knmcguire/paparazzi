@@ -151,4 +151,36 @@ void fmat_inverse(int n, float* matinv, float *mat)
 		
 	}
 
-}
+};
+
+void fmat_make_zeroes(float *matrix, int row, int col)
+{
+  int i,j;
+  for(i = 0 ; i < row; i++)
+  {
+    for(j = 0 ; j < col; j++)
+    {
+      matrix[i*col+j] = 0.0;
+    }
+  }
+};
+
+
+void fmat_make_identity(float *matrix, int n)
+{
+  int i,j;
+  for(i = 0 ; i < n; i++)
+  {
+    for(j = 0 ; j < n; j++)
+    {
+      if (i == j)
+      {
+        matrix[i*n+j] = 1.0;
+      }
+      else
+      {
+        matrix[i*n+j] = 0.0;
+      }
+    }
+  }
+};
