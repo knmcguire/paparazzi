@@ -1,13 +1,28 @@
 #include "collisioncone.h"
 
 
+int collisioncone_assess( float *cc,
+	float relx, float rely,
+	float ownvx, float ownvy,
+	float relvx, float relvy,
+	float radius)
+{
+	collisioncone_update(cc,	relx, rely, relvx, relvy, radius);
+	return collisioncone_checkdanger(cc, ownvx, ownvy);
+}
+
 /*
 	Updated the coordinates of the triangle for the collision cone of an obstacle.
 */
 void collisioncone_update( float *cc,
-	float bearing, float range, float radius,
-	float obstvx, float obstvy )
+	float relx, float rely,
+	float relvx, float relvy,
+	float radius)
 {
+
+	float range, bearing;
+	cart2polar(relx, rely, &range, &bearing);
+
 	/*
 	The other two edges are symmetrical about a diagonal extending along the localization bearing.
 	*/
@@ -23,7 +38,7 @@ void collisioncone_update( float *cc,
 	cc[5] = -cc[3]; // y_body
 
 	shape_rotateatorigin(cc, 6, bearing);
-	shape_shift(cc, 6, obstvx, obstvy);
+	shape_shift(cc, 6, relvx, relvy);
 	
 	/* In MATLAB for data analysis in a global world frame:
 		1. Rotate about [x1 y1] = [0 0] by orientation vector
@@ -60,3 +75,69 @@ void collisioncone_fuse( float *cc0, float *cc1)
 	}
 
 }
+
+
+int collisioncone_checkdanger( float *cc, float ownvx, float ownvy)
+{
+	float vv[2];
+
+	vv[0] = ownvx;
+	vv[1] = ownvy;
+
+	/* Check if the current velocity is ok.
+	If point is in area then we get a flag */
+	return shape_checkifpointinarea(cc, 6, vv);
+};
+
+
+int collisioncone_findnewcmd( float cc[3][6], 
+	float *v_des, float *psi_des, 
+	float psisearch, int nfilters )
+{	
+
+	int flag = 1;
+	int count = 1;
+	int ng = 1;
+	int i;
+
+	float psi_add;
+	deg2rad(psisearch, &psi_add);
+
+	float psi0 = *psi_des;
+	float vx,vy;
+
+	while ((flag == 1)	&& (count < 5))
+	{
+
+		polar2cart(*v_des, *psi_des, &vx, &vy);
+
+		//Reciprocity is assumed!
+		vx = vx/2;
+		vy = vy/2;
+
+		/* Check if we succeed */
+		for (i = 0; i < nfilters; i++)
+		{
+
+			flag = collisioncone_checkdanger(cc[i], vx, vy);
+
+			if (flag == 1)
+				break;
+
+		}
+
+		if (flag == 0)
+			break;
+
+		*psi_des = psi0 + (ng * count * psi_add);
+		wrapTo2Pi(psi_des);
+
+		ng = ng * (-1);
+		if (ng > 0)
+			count++;
+
+	}
+
+	return count;
+
+};

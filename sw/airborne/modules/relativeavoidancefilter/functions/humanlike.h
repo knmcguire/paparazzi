@@ -16,10 +16,10 @@ int hl_extremetest( float px, float py,
 	float vx_obst, float vy_obst,
 	float dt );
 
-void hl_prospective( float *vec, float px, float py, 
+int hl_prospective( float *vec, float px, float py, 
 	float vx_own, float vy_own,
 	float vx_obst, float vy_obst,
-	float dt , float max, int *flag);
+	float dt , float max);
 
 float hl_selectangle(int length, float *psi_des_vec);
 

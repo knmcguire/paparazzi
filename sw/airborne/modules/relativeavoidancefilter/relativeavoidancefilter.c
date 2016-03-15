@@ -26,12 +26,6 @@
 #include "modules/relativeavoidancefilter/relativeavoidancefilter.h"
 
 int nfilters, ntargets, ntargets0, nstates, nmeasurements;
-
-float P[NSTATES*NSTATES];
-float Q[NSTATES*NSTATES];
-float R[NMEASUREMENTS*NMEASUREMENTS];
-float X[NSTATES];
-float Y[NMEASUREMENTS];
 float arenaside;
 
 ekf_filter ekf[2];
@@ -42,28 +36,6 @@ void rafilter_init(void)
 	ntargets0 = 1;
 	nfilters = 0;
 	arenaside = 2;
-
-	// float P[nstates*nstates];
-	// float Q[nstates*nstates];
-	// float R[nmeasurements*nmeasurements];
-
-	// float X[nstates];
-	// float Y[nmeasurements];
-	// float U[1]; // Irrelevant but just needs to be defined for compiling
-
-	fmat_make_identity(P,NSTATES);
-	fmat_make_identity(Q,NSTATES);
-	fmat_make_identity(R,NMEASUREMENTS);
-
-	fmat_scal_mult(NSTATES,NSTATES,Q,pow(0.5,2),Q);
-	fmat_scal_mult(NMEASUREMENTS,NMEASUREMENTS,R,pow(0.2,2),R);
-	Q[0] = 0.01;
-	Q[NSTATES+1] = 0.01;
-	R[0] = 10.0;
-
-	fmat_make_zeroes(X, NSTATES, 1); // Initial state
-	X[0] = 1.0; // These cannot be zero or else you'll divide by zero
-	X[1] = 1.0;
 
 };
 

@@ -31,22 +31,29 @@ typedef struct ekf_filter {
   float tmp2[N*N];
   float tmp3[N*N];
 
+  float dt;
+
 } ekf_filter;
 
 /*
  * Basic functions describing evolution and measure
  */
 
-extern void linear_filter(float* X, float* dt, float *dX, float* A);
+extern void linear_filter(float* X, float dt, float *dX, float* A);
 extern void linear_measure(float*X, float* Y, float *H);
+
+extern void ekf_filter_new(ekf_filter* filter);
 
 extern void ekf_filter_setup(
 					ekf_filter *filter, 
 					float* Q,
-					float* R);
+					float* R,
+          float t);
+
 extern void ekf_filter_reset(ekf_filter *filter, float *x0, float *P0);
 
 extern void ekf_filter_predict(ekf_filter *filter);
+
 extern void ekf_filter_update(ekf_filter *filter, float *y);
 
 extern void ekf_filter_get_state(ekf_filter* filter, float *X, float* P);

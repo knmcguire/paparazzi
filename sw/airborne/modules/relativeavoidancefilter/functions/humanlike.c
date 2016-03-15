@@ -36,15 +36,15 @@ int hl_extremetest( float px, float py,
 }
 
 
-void hl_prospective( float *vec, float px, float py, 
+int hl_prospective( float *vec, float px, float py, 
 	float vx_own, float vy_own,
 	float vx_obst, float vy_obst,
-	float dt, float max, int *flag)
+	float dt, float max)
 {
-	int i,j;
+	int i,j, flag;
 	float v, ang, vox, voy, temp;
 	cart2polar(vx_own, vy_own, &v, &temp);
-	*flag = 0;
+	flag = 0;
 
 	for (i = 0; i < 12; i++)
 	{
@@ -61,8 +61,8 @@ void hl_prospective( float *vec, float px, float py,
 
 			if (hl_extremetest( px, py, vox, voy, vx_obst, vy_obst, j*dt) == 0)
 			{
-				printf("collision at ang %2.2f!\n", ang);
-				*flag = 1;
+				// printf("collision at ang %2.2f!\n", ang);
+				flag = 1;
 				break;
 			}
 
@@ -72,6 +72,7 @@ void hl_prospective( float *vec, float px, float py,
 
 	}
 
+	return flag;
 
 }
 

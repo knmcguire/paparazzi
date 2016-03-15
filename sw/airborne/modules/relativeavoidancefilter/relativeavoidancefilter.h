@@ -46,7 +46,7 @@
 
 #include "functions/PID.h" // Function(s) for a basic PID controller
 #include "functions/coordinateconversions.h"
-// // #include "functions/randomgenerator.h" // Functions for random generations of number 
+#include "functions/randomgenerator.h" // Functions for random generations of number 
 
 #include "functions/discreteekf.h" // Discrete Extended Kalman Filter base
 

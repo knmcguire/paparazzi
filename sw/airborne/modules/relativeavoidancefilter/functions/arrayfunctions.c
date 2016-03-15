@@ -117,3 +117,67 @@ void array_arraymin(int length, float *x1, float *x2)
 	}
 
 }
+
+/* 
+
+	Makes the vector x1 into a vector that features the maximum value
+	at each index position when comparing vector x1 to vector x2 .
+
+	x1 is altered.
+	x2 is not altered.
+
+*/
+void array_arraymax(int length, float *x1, float *x2)
+{
+	int i;
+
+	for (i = 0; i < length; i++)
+	{
+		if (x1[i] < x2[i])
+		{
+			x1[i] = x2[i];
+		}
+	}
+
+}
+
+#ifndef ARM_COMPILER
+
+void array_print(int length, float *x)
+{
+	int i;
+	for (i = 0; i < length; i++) {
+		printf("%2.2f\t", x[i]);
+	}
+	printf("\n");
+}
+
+#endif
+
+void array_make_zeros(int length, float *x)
+{
+	int i;
+	for(i = 0 ; i < length; i++)
+	{
+		x[i] = 0.0;
+	}
+};
+
+
+void array_make_ones(int length, float *x)
+{
+	int i;
+	for(i = 0 ; i < length; i++)
+	{
+		x[i] = 1.0;
+	}
+};
+
+void array_mult_scal(int length, float k, float *x)
+{
+	int i;
+	for(i = 0 ; i < length; i++)
+	{
+		x[i] = k * x[i];
+	}
+};

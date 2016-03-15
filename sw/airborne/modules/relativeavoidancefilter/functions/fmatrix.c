@@ -1,29 +1,38 @@
 #include "fmatrix.h"
 
+/* Function to add two matrices to eachother */
 void fmat_add(int n_row, int n_col, float* r, float* a, float* b) {
 	int row, col, ridx;
-	for (row = 0; row<n_row; row++) {
-		for (col = 0; col<n_col; col++) {
+	for (row = 0; row<n_row; row++)
+	{
+		for (col = 0; col<n_col; col++)
+		{
 			ridx = row * n_col + col;
 			r[ridx] = a[ridx] + b[ridx];
 		}
 	}
 }
 
+/* Function to subtract two matrices from eachother */
 void fmat_sub(int n_row, int n_col, float* r, float* a, float* b) {
 	int row, col, ridx;
-	for (row = 0; row<n_row; row++) {
-		for (col = 0; col<n_col; col++) {
+	for (row = 0; row<n_row; row++)
+	{
+		for (col = 0; col<n_col; col++)
+		{
 			ridx = row * n_col + col;
 			r[ridx] = a[ridx] - b[ridx];
 		}
 	}
 }
 
+/* Function to obtain the transpose of a matrix */
 void fmat_transpose(int n_row, int n_col, float* r, float* a) {
 	int row, col, ridx, aidx;
-	for (row = 0; row<n_row; row++) {
-		for (col = 0; col<n_col; col++) {
+	for (row = 0; row<n_row; row++)
+	{
+		for (col = 0; col<n_col; col++)
+		{
 			aidx = row * n_col + col;
 			ridx = col * n_row + row;
 			r[ridx] = a[aidx];
@@ -31,33 +40,46 @@ void fmat_transpose(int n_row, int n_col, float* r, float* a) {
 	}
 }
 
+/* Function to multiply a matrix by a scalar value */
 void fmat_scal_mult(int n_row, int n_col, float* r, float k, float* a) {
 	int row, col, ridx;
-	for (row = 0; row<n_row; row++) {
-		for (col = 0; col<n_col; col++) {
+	for (row = 0; row < n_row; row++)
+	{
+		for (col = 0; col < n_col; col++)
+		{
 			ridx = row * n_col + col;
-			r[ridx] = k * a[ridx];
+			if (a[ridx] != 0.0)
+				r[ridx] = k * a[ridx];
+			else
+				r[ridx] = 0.0;
 		}
 	}
 }
 
+/* Add a scalar value to a matrix */
 void fmat_add_scal_mult(int n_row, int n_col, float* r, float*a, float k, float* b) {
 	int row, col, ridx;
-	for (row = 0; row<n_row; row++) {
-		for (col = 0; col<n_col; col++) {
+	for (row = 0; row < n_row; row++)
+	{
+		for (col = 0; col < n_col; col++)
+		{
 			ridx = row * n_col + col;
 			r[ridx] = a[ridx] + k * b[ridx];
 		}
 	}
 }
 
+/* Multiply two matrices with eachother */
 void fmat_mult(int n_rowa, int n_cola, int n_colb, float* r, float* a, float* b) {
 	int row, col, k, ridx, aidx, bidx;
-	for (row = 0; row<n_rowa; row++) {
-		for (col = 0; col<n_colb; col++) {
+	for (row = 0; row < n_rowa; row++)
+	{
+		for (col = 0; col < n_colb; col++)
+		{
 			ridx = col + row * n_colb;
 			r[ridx] =0.;
-			for (k=0; k<n_cola; k++) {
+			for (k=0; k < n_cola; k++)
+			{
 				aidx = k + row * n_cola;
 				bidx = col + k * n_colb;
 				r[ridx] += a[aidx] * b[bidx];
@@ -66,16 +88,24 @@ void fmat_mult(int n_rowa, int n_cola, int n_colb, float* r, float* a, float* b)
 	}
 }
 
-// void fmat_print(int n_row, int n_col, float* a) {
-// 	int row, col, ridx;
-// 	for (row = 0; row<n_row; row++) {
-// 		for (col = 0; col<n_col; col++) {
-// 			ridx = row * n_col + col;
-// 		     printf("%2.2f\t", a[ridx]);
-// 		}
-//      	printf("\n");
-// 	}
-// }
+#ifndef ARM_COMPILER
+
+/* Print the matrix */
+void fmat_print(int n_row, int n_col, float* a)
+{
+	int row, col, ridx;
+	for (row = 0; row < n_row; row++)
+	{
+		for (col = 0; col < n_col; col++)
+		{
+			ridx = row * n_col + col;
+			printf("%2.2f\t", a[ridx]);
+		}
+		printf("\n");
+	}
+}
+
+#endif
 
 /* Calculate inverse of matrix 
 
@@ -153,34 +183,35 @@ void fmat_inverse(int n, float* matinv, float *mat)
 
 };
 
+/* Make a matrix of zeros */
 void fmat_make_zeroes(float *matrix, int row, int col)
 {
-  int i,j;
-  for(i = 0 ; i < row; i++)
-  {
-    for(j = 0 ; j < col; j++)
-    {
-      matrix[i*col+j] = 0.0;
-    }
-  }
+	int i,j;
+	for(i = 0 ; i < row; i++)
+	{
+		for(j = 0 ; j < col; j++)
+		{
+			matrix[i*col+j] = 0.0;
+		}
+	}
 };
 
-
+/* Make an identity matrix */
 void fmat_make_identity(float *matrix, int n)
 {
-  int i,j;
-  for(i = 0 ; i < n; i++)
-  {
-    for(j = 0 ; j < n; j++)
-    {
-      if (i == j)
-      {
-        matrix[i*n+j] = 1.0;
-      }
-      else
-      {
-        matrix[i*n+j] = 0.0;
-      }
-    }
-  }
+	int i,j;
+	for(i = 0 ; i < n; i++)
+	{
+		for(j = 0 ; j < n; j++)
+		{
+			if (i == j)
+			{
+				matrix[i*n+j] = 1.0;
+			}
+			else
+			{
+				matrix[i*n+j] = 0.0;
+			}
+		}
+	}
 };
