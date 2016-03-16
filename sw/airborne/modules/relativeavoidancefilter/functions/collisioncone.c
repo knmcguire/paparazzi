@@ -7,7 +7,7 @@ int collisioncone_assess( float *cc,
 	float relvx, float relvy,
 	float radius)
 {
-	collisioncone_update(cc,	relx, rely, relvx, relvy, radius);
+	collisioncone_update(cc, relx, rely, relvx, relvy, radius);
 	return collisioncone_checkdanger(cc, ownvx, ownvy);
 }
 
@@ -106,7 +106,7 @@ int collisioncone_findnewcmd( float cc[3][6],
 	float psi0 = *psi_des;
 	float vx,vy;
 
-	while ((flag == 1)	&& (count < 5))
+	while ((flag == 1)	&& (count < ((int)180.0/psisearch)))
 	{
 
 		polar2cart(*v_des, *psi_des, &vx, &vy);
@@ -118,12 +118,9 @@ int collisioncone_findnewcmd( float cc[3][6],
 		/* Check if we succeed */
 		for (i = 0; i < nfilters; i++)
 		{
-
 			flag = collisioncone_checkdanger(cc[i], vx, vy);
-
 			if (flag == 1)
 				break;
-
 		}
 
 		if (flag == 0)

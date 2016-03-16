@@ -50,7 +50,7 @@ extern void ekf_filter_setup(
 					float* R,
           float t);
 
-extern void ekf_filter_reset(ekf_filter *filter, float *x0, float *P0);
+extern void ekf_filter_reset(ekf_filter *filter);
 
 extern void ekf_filter_predict(ekf_filter *filter);
 

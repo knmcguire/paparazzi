@@ -20,6 +20,6 @@ extern void array_print(int length, float *x);
 
 extern void array_make_zeros(int length, float *x);
 extern void array_make_ones(int length, float *x);
-extern void array_mult_scal(int length, float k, float *x);
+extern void array_mult_scal(int length, float *y, float k, float *x);
 
 #endif  /*ARRAYFUNCTIONS_H*/

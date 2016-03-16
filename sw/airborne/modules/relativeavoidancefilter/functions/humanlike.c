@@ -14,10 +14,10 @@ float hl_distbetweenpoints(float p1, float p2, float r1, float r2)
 }
 
 
-int hl_extremetest( float px, float py, 
+int hl_collisiontest( float px, float py, 
 	float vx_own, float vy_own,
 	float vx_obst, float vy_obst,
-	float dt )
+	float dt, float radius )
 {	
 	float pox = 0.0;
 	float poy = 0.0;
@@ -29,28 +29,28 @@ int hl_extremetest( float px, float py,
 
 	/* Check if over the horizon interval dt
 	there will be any sign of a collision */
-	if (hl_distbetweenpoints(pox, poy, pobx, poby) < 1.0)
-		return 0; // collision
+	if (hl_distbetweenpoints(pox, poy, pobx, poby) > radius)
+		return 0; // no collision
 	else 
-		return 1; // no collision
+		return 1; // collision
 }
 
 
 int hl_prospective( float *vec, float px, float py, 
 	float vx_own, float vy_own,
 	float vx_obst, float vy_obst,
-	float dt, float max)
+	float dt, float max, int length, float radius)
 {
-	int i,j, flag;
+	int i, j;
 	float v, ang, vox, voy, temp;
 	cart2polar(vx_own, vy_own, &v, &temp);
-	flag = 0;
+	int flag = 0;
 
-	for (i = 0; i < 12; i++)
+	for (i = 0; i < length; i++)
 	{
 
 		j = 1;
-		ang = -M_PI/2 + M_PI/6*i;
+		ang = -M_PI/2 + M_PI/(length/2)*i;
 		wrapToPi(&ang);
 		polar2cart(v, ang, &vox, &voy);
 
@@ -58,15 +58,12 @@ int hl_prospective( float *vec, float px, float py,
 		{
 
 			vec[i] = j*dt;
+			flag = hl_collisiontest( px, py, vox, voy, vx_obst, vy_obst, j*dt, radius);
 
-			if (hl_extremetest( px, py, vox, voy, vx_obst, vy_obst, j*dt) == 0)
-			{
-				// printf("collision at ang %2.2f!\n", ang);
-				flag = 1;
+			if (flag)
 				break;
-			}
-
-			j++;
+			else
+				j++;
 			
 		}
 
@@ -80,6 +77,6 @@ float hl_selectangle(int length, float *psi_des_vec)
 {	
 	int idx;
 	idx = array_getmaxidx(length, psi_des_vec);
-	printf("getmaxidx: %d \n", idx);
-	return -M_PI/3 + M_PI/6*idx;
+	//printf("getmaxidx: %d \n", idx);
+	return psi_des_vec[idx];
 }

@@ -25,11 +25,11 @@ void ekf_filter_setup(
 	filter->dt = t;
 }
 
-/* Resets the state vector and covariance matrices of the EKF */
-void ekf_filter_reset(ekf_filter *filter, float *x0, float *P0)
+/* Resets the state voidector and covariance matrices of the EKF */
+void ekf_filter_reset(ekf_filter *filter)
 {
-	memcpy(filter->X, x0, N * sizeof(float));
-	memcpy(filter->P, P0, N * N * sizeof(float));
+	fmat_make_identity(filter->P, N); // Make identity matrix
+	fmat_make_zeroes(filter->X, N, 1); // Initial state
 }
 
 /* Extract the latest state vector and the covariance matrix of the EKF*/
