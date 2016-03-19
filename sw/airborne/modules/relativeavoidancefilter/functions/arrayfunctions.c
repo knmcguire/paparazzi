@@ -163,6 +163,14 @@ void array_make_zeros(int length, float *x)
 	}
 };
 
+void array_make_zeros_int(int length, int *x)
+{
+	int i;
+	for(i = 0 ; i < length; i++)
+	{
+		x[i] = 0.0;
+	}
+};
 
 void array_make_ones(int length, float *x)
 {

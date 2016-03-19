@@ -50,7 +50,7 @@ int hl_prospective( float *vec, float px, float py,
 	{
 
 		j = 1;
-		ang = -M_PI/2 + M_PI/(length/2)*i;
+		ang = -M_PI + (2*M_PI/length)*i;
 		wrapToPi(&ang);
 		polar2cart(v, ang, &vox, &voy);
 

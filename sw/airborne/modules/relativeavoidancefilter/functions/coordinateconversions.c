@@ -6,6 +6,7 @@ Compliments of
 http://stackoverflow.com/questions/29089710/pointers-in-c-programming-coordinate-conversion */
 void polar2cart(float radius, float radians, float *x, float *y)
 {
+	wrapToPi(&radians);
 	*x = radius * cos(radians); 
 	*y = radius * sin(radians);
 };

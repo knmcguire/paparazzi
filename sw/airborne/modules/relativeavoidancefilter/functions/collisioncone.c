@@ -30,16 +30,17 @@ void collisioncone_update( float *cc,
 	cc[1] = 0.0;
 
 	// This is the edge extending upwards to the right (+y)
-	cc[2] = range+1; // x_body
-	cc[3] = (range+1)*tan(atan((range+1)/radius)); // y_body
+	cc[2] = range+5; // x_body
+	cc[3] = (range+5)*tan(atan(radius/range)); // y_body
 
 	// This is the edge exteding upwards to the left (-y)
 	cc[4] = range+1; // x_body
 	cc[5] = -cc[3]; // y_body
 
 	shape_rotateatorigin(cc, 6, bearing);
-	shape_shift(cc, 6, relvx, relvy);
-	
+	// shape_shift(cc, 6, relvx, relvy);
+
+	// Pull it more central
 	/* In MATLAB for data analysis in a global world frame:
 		1. Rotate about [x1 y1] = [0 0] by orientation vector
 		2. Shift to global coordinate
@@ -106,32 +107,39 @@ int collisioncone_findnewcmd( float cc[3][6],
 	float psi0 = *psi_des;
 	float vx,vy;
 
-	while ((flag == 1)	&& (count < ((int)180.0/psisearch)))
+	while (flag == 1)
 	{
 
 		polar2cart(*v_des, *psi_des, &vx, &vy);
 
 		//Reciprocity is assumed!
-		vx = vx/2;
-		vy = vy/2;
+		// vx = vx/2;
+		// vy = vy/2;
 
 		/* Check if we succeed */
 		for (i = 0; i < nfilters; i++)
 		{
 			flag = collisioncone_checkdanger(cc[i], vx, vy);
-			if (flag == 1)
+			if (flag == 1) // Still problems with at least one drone, let's try again
 				break;
 		}
 
 		if (flag == 0)
-			break;
+			break; // Solved
 
-		*psi_des = psi0 + (ng * count * psi_add);
+		*psi_des = psi0 + (count * psi_add);
 		wrapTo2Pi(psi_des);
 
 		ng = ng * (-1);
+		
 		if (ng > 0)
 			count++;
+
+		if (count >= M_PI/psi_add)
+		{
+			*v_des = *v_des + *v_des;
+			count = 1;
+		}
 
 	}
 

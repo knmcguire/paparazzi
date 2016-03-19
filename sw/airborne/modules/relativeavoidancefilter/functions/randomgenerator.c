@@ -9,7 +9,8 @@ It will create an initial random seed that is used later on, tuned to the curren
 void randomgen_init()
 {
 	// srand( (unsigned) time(NULL) * getpid() );
-	srand( (unsigned) time(NULL) );
+	float *temp;
+	srand( temp );
 
 	// time_t now;
  //  	now = time(NULL);
