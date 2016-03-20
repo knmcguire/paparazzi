@@ -28,4 +28,7 @@ void wrapTo2Pi(float *ang);
 /* Keeps a value between two bounds */
 void keepbounded(float *value, float min, float max);
 
+void ENUearthToNEDbody(float xe, float ye, float psi, float *xb, float *yb);
+void NEDbodyToENUearth(float xb, float yb, float psi, float *xe, float *ye);
+
 #endif

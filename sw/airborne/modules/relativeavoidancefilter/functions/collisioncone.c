@@ -34,11 +34,11 @@ void collisioncone_update( float *cc,
 	cc[3] = (range+5)*tan(atan(radius/range)); // y_body
 
 	// This is the edge exteding upwards to the left (-y)
-	cc[4] = range+1; // x_body
+	cc[4] = range+5; // x_body
 	cc[5] = -cc[3]; // y_body
 
 	shape_rotateatorigin(cc, 6, bearing);
-	// shape_shift(cc, 6, relvx, relvy);
+	shape_shift(cc, 6, relvx, relvy);
 
 	// Pull it more central
 	/* In MATLAB for data analysis in a global world frame:
@@ -107,7 +107,7 @@ int collisioncone_findnewcmd( float cc[3][6],
 	float psi0 = *psi_des;
 	float vx,vy;
 
-	while (flag == 1)
+	while (1)
 	{
 
 		polar2cart(*v_des, *psi_des, &vx, &vy);
@@ -135,7 +135,7 @@ int collisioncone_findnewcmd( float cc[3][6],
 		if (ng > 0)
 			count++;
 
-		if (count >= M_PI/psi_add)
+		if (count >= (2*M_PI)/psi_add)
 		{
 			*v_des = *v_des + *v_des;
 			count = 1;
