@@ -22,7 +22,7 @@ void collisioncone_fuse( float *cc0, float *cc1 );
 int collisioncone_checkdanger( float *cc, 
 	float ownvx, float ownvy);
 
-int collisioncone_findnewcmd(	float cc[][6], 
+void collisioncone_findnewcmd(	float cc[][6], 
 	float *v_des, float *psi_des,
 	float psisearch, int nfilters );
 

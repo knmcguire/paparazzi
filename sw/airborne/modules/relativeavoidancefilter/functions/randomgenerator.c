@@ -8,15 +8,8 @@ It will create an initial random seed that is used later on, tuned to the curren
 */
 void randomgen_init()
 {
-	// srand( (unsigned) time(NULL) * getpid() );
 	float *temp;
 	srand( temp );
-
-	// time_t now;
- //  	now = time(NULL);
- //  	struct tm *ts;
- //  	ts = localtime(&now);
- //  	srand(ts->tm_sec);
 }
 
 /* Get a random value of type float between a min and max */

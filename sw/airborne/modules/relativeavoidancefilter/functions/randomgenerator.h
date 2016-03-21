@@ -1,11 +1,7 @@
 #ifndef RANDOMGENERATOR_H
 #define RANDOMGENERATOR_H
 
-#include "time.h"
 #include "stdlib.h"
-// #include <sys/types.h>
-// #include <unistd.h>
-
 
 /* Initilizer function.
 

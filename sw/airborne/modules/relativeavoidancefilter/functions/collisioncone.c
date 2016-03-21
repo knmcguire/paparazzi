@@ -91,30 +91,24 @@ int collisioncone_checkdanger( float *cc, float ownvx, float ownvy)
 };
 
 
-int collisioncone_findnewcmd( float cc[3][6], 
+void collisioncone_findnewcmd( float cc[3][6], 
 	float *v_des, float *psi_des, 
 	float psisearch, int nfilters )
 {	
 
 	int flag = 1;
 	int count = 1;
-	int ng = 1;
 	int i;
 
 	float psi_add;
 	deg2rad(psisearch, &psi_add);
 
 	float psi0 = *psi_des;
-	float vx,vy;
+	float vx, vy;
 
 	while (1)
 	{
-
 		polar2cart(*v_des, *psi_des, &vx, &vy);
-
-		//Reciprocity is assumed!
-		// vx = vx/2;
-		// vy = vy/2;
 
 		/* Check if we succeed */
 		for (i = 0; i < nfilters; i++)
@@ -130,10 +124,7 @@ int collisioncone_findnewcmd( float cc[3][6],
 		*psi_des = psi0 + (count * psi_add);
 		wrapTo2Pi(psi_des);
 
-		ng = ng * (-1);
-		
-		if (ng > 0)
-			count++;
+		count++;
 
 		if (count >= (2*M_PI)/psi_add)
 		{
@@ -142,7 +133,5 @@ int collisioncone_findnewcmd( float cc[3][6],
 		}
 
 	}
-
-	return count;
 
 };
