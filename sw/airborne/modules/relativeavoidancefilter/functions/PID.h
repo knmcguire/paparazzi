@@ -1,6 +1,8 @@
 #ifndef PID_H
 #define PID_H
 
+#include "randomgenerator.h"
+
 /* 
 Function for a basic Proportional Integral Differential (PID) controller 
 */

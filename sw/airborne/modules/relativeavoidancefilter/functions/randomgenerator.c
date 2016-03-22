@@ -1,5 +1,5 @@
 #include "randomgenerator.h"
-
+#include "stdint.h"
 /* Initilizer function.
 
 Run this at the beginning of the code and before running any of the functions  below.
@@ -8,8 +8,10 @@ It will create an initial random seed that is used later on, tuned to the curren
 */
 void randomgen_init()
 {
-	float *temp;
-	srand( temp );
+	int temp;
+	uintptr_t t = (uintptr_t)&temp;
+	
+	srand( t );
 }
 
 /* Get a random value of type float between a min and max */

@@ -26,10 +26,6 @@
 #ifndef RELATIVEAVOIDANCEFILTER_H
 #define RELATIVEAVOIDANCEFILTER_H
 
-/* Standard Includes */
-// #include "math.h"
-#include "stdlib.h"
-#include "stdio.h"
 
 /* Paparazzi -- Controller data */
 #include "../../state.h" // To get state (pos/vel/acc/...) 
@@ -44,24 +40,25 @@
 
 /* Own functions */
 
+/* Standard Includes */
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+// Own C includes
 #include "functions/PID.h" // Function(s) for a basic PID controller
 #include "functions/coordinateconversions.h"
 #include "functions/randomgenerator.h" // Functions for random generations of number 
 
-#include "functions/discreteekf.h" // Discrete Extended Kalman Filter base
-
-#include "functions/cstylevector.h" // Vector "object" in C
-#include "functions/fmatrix.h" // Matrix of float values functions
-#include "functions/shape.h" // Functions for shape (polygon) manipulation in cartesian plane
-#include "functions/arrayfunctions.h" // Functions for array manipulation
-
-// #include "functions/humanlike.h" // Functions for human-like obstacle avoidance
-#include "functions/collisioncone.h" // Collision cone functions
-
-// #include "functions/filterfunctions.h" // Process + Measurement functions of EKF
-
-#define NSTATES 9
-#define NMEASUREMENTS 8
+// Includes borrowed from Paparazzi
+#include "functions/discreteekf.h"
+#include "functions/cstylevector.h"
+#include "functions/collisioncone.h"
+#include "functions/fmatrix.h"
+#include "functions/shape.h"
+#include "functions/arrayfunctions.h"
+#include "functions/humanlike.h"
 
 extern void rafilter_init(void);
 extern void rafilter_periodic(void);
