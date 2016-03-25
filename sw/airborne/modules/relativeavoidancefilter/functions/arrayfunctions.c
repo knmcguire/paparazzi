@@ -12,14 +12,9 @@ void array_shiftleft(float *array, int size, int shift)
 	for (i = 0; i < size; i++)
 	{
 		if (i+shift >= size)
-		{
 			array[i] = temp[i+shift - size];
-		} 
 		else
-		{
 			array[i] = temp[i+shift];
-		}
-
 	}
 
 }
@@ -37,16 +32,10 @@ void array_shiftright(float *array, int size, int shift)
 	for (i = 0; i < size; i++)
 	{
 		if (i-shift < 0)
-		{
 			array[i] = temp[i-shift + size];
-		} 
 		else
-		{
 			array[i] = temp[i-shift];
-		}
-
 	}
-
 }
 
 
@@ -69,7 +58,6 @@ int array_getminidx(int length, float *x)
 	}
 
 	return idxmin;
-
 }
 
 /* 
@@ -91,7 +79,6 @@ int array_getmaxidx(int length, float *x)
 	}
 
 	return idxmax;
-	
 }
 
 
@@ -111,9 +98,7 @@ void array_arraymin(int length, float *x1, float *x2)
 	for (i = 0; i < length; i++)
 	{
 		if (x1[i] > x2[i])
-		{
 			x1[i] = x2[i];
-		}
 	}
 
 }
@@ -134,21 +119,29 @@ void array_arraymax(int length, float *x1, float *x2)
 	for (i = 0; i < length; i++)
 	{
 		if (x1[i] < x2[i])
-		{
 			x1[i] = x2[i];
-		}
 	}
 
 }
 
-#ifndef ARM_COMPILER
+int array_isvaluein_int(int length, int *x, int value){
+    int i;
+    for (i=0; i < length; i++) {
+        if (x[i] == value)
+            return 1;
+    }
 
+    return 0;
+}
+
+#ifndef ARM_COMPILER
 void array_print(int length, float *x)
 {
 	int i;
-	for (i = 0; i < length; i++) {
+
+	for (i = 0; i < length; i++)
 		printf("%2.2f\t", x[i]);
-	}
+
 	printf("\n");
 }
 
@@ -158,34 +151,26 @@ void array_make_zeros(int length, float *x)
 {
 	int i;
 	for(i = 0 ; i < length; i++)
-	{
 		x[i] = 0.0;
-	}
 };
 
 void array_make_zeros_int(int length, int *x)
 {
 	int i;
 	for(i = 0 ; i < length; i++)
-	{
 		x[i] = 0.0;
-	}
 };
 
 void array_make_ones(int length, float *x)
 {
 	int i;
 	for(i = 0 ; i < length; i++)
-	{
 		x[i] = 1.0;
-	}
 };
 
 void array_mult_scal(int length, float *y, float k, float *x)
 {
 	int i;
 	for(i = 0 ; i < length; i++)
-	{
 		y[i] = k * x[i];
-	}
 };

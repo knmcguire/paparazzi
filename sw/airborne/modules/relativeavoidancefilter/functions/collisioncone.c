@@ -106,7 +106,7 @@ void collisioncone_findnewcmd( float cc[3][6],
 	float psi0 = *psi_des;
 	float vx, vy;
 
-	while (1)
+	while (*v_des <= 2.0)
 	{
 		polar2cart(*v_des, *psi_des, &vx, &vy);
 

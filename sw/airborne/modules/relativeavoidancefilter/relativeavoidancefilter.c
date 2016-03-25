@@ -36,23 +36,41 @@
 
 #define ASIDE 2 // Size of the arena
 
-float px_des, py_des;
-float vx_des, vy_des;
-float vx, vy;
-float v_des, psi_des;
-float h_des;
+#ifndef RSSISENDER_ID
+	#define RSSISENDER_ID ABI_BROADCAST
+#endif
 
-int ntargets = NTAR;
-int nfilters = 0;
+ float px_des, py_des;
+ float vx_des, vy_des;
+ float vx, vy;
+ float v_des, psi_des;
+ float h_des;
 
-ekf_filter ekf[NUAVS-1];
-float Y[NMEASUREMENTS];
+ int ntargets = NTAR;
+ int nf;
+ int IDarray[NUAVS-1];
 
-int flag[NUAVS-1];
-int flagglobal;
-int flagglobalcounter;
-float cc[NUAVS-1][6];
-int arenaside;
+ ekf_filter ekf[NUAVS-1];
+ float Y[NMEASUREMENTS];
+
+ int flag[NUAVS-1];
+ int flagglobal;
+ int flagglobalcounter;
+ float cc[NUAVS-1][6];
+ int arenaside;
+
+BTmessage msg;
+
+static abi_event rssi_ev;
+static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
+	uint8_t ac_id, int8_t source_strength __attribute__((unused)), int8_t rssi);
+static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
+	uint8_t ac_id, int8_t source_strength __attribute__((unused)), int8_t rssi)
+{
+ 	msg.ID   = ac_id;
+ 	msg.RSSI = rssi;
+};
+
 void rafilter_init(void)
 {
 	randomgen_init(); // Initialize random seed
@@ -60,48 +78,52 @@ void rafilter_init(void)
 	flagglobal = 0;
 	flagglobalcounter = 0;
 	array_make_zeros_int(NUAVS-1, flag);
-
-	ntargets = NTAR;
-	nfilters = 0;
 	
+	ntargets = NTAR;
+	nf = 0;
 	arenaside = ASIDE;
-	getNewGoalPos(&px_des, &py_des, arenaside);
 
+	array_make_zeros_int(NUAVS-1, IDarray);
+
+	getNewGoalPos(&px_des, &py_des, arenaside);
 };
 
 void rafilter_periodic(void)
 {
+	AbiBindMsgRSSI(RSSISENDER_ID, &rssi_ev, bluetoothmsg_cb);
+
+	// If it's a new ID we start a new EKF for it
+	if ((array_isvaluein_int(2,IDarray,msg.ID) == 0) 
+		&& (nf < NUAVS-1))
+	{
+		IDarray[nf] = msg.ID;
+
+		// Initialize an ekf filter for each target tracker			
+		ekf_filter_new(&ekf[nf]);
+
+		// Set up the Q and R matrices.
+		fmat_scal_mult(NSTATES,NSTATES, ekf[nf].Q, pow(0.5,2), ekf[nf].Q);
+		fmat_scal_mult(NMEASUREMENTS,NMEASUREMENTS, ekf[nf].R, pow(SPEEDNOISE,2), ekf[nf].R);
+		ekf[i].Q[0] = 0.01;
+		ekf[i].Q[NSTATES+1] = 0.01;
+		ekf[i].R[0] = RSSINOISE;
+
+		// Initial positions cannot be zero or else you'll divide by zero
+		ekf[i].X[0] = 1.0; 
+		ekf[i].X[1] = 1.0;
+		ekf[i].dt = 0.2;
+
+		nf++;
+	}
 
 	struct NedCoor_f *ownPos = stateGetPositionNed_f();
 	struct NedCoor_f *ownVel = stateGetSpeedNed_f();
 
-	if (nfilters < 2)
+	for (int i = 0; i < nf; i++)
 	{
-		for (int i = 0; i < ntargets-NTAR; i++)
-		{
-			// Initialize an ekf filter for each target tracker					
-			ekf_filter_new(&ekf[i]);
+		// Get the Bluetooth message
+		AbiBindMsgRSSI(RSSISENDER_ID, &rssi_ev, bluetoothmsg_cb);
 
-			// Set up the Q and R matrices.
-			fmat_scal_mult(NSTATES,NSTATES, ekf[i].Q, pow(0.5,2), ekf[i].Q);
-			fmat_scal_mult(NMEASUREMENTS,NMEASUREMENTS, ekf[i].R, pow(SPEEDNOISE,2), ekf[i].R);
-			ekf[i].Q[0] = 0.01;
-			ekf[i].Q[NSTATES+1] = 0.01;
-			ekf[i].R[0] = RSSINOISE;
-
-			// Initial positions cannot be zero or else you'll divide by zero
-			ekf[i].X[0] = 1.0; 
-			ekf[i].X[1] = 1.0;
-			ekf[i].dt = 0.2;
-
-			nfilters++;
-		}
-	}
-
-
-	for (int i = 0; i < ntargets-NTAR; i++)
-	{
-		
 		// Construct measurement vector for EKF
 		Y[0] = -60.0; // Bluetooth RSSI measurement
 		Y[1] = ownVel->x;
@@ -121,14 +143,14 @@ void rafilter_periodic(void)
 	float ownPsi = M_PI;
 
 	if(abs(h_err) < 0.10)
-	{	
+	{
 		vx = PID( -0.25, 0.0, 0.0, ownPos->x - px_des, 0.0, 0.0 );
 		vy = PID( -0.25, 0.0, 0.0, ownPos->y - py_des, 0.0, 0.0 );
 
 		ENUearthToNEDbody(vx, vy, ownPsi, &vx_des, &vy_des);	
 		flagglobal = 0;
 
-		for (int i = 0; i < nfilters; i++)
+		for (int i = 0; i < nf; i++)
 		{
 			collisioncone_update(cc[i],
 				ekf[i].X[0], ekf[i].X[1],
@@ -148,7 +170,7 @@ void rafilter_periodic(void)
 				flagglobalcounter++;
 
 			cart2polar(vx_des, vy_des, &v_des, &psi_des);
-			collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nfilters);
+			collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nf);
 			polar2cart(v_des, psi_des, &vx_des, &vy_des);
 			NEDbodyToENUearth(vx_des, vy_des, ownPsi, &vx, &vy);
 

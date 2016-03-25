@@ -13,6 +13,7 @@ extern int array_getminidx(int length, float *x);
 extern int array_getmaxidx(int length, float *x);
 extern void array_arraymin(int length, float *x1, float *x2);
 extern void array_arraymax(int length, float *x1, float *x2);
+extern int array_isvaluein_int(int length, int *x, int value);
 
 #ifndef ARM_COMPILER
 extern void array_print(int length, float *x);

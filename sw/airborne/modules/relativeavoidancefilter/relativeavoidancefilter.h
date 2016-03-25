@@ -33,6 +33,9 @@
 #include "../../firmwares/rotorcraft/guidance/guidance_h.h"
 #include "../../firmwares/rotorcraft/autopilot.h"
 
+// ABI messages
+#include "subsystems/abi.h"
+
 /* Paparazzi -- Auxiliary stuff */
 #include "../../math/pprz_algebra.h"
 #include "../../math/pprz_algebra_float.h"
@@ -59,6 +62,11 @@
 #include "functions/shape.h"
 #include "functions/arrayfunctions.h"
 #include "functions/humanlike.h"
+
+typedef struct
+{
+   float  ID, vx, vy, psi, h, RSSI;
+}BTmessage;
 
 extern void rafilter_init(void);
 extern void rafilter_periodic(void);
