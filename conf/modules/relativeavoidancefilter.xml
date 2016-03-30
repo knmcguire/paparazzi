@@ -19,12 +19,9 @@
 		<file name="functions/fmatrix.h"/>
 		<file name="functions/PID.h"/>
 		<file name="functions/shape.h"/>
-		<file name="functions/randomgenerator.h"/>
-
 	</header>
 	
 	<init fun="rafilter_init()"/>
-	
 	<periodic fun="rafilter_periodic()" freq="5" autorun="TRUE"/>
 	
 	<makefile>
@@ -38,8 +35,6 @@
 		<file name="functions/fmatrix.c"/>
 		<file name="functions/PID.c"/>
 		<file name="functions/shape.c"/>
-		<file name="functions/randomgenerator.c"/>
-
 	</makefile>
 
 </module>

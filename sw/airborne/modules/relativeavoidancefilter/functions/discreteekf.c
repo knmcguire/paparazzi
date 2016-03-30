@@ -134,8 +134,8 @@ void linear_measure(float*X, float* Y, float *H)
 {
 	int row, col;
 
-	float Pn = -65.0;
-	float gamma = 2.5;
+	float Pn = -63.0;
+	float gamma = 2;
 
 	// RSSI measurement
 	Y[0] = Pn - (10.0 * gamma * log10(sqrt(pow(X[0],2.0) + pow(X[1],2.0) + pow(X[8],2.0))));

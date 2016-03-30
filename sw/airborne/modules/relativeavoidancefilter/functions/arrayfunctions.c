@@ -1,7 +1,7 @@
 #include "arrayfunctions.h"
 
 /*
-	Shifts an array to the left by a defined number of steps at a time
+Shifts an array to the left by a defined number of steps at a time
 */
 void array_shiftleft(float *array, int size, int shift)
 {
@@ -21,7 +21,7 @@ void array_shiftleft(float *array, int size, int shift)
 
 
 /*
-	Shifts an array to the right by a defined number of steps at a time
+Shifts an array to the right by a defined number of steps at a time
 */
 void array_shiftright(float *array, int size, int shift)
 {
@@ -40,7 +40,7 @@ void array_shiftright(float *array, int size, int shift)
 
 
 /*
-	Returns the idx of the minimum value in an array
+Returns the idx of the minimum value in an array
 */
 int array_getminidx(int length, float *x)
 {
@@ -61,7 +61,7 @@ int array_getminidx(int length, float *x)
 }
 
 /* 
-	Returns the idx of the maximum value in an array
+Returns the idx of the maximum value in an array
 */
 int array_getmaxidx(int length, float *x)
 {
@@ -84,11 +84,11 @@ int array_getmaxidx(int length, float *x)
 
 /* 
 
-	Makes the vector x1 into a vector that features the minimum value
-	at each index position when comparing vector x1 to vector x2 .
+Makes the vector x1 into a vector that features the minimum value
+at each index position when comparing vector x1 to vector x2 .
 
-	x1 is altered.
-	x2 is not altered.
+x1 is altered.
+x2 is not altered.
 
 */
 void array_arraymin(int length, float *x1, float *x2)
@@ -105,11 +105,11 @@ void array_arraymin(int length, float *x1, float *x2)
 
 /* 
 
-	Makes the vector x1 into a vector that features the maximum value
-	at each index position when comparing vector x1 to vector x2 .
+Makes the vector x1 into a vector that features the maximum value
+at each index position when comparing vector x1 to vector x2 .
 
-	x1 is altered.
-	x2 is not altered.
+x1 is altered.
+x2 is not altered.
 
 */
 void array_arraymax(int length, float *x1, float *x2)
@@ -124,15 +124,17 @@ void array_arraymax(int length, float *x1, float *x2)
 
 }
 
-int array_isvaluein_int(int length, int *x, int value){
-    int i;
-    for (i=0; i < length; i++) {
-        if (x[i] == value)
-            return 1;
-    }
-
-    return 0;
+bool array_find_int(int length, int *x, int value, int *location) {
+	int i;
+	for (i=0; i < length; i++) {
+		if (x[i] == value)
+			*location = i;
+			return true;
+	}
+	*location = -1;
+	return false;
 }
+
 
 #ifndef ARM_COMPILER
 void array_print(int length, float *x)
