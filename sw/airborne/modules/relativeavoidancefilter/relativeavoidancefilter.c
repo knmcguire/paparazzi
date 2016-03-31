@@ -39,7 +39,7 @@
 #define KP_V 1.0 // Vertical controller gain
 #define V_NOMINAL 1.0 // Nominal velocity
 
-#define ASIDE 2 // Size of the arena
+#define ASIDE 3.0 // Size of the arena
 
 #ifndef RSSISENDER_ID
 	#define RSSISENDER_ID ABI_BROADCAST
@@ -82,6 +82,17 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 
 };
 
+float absolute(float a)
+{
+	if (a < 0)
+		return -a;
+	if (a > 0)
+		return a;
+	else
+		return a;
+
+}
+
 void rafilter_init(void)
 {
 	ntargets = NTAR;
@@ -91,18 +102,20 @@ void rafilter_init(void)
 	ra_active = false;
 };
 
+float psi_des;
 void rafilter_periodic(void)
 {
 	// Initialize variables
 	float posx, posy, posz, ownVx, ownVy, ownPsi;
-	float vx_des, vy_des, v_des, psi_des, vx, vy;	
+	float vx_des, vy_des, v_des, vx, vy;	
 	float cc[NUAVS-1][6];
 	float trackedVx, trackedVy, trackedPsi, trackedz;
 	float Y[NMEASUREMENTS];
 	int flag[NUAVS-1];
 	bool flagglobal = false;
 	array_make_zeros_int(NUAVS-1, flag);
-	
+	v_des = V_NOMINAL;
+
 	// Own data	
 	struct EnuCoor_f *ownPos = stateGetPositionEnu_f();
 	struct EnuCoor_f *ownVel = stateGetSpeedEnu_f();
@@ -141,15 +154,16 @@ void rafilter_periodic(void)
 
 	if(ra_active)
 	{
-		if ((abs(posx) > ASIDE-0.5) || (abs(posy) > ASIDE-0.5)) {
+		printf("aposx %.2f aposy %.2f \n", absolute(posx), absolute(posy));
+		if ((absolute(posx) > (ASIDE-0.5)) || (absolute(posy) > (ASIDE-0.5))) {
 			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
 			printf("going back inside\n");
 			ENUearthToNEDbody(-posx, -posy, ownPsi, &vx_des, &vy_des); // (Gazebo specific?)
 			cart2polar(vx_des, vy_des, &v_des, &psi_des);
 			v_des = V_NOMINAL;
 		}
-		else if (nf-1 >= 0) {
-			wrapToPi(&psi_des); // Keep current heading
+		else {
+			// wrapToPi(&psi_des); // Keep current heading
 			v_des = V_NOMINAL; // Fix to nominal velocity
 
 			polar2cart(v_des, psi_des, &vx_des, &vy_des);
@@ -165,18 +179,14 @@ void rafilter_periodic(void)
 				collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nf);
 			}
 		}
-		else {
-			vx_des = 1.0;
-			vy_des = 1.0;
-		}
+
 		polar2cart(v_des, psi_des, &vx_des, &vy_des);
-		NEDbodyToENUearth(vx_des, vy_des, ownPsi, &vx, &vy); // (gazebo specific?)
+		NEDbodyToENUearth(vx_des, vy_des, ownPsi, &vx, &vy);
+		raavoid_speed_f.x = vy;
+		raavoid_speed_f.y = vx;
 
-		raavoid_speed_f.x = vx;
-		raavoid_speed_f.y = vy;
+		printf("AttCtrl: vx_err: %.1f \t vy_err: %.1f \t vx: %.1f \t vy: %.1f \t vx_cmd: %.1f \t vy_cmd: %.1f \t psi: %.5f \t posx %.1f \t posy %.1f \n", 
+			vx - ownVel->x, vy - ownVel->y, ownVel->x, ownVel->y, vx, vy, ownPsi, posx, posy);
 	}
-
-	printf("AttCtrl: vx_cmd: %.1f \t vy_cmd: %.1f \t psi: %.1f \t posx %.1f \t posy %.1f \n", vx, vy, ownPsi, posx, posy);
-
 };
 

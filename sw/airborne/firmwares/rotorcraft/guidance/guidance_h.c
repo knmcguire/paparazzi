@@ -45,13 +45,6 @@
 
 #include "state.h"
 
-// #include "../../../modules/relativeavoidancefilter/functions/PID.h" // Function(s) for a basic PID controller
-
-#ifdef GUIDANCE_H_USE_SPEED_REF
-#define GUIDANCE_H_V_PGAIN 100 // this number is then divided by 100
-#define GUIDANCE_H_V_IGAIN 0
-#define GUIDANCE_H_V_DGAIN 0
-#endif
 
 #ifndef GUIDANCE_H_AGAIN
 #define GUIDANCE_H_AGAIN 0
@@ -444,9 +437,9 @@ void guidance_h_run(bool_t  in_flight)
 				/* set final attitude setpoint */
 				stabilization_attitude_set_earth_cmd_i(&guidance_h_cmd_earth,
 																							 guidance_h.sp.heading);
+        }
+      }
 #endif
-				}
-			}
 			stabilization_attitude_run(in_flight);
 			break;
 
@@ -508,48 +501,172 @@ static void guidance_h_update_reference(void)
  * you get an angle of 5.6 degrees for 1m pos error */
 #define GH_GAIN_SCALE 2
 
-float v_prev[2], v_err_prev[2], v_err_integral[2];
+float  vX_last;
+float  vY_last;
+float  vX_err_last;
+float  vY_err_last;
+double vX_err_integral;
+double vY_err_integral;
+
 static void guidance_h_traj_run_speed(bool_t in_flight) 
 {
 	/* maximum bank angle: default 20 deg*/
 	static const int32_t traj_max_bank = Max(BFP_OF_REAL(GUIDANCE_H_MAX_BANK, INT32_ANGLE_FRAC),
 														 BFP_OF_REAL(RadOfDeg(GUIDANCE_H_MAX_BANK), INT32_ANGLE_FRAC));
-		if (in_flight)	{
-			float dt = 0.2;
-		struct EnuCoor_f *ownVel = stateGetSpeedEnu_f();
-		float KP_V = GUIDANCE_H_V_PGAIN;
-		float KI_V = GUIDANCE_H_V_IGAIN;
-		float KD_V = GUIDANCE_H_V_DGAIN;
+	static const int32_t total_max_bank = BFP_OF_REAL(RadOfDeg(45), INT32_ANGLE_FRAC);
 
+	float vRefX = raavoid_speed_f.x; 
+	float vRefY = raavoid_speed_f.y;
+
+   // Velocity derivative
+   float vXDeriv = stateGetSpeedNed_f()->x - vX_last;
+   float vYDeriv = stateGetSpeedNed_f()->y - vY_last;
+
+   vX_last = stateGetSpeedNed_f()->x;
+   vY_last = stateGetSpeedNed_f()->y;
+
+   // Add damping to the commanded velocity
+   float guidance_h_velocity_feedback_dgain = 1;
+   vRefX += (((double)guidance_h_velocity_feedback_dgain)/100)*vXDeriv;
+   vRefY += (((double)guidance_h_velocity_feedback_dgain)/100)*vYDeriv;
+
+   // Velocity error - FLOAT
+   float vX_err = vRefX - stateGetSpeedNed_f()->x;
+   float vY_err = vRefY - stateGetSpeedNed_f()->y;
+
+   // Derivative of the velocity error - FLOAT (NEEDS TIME SCALING)
+   float vX_err_dot = vX_err - vX_err_last;
+   float vY_err_dot = vY_err - vY_err_last;
+
+   // Integral of the velocity error
+   vX_err_integral += vX_err;
+   vY_err_integral += vY_err;
+
+   vX_err_last = vX_err;
+   vY_err_last = vY_err;
+
+   float guidance_h_vPgain = 60;
+   float guidance_h_vIgain = 100;
+   float guidance_h_vDgain = 1;
+   
+   float pd_x = vX_err*(((double)guidance_h_vPgain)/100.0f) +
+                vX_err_integral*(((double)guidance_h_vIgain)/100000.0f) + 
+                vX_err_dot*(((double)guidance_h_vDgain)/100.0f);
+
+   float pd_y = vY_err*(((double)guidance_h_vPgain)/100.0f) +
+                vY_err_integral*(((double)guidance_h_vIgain)/100000.0f)+
+                vY_err_dot*(((double)guidance_h_vDgain)/100.0f);
+
+   struct Int32Vect2  attitudeSetpoint;
+   attitudeSetpoint.x = ANGLE_BFP_OF_REAL(pd_x);
+   attitudeSetpoint.y = ANGLE_BFP_OF_REAL(pd_y);
+
+  /* trim max bank angle from PD */
+   VECT2_STRIM(attitudeSetpoint, -traj_max_bank, traj_max_bank);
+   INT_VECT2_ZERO(guidance_h_trim_att_integrator);
+   quat_from_earth_cmd_i(&stab_att_sp_quat, &attitudeSetpoint, guidance_h.sp.heading);
+
+	// /* compute position error    */
+	// guidance_h_pos_err.x = guidance_h.ref.pos.x - ownPos->x;
+	// guidance_h_pos_err.y = guidance_h.ref.pos.y - ownPos->y;
+
+	// /* compute speed error    */
+	// guidance_h.ref.speed.x = raavoid_speed_f.x - ownVel->x;
+	// guidance_h.ref.speed.y = raavoid_speed_f.y - ownVel->y;
+
+	// VECT2_DIFF(guidance_h_speed_err, guidance_h.ref.speed, *stateGetSpeedEnu_f());
+	// /* saturate it               */
+	// VECT2_STRIM(guidance_h_speed_err, -MAX_SPEED_ERR, MAX_SPEED_ERR);
+  
+	// int32_t pd_x =
+	// 	((guidance_h.gains.p * guidance_h_pos_err.x) >> (INT32_POS_FRAC - GH_GAIN_SCALE)) +
+	// 	((guidance_h.gains.d * (guidance_h_speed_err.x >> 2)) >> (INT32_SPEED_FRAC - GH_GAIN_SCALE - 2));
+	// int32_t pd_y =
+	// 	((guidance_h.gains.p * guidance_h_pos_err.y) >> (INT32_POS_FRAC - GH_GAIN_SCALE)) +
+	// 	((guidance_h.gains.d * (guidance_h_speed_err.y >> 2)) >> (INT32_SPEED_FRAC - GH_GAIN_SCALE - 2));
+
+	// 		struct Int32Vect2  attitudeSetpoint;
+	// 	attitudeSetpoint.x = ANGLE_BFP_OF_REAL(pd_x);
+	// 	attitudeSetpoint.y = ANGLE_BFP_OF_REAL(pd_y);
+
+	// 	  /* trim max bank angle from PD */
+	// 	VECT2_STRIM(attitudeSetpoint, -traj_max_bank, traj_max_bank);
+	// 	INT_VECT2_ZERO(guidance_h_trim_att_integrator);
+
+	// 	VECT2_STRIM(attitudeSetpoint, -traj_max_bank, traj_max_bank);
+	// 	INT_VECT2_ZERO(guidance_h_trim_att_integrator);
+
+	// 	quat_from_earth_cmd_i(&stab_att_sp_quat, &attitudeSetpoint, guidance_h.sp.heading);
+	
+	// guidance_h_cmd_earth.x = pd_x +
+	// 	((guidance_h.gains.v * guidance_h.ref.speed.x) >> 17) + /* speed feedforward gain */
+	// 	((guidance_h.gains.a * guidance_h.ref.accel.x) >> 8);   /* acceleration feedforward gain */
+	// guidance_h_cmd_earth.y = pd_y +
+	// 	((guidance_h.gains.v * guidance_h.ref.speed.y) >> 17) + /* speed feedforward gain */
+	// 	((guidance_h.gains.a * guidance_h.ref.accel.y) >> 8);   /* acceleration feedforward gain */
+
+		
+	// /* trim max bank angle from PD */
+	// VECT2_STRIM(guidance_h_cmd_earth, -traj_max_bank, traj_max_bank);
+
+	// if (in_flight) {
+	// 	guidance_h_trim_att_integrator.x += (guidance_h.gains.i * pd_x);
+	// 	guidance_h_trim_att_integrator.y += (guidance_h.gains.i * pd_y);
+	// 	/* saturate it  */
+	// 	VECT2_STRIM(guidance_h_trim_att_integrator, -(traj_max_bank << 16), (traj_max_bank << 16));
+	// 	/* add it to the command */
+	// 	guidance_h_cmd_earth.x += (guidance_h_trim_att_integrator.x >> 16);
+	// 	guidance_h_cmd_earth.y += (guidance_h_trim_att_integrator.y >> 16);
+	// } else {
+	// 	INT_VECT2_ZERO(guidance_h_trim_att_integrator);
+	// }
+
+	// VECT2_STRIM(guidance_h_cmd_earth, -total_max_bank, total_max_bank);
+
+}
+
+		// autopilot_guided_move_ned(raavoid_speed_f.x, raavoid_speed_f.y, 0.0, 0.0);
+		// float dt = 0.01; // DOESN'T MATTER
+		// struct EnuCoor_f *ownVel = stateGetSpeedEnu_f();
+		
 		// // Velocity derivative
 		// float vXDeriv = ownVel->x - vX_last;
 		// float vYDeriv = ownVel->y - vY_last;
 
-		v_prev[0] = ownVel->x;
-		v_prev[1] = ownVel->y;
-
 		// Velocity error - FLOAT
-		float v_err[2];
-		v_err[0] = raavoid_speed_f.x - ownVel->x;
-		v_err[1] = raavoid_speed_f.y - ownVel->y;
+		// float v_err[2];
+		// v_err[0] = raavoid_speed_f.x - ownVel->x;
+		// v_err[1] = raavoid_speed_f.y - ownVel->y;
+		
+		// ENUearthToNEDbody(v_err[0], v_err[1], stateGetNedToBodyEulers_f()->psi , &v_err[0], &v_err[1]); // (Gazebo specific?)
+	
+		// // Velocity --> Acceleration
+		// float a_cmd[2];
+		// for (int i = 0; i < 2; i++) {
+		// 	a_cmd[i] = PID( 1*dt, 0.0*dt, 0.0*dt, v_err[i], v_err_prev[i], &v_err_integral[i], 1 );
+		// 	v_err_prev[i] = v_err[i];
+		// }
+		
+		// // Acceleration --> Pitch/Roll
+		// float pd_cmd[2];
+		// for (int i = 0; i < 2; i++) {
+		// 	pd_cmd[i] = PID( 0*dt, 0*dt, 0*dt, -a_cmd[i], a_err_prev[i], &a_err_integral[i], 1 );
+		// 	a_err_prev[i] = -a_cmd[i];
+		// }
 
-		float pd[2];
-		for (int i = 0; i < 2; i++) {
-			pd[i] = PID( KP_V, KI_V, KD_V, v_err[i], v_err_prev[i], &v_err_integral[i], dt );
-			v_err_prev[i] = v_err[i];
-		}
+		// printf("acc_cmd x: %.2f acc_cmd y: %.2f vx_cmd x %.2f vy_cmd y %.2f vx %.2f vy %.2f verr_x %.2f verr_y %.2f max ang %d \n ", 
+		// 	a_cmd[0],a_cmd[1] , raavoid_speed_f.x, raavoid_speed_f.y, ownVel->x, ownVel->y, v_err[0], v_err[1], traj_max_bank);
+		// struct Int32Vect2  attitudeSetpoint;
+		// attitudeSetpoint.x = ANGLE_BFP_OF_REAL(pd_cmd[0]);
+		// attitudeSetpoint.y = ANGLE_BFP_OF_REAL(pd_cmd[1]);
 
-		struct Int32Vect2  attitudeSetpoint;
-		attitudeSetpoint.x = ANGLE_BFP_OF_REAL(pd[0]);
-		attitudeSetpoint.y = ANGLE_BFP_OF_REAL(pd[1]);
+		//   /* trim max bank angle from PD */
+		// VECT2_STRIM(attitudeSetpoint, -traj_max_bank, traj_max_bank);
+		// INT_VECT2_ZERO(guidance_h_trim_att_integrator);
 
-			/* trim max bank angle from PD */
-		VECT2_STRIM(attitudeSetpoint, -traj_max_bank, traj_max_bank);
-		INT_VECT2_ZERO(guidance_h_trim_att_integrator);
-
-		quat_from_earth_cmd_i(&stab_att_sp_quat, &attitudeSetpoint, guidance_h.sp.heading);
-	}
-}
+		// quat_from_earth_cmd_i(&stab_att_sp_quat, &attitudeSetpoint, guidance_h.sp.heading);
+  //   printf("pd[0] %.2f pd[1] %.2f atsetx %d atsety %d \n",raavoid_speed_f.x, raavoid_speed_f.y, attitudeSetpoint.x,attitudeSetpoint.y);
+	// }
 
 
 #if !GUIDANCE_INDI
