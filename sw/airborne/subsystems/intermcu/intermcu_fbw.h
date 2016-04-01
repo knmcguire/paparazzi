@@ -29,11 +29,12 @@
 
 #include "subsystems/intermcu.h"
 
-extern uint8_t autopilot_motors_on;
+extern bool autopilot_motors_on;
 extern pprz_t intermcu_commands[COMMANDS_NB];
 void intermcu_on_rc_frame(uint8_t fbw_mode);
 void intermcu_send_status(uint8_t mode);
 void InterMcuEvent(void (*frame_handler)(void));
+void intermcu_blink_fbw_led(uint16_t dv);
 
 
 /* We need radio defines for the Autopilot */

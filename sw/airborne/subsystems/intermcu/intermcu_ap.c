@@ -72,8 +72,8 @@ void intermcu_periodic(void)
   }
 }
 
-static bool_t disable_comm;
-void disable_inter_comm(bool_t value)
+static bool disable_comm;
+void disable_inter_comm(bool value)
 {
   disable_comm = value;
 }
@@ -81,8 +81,9 @@ void disable_inter_comm(bool_t value)
 void intermcu_set_actuators(pprz_t *command_values, uint8_t ap_mode __attribute__((unused)))
 {
   if (!disable_comm) {
+    uint8_t autopilot_motors_on_tmp = autopilot_motors_on;
     pprz_msg_send_IMCU_COMMANDS(&(intermcu_transport.trans_tx), intermcu_device,
-                                INTERMCU_AP, &autopilot_motors_on, COMMANDS_NB, command_values); //TODO: Append more status
+                                INTERMCU_AP, &autopilot_motors_on_tmp, COMMANDS_NB, command_values); //TODO: Append more status
   }
 }
 
@@ -120,7 +121,7 @@ static inline void intermcu_parse_msg(struct transport_rx *trans, void (*rc_fram
   }
 
   // Set to receive another message
-  trans->msg_received = FALSE;
+  trans->msg_received = false;
 }
 
 void RadioControlEvent(void (*frame_handler)(void))

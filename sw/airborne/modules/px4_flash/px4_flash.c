@@ -62,18 +62,27 @@ tid_t px4iobl_tid; ///< id for time out of the px4 bootloader reset
 #define PROTO_GET_CRC           0x29 ///< compute & return a CRC
 #define PROTO_BOOT              0x30 ///< boot the application
 
-bool_t setToBootloaderMode;
-bool_t px4ioRebootTimeout;
+bool setToBootloaderMode;
+bool px4ioRebootTimeout;
 
 void px4flash_init(void)
 {
-  setToBootloaderMode = FALSE;
-  px4ioRebootTimeout = FALSE;
+  setToBootloaderMode = false;
+  px4ioRebootTimeout = false;
   px4iobl_tid = sys_time_register_timer(15.0, NULL); //20 (fbw pprz bl timeout)-5 (px4 fmu bl timeout)
 }
 
 void px4flash_event(void)
 {
+  if (sys_time_check_and_ack_timer(px4iobl_tid)) {
+    px4ioRebootTimeout = TRUE;
+    sys_time_cancel_timer(px4iobl_tid);
+    //for unknown reasons, 1500000 baud does not work reliably after prolonged times.
+    //I suspect a temperature related issue, combined with the fbw f1 crystal which is out of specs
+    //After a initial period on 1500000, revert to 230400
+    //We still start at 1500000 to remain compatible with original PX4 firmware. (which always runs at 1500000)
+    uart_periph_set_baudrate(PX4IO_PORT->periph, B230400);
+  }
   if (PX4IO_PORT->char_available(PX4IO_PORT->periph)) {
     if (!setToBootloaderMode) {
       //ignore anything coming from IO if not in bootloader mode (which should be nothing)
@@ -81,7 +90,7 @@ void px4flash_event(void)
       //relay everything from IO to the laptop
       while (PX4IO_PORT->char_available(PX4IO_PORT->periph)) {
         unsigned char b = PX4IO_PORT->get_byte(PX4IO_PORT->periph);
-        FLASH_PORT->put_byte(FLASH_PORT->periph, b);
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, b);
       }
     }
   }
@@ -91,7 +100,7 @@ void px4flash_event(void)
     // TMP TEST
     //    while (FLASH_PORT->char_available(FLASH_PORT->periph)) {
     //      unsigned char bla = FLASH_PORT->get_byte(FLASH_PORT->periph);
-    //      FLASH_PORT->put_byte(FLASH_PORT->periph,bla);
+    //      FLASH_PORT->put_byte(FLASH_PORT->periph, 0,bla);
     //    }
     //    return;
 
@@ -128,48 +137,45 @@ void px4flash_event(void)
       //the target is the fbw, so reboot the fbw and switch to relay mode
 
       //first check if the bootloader has not timeout:
-      if (sys_time_check_and_ack_timer(px4iobl_tid) || px4ioRebootTimeout) {
-        px4ioRebootTimeout = TRUE;
-        sys_time_cancel_timer(px4iobl_tid);
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'T');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'I');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'M');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'E');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'O');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'U');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'T'); // use 7 chars as answer
+      if (px4ioRebootTimeout) {
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'T');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'I');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'M');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'E');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'O');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'U');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'T'); // use 7 chars as answer
         return;
       }  { // FBW OK OK hollay hollay :)
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'F');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'B');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'W');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'O');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'K');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'O');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'K'); // use 7 chars as answer
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'F');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'B');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'W');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'O');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'K');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'O');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'K'); // use 7 chars as answer
       }
 
 
       //stop all intermcu communication:
       disable_inter_comm(true);
 
+      px4iobl_tid = sys_time_register_timer(5.0, NULL); //10 (fbw pprz bl timeout)-5 (px4 fmu bl timeout)
       /*
-      * The progdieshit define is very usefull, if for whatever reason the (normal, not bootloader) firmware on the IO chip became disfunct.
+      * The forceprog define is very usefull, if for whatever reason the (normal, not bootloader) firmware on the IO chip became disfunct.
       * In that case:
       * 1. enable this define
       * 2. build and upload  the fmu f4 chip (ap target in pprz center)
       * 3. build the io code, and convert the firmware using the following command:
-      *       /home/houjebek/paparazzi/sw/tools/px4/px_mkfw.py --prototype "/home/houjebek/px4/Firmware/Images/px4io-v2.prototype" --image /home/houjebek/paparazzi/var/aircrafts/Iris/fbw/fbw.bin > /home/houjebek/paparazzi/var/aircrafts/Iris/fbw/fbw.px4
-      * 4. Start the following command:
-      *    /home/houjebek/paparazzi/sw/tools/px4/px_uploader.py --port "/dev/ttyACM0" /home/houjebek/paparazzi/var/aircrafts/Iris/fbw/fbw.px4
+      * Optional 5&6:
       * 5a. Either, boot the Pixhawk (reconnect usb) holding the IO reset button until the FMU led stops blinking fast (i.e. exits its own bootloader)
       * 5b  Or, press the IO reset button on the pixhawk
       * 6. Watch the output of the command of step 4, it should recognize the IO bootloader and start flashing. If not try repeating step 5a.
       * 7. Don forget to disable the define and upload the ap again :)
       */
-      //    #define progdieshit
+      //#define forceprog
 
-#ifndef progdieshit
+#ifndef forceprog
       //send the reboot to bootloader command:
       static struct IOPacket  dma_packet;
       dma_packet.count_code = 0x40 + 0x01;
@@ -180,12 +186,12 @@ void px4flash_event(void)
       dma_packet.crc = crc_packet(&dma_packet);
       struct IOPacket *pkt = &dma_packet;
       uint8_t *p = (uint8_t *)pkt;
-      PX4IO_PORT->put_byte(PX4IO_PORT->periph, p[0]);
-      PX4IO_PORT->put_byte(PX4IO_PORT->periph, p[1]);
-      PX4IO_PORT->put_byte(PX4IO_PORT->periph, p[2]);
-      PX4IO_PORT->put_byte(PX4IO_PORT->periph, p[3]);
-      PX4IO_PORT->put_byte(PX4IO_PORT->periph, p[4]);
-      PX4IO_PORT->put_byte(PX4IO_PORT->periph, p[5]);
+      PX4IO_PORT->put_byte(PX4IO_PORT->periph, 0, p[0]);
+      PX4IO_PORT->put_byte(PX4IO_PORT->periph, 0, p[1]);
+      PX4IO_PORT->put_byte(PX4IO_PORT->periph, 0, p[2]);
+      PX4IO_PORT->put_byte(PX4IO_PORT->periph, 0, p[3]);
+      PX4IO_PORT->put_byte(PX4IO_PORT->periph, 0, p[4]);
+      PX4IO_PORT->put_byte(PX4IO_PORT->periph, 0, p[5]);
 
       sys_time_usleep(5000); // this seems to be close to the minimum delay necessary to process this packet at the IO side
       //the pixhawk IO chip should respond with:
@@ -229,8 +235,8 @@ void px4flash_event(void)
           sys_time_usleep(10000);
 
           //send a get_sync command in order to keep the io in bootloader mode
-          PX4IO_PORT->put_byte(PX4IO_PORT->periph, PROTO_GET_SYNC);
-          PX4IO_PORT->put_byte(PX4IO_PORT->periph, PROTO_EOC);
+          PX4IO_PORT->put_byte(PX4IO_PORT->periph, 0, PROTO_GET_SYNC);
+          PX4IO_PORT->put_byte(PX4IO_PORT->periph, 0, PROTO_EOC);
 
           //get_sync should be replied with, so check if that happens and
           //all other bytes are discarded, hopefully those were not important
@@ -250,13 +256,13 @@ void px4flash_event(void)
           while (PX4IO_PORT->char_available(PX4IO_PORT->periph)) {PX4IO_PORT->get_byte(PX4IO_PORT->periph);}
         }
       } else {
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'E'); //TODO: find out what the PX4 protocol for error feedback is...
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'R');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'R');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'O');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, 'R');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, '!');
-        FLASH_PORT->put_byte(FLASH_PORT->periph, ' '); // use 7 chars as answer
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'E'); //TODO: find out what the PX4 protocol for error feedback is...
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'R');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'R');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'O');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, 'R');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, '!');
+        FLASH_PORT->put_byte(FLASH_PORT->periph, 0, ' '); // use 7 chars as answer
 
       }
     }
@@ -264,7 +270,7 @@ void px4flash_event(void)
     //already in bootloader mode, just directly relay data
     while (FLASH_PORT->char_available(FLASH_PORT->periph)) {
       unsigned char b = FLASH_PORT->get_byte(FLASH_PORT->periph);
-      PX4IO_PORT->put_byte(PX4IO_PORT->periph, b);
+      PX4IO_PORT->put_byte(PX4IO_PORT->periph, 0, b);
     }
   }
 }

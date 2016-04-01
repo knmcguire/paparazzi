@@ -36,7 +36,7 @@
 #include "lib/v4l/v4l2.h"
 
 struct opticflow_t {
-  bool_t got_first_img;             ///< If we got a image to work with
+  bool got_first_img;             ///< If we got a image to work with
   float prev_phi;                   ///< Phi from the previous image frame
   float prev_theta;                 ///< Theta from the previous image frame
   struct image_t img_gray;          ///< Current gray image frame
@@ -48,12 +48,13 @@ struct opticflow_t {
   uint16_t search_distance;         ///< Search distance for blockmatching alg.
   uint8_t derotation;             ///< Derotation switched on or off (depended on the quality of the gyroscope measurement)
 
-  uint8_t subpixel_factor;          ///< The amount of subpixels per pixel
+  uint16_t subpixel_factor;          ///< The amount of subpixels per pixel
   uint8_t max_iterations;           ///< The maximum amount of iterations the Lucas Kanade algorithm should do
   uint8_t threshold_vec;            ///< The threshold in x, y subpixels which the algorithm should stop
+  uint8_t pyramid_level;        ///< Number of pyramid levels used in Lucas Kanade algorithm (0 == no pyramids used)
 
   uint8_t max_track_corners;        ///< Maximum amount of corners Lucas Kanade should track
-  bool_t fast9_adaptive;            ///< Whether the FAST9 threshold should be adaptive
+  bool fast9_adaptive;            ///< Whether the FAST9 threshold should be adaptive
   uint8_t fast9_threshold;          ///< FAST9 corner detection threshold
   uint16_t fast9_min_distance;      ///< Minimum distance in pixels between corners
 
@@ -63,6 +64,7 @@ struct opticflow_t {
 void opticflow_calc_init(struct opticflow_t *opticflow, uint16_t w, uint16_t h);
 void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_t *state, struct image_t *img,
                           struct opticflow_result_t *result);
+
 void calc_fast9_lukas_kanade(struct opticflow_t *opticflow, struct opticflow_state_t *state, struct image_t *img,
                              struct opticflow_result_t *result);
 void calc_edgeflow_tot(struct opticflow_t *opticflow, struct opticflow_state_t *state, struct image_t *img,

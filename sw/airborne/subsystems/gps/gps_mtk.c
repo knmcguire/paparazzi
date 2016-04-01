@@ -100,7 +100,7 @@ struct GpsMtk gps_mtk;
 #define MTK_DIY_WAAS_ON     "$PSRF151,1*3F\r\n"
 #define MTK_DIY_WAAS_OFF    "$PSRF151,0*3E\r\n"
 
-bool_t gps_configuring;
+bool gps_configuring;
 static uint8_t gps_status_config;
 #endif
 
@@ -111,12 +111,12 @@ void gps_mtk_msg(void);
 void gps_mtk_init(void)
 {
   gps_mtk.status = UNINIT;
-  gps_mtk.msg_available = FALSE;
+  gps_mtk.msg_available = false;
   gps_mtk.error_cnt = 0;
   gps_mtk.error_last = GPS_MTK_ERR_NONE;
 #ifdef GPS_CONFIGURE
   gps_status_config = 0;
-  gps_configuring = TRUE;
+  gps_configuring = true;
 #endif
 }
 
@@ -157,7 +157,7 @@ void gps_mtk_msg(void)
     }
     AbiSendMsgGPS(GPS_MTK_ID, now_ts, &gps_mtk.state);
   }
-  gps_mtk.msg_available = FALSE;
+  gps_mtk.msg_available = false;
 }
 
 static void gps_mtk_time2itow(uint32_t  gps_date, uint32_t  gps_time,
@@ -394,7 +394,7 @@ void gps_mtk_parse(uint8_t c)
         gps_mtk.error_last = GPS_MTK_ERR_CHECKSUM;
         goto error;
       }
-      gps_mtk.msg_available = TRUE;
+      gps_mtk.msg_available = true;
       goto restart;
       break;
     default:
@@ -432,7 +432,7 @@ void gps_mtk_register(void)
 static void MtkSend_CFG(char *dat)
 {
   struct link_device *dev = &((MTK_GPS_LINK).device);
-  while (*dat != 0) { dev->put_byte(dev->periph, *dat++); }
+  while (*dat != 0) { dev->put_byte(dev->periph, 0, *dat++); }
 }
 
 void gps_configure_uart(void)
@@ -442,7 +442,7 @@ void gps_configure_uart(void)
 #ifdef USER_GPS_CONFIGURE
 #include USER_GPS_CONFIGURE
 #else
-static bool_t user_gps_configure(bool_t cpt)
+static bool user_gps_configure(bool cpt)
 {
   switch (cpt) {
     case 0:
@@ -450,11 +450,11 @@ static bool_t user_gps_configure(bool_t cpt)
       break;
     case 1:
       MtkSend_CFG(MTK_DIY_OUTPUT_RATE);
-      return FALSE;
+      return false;
     default:
       break;
   }
-  return TRUE; /* Continue, except for the last case */
+  return true; /* Continue, except for the last case */
 }
 #endif // ! USER_GPS_CONFIGURE
 
