@@ -82,6 +82,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 
 };
 
+// absolute
+
 float absolute(float a)
 {
 	if (a < 0)
@@ -90,7 +92,6 @@ float absolute(float a)
 		return a;
 	else
 		return a;
-
 }
 
 void rafilter_init(void)
@@ -154,10 +155,10 @@ void rafilter_periodic(void)
 
 	if(ra_active)
 	{
-		printf("aposx %.2f aposy %.2f \n", absolute(posx), absolute(posy));
+		// printf("aposx %.2f aposy %.2f \n", absolute(posx), absolute(posy));
 		if ((absolute(posx) > (ASIDE-0.5)) || (absolute(posy) > (ASIDE-0.5))) {
 			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
-			printf("going back inside\n");
+			// printf("going back inside\n");
 			ENUearthToNEDbody(-posx, -posy, ownPsi, &vx_des, &vy_des); // (Gazebo specific?)
 			cart2polar(vx_des, vy_des, &v_des, &psi_des);
 			v_des = V_NOMINAL;
@@ -185,8 +186,8 @@ void rafilter_periodic(void)
 		raavoid_speed_f.x = vy;
 		raavoid_speed_f.y = vx;
 
-		printf("AttCtrl: vx_err: %.1f \t vy_err: %.1f \t vx: %.1f \t vy: %.1f \t vx_cmd: %.1f \t vy_cmd: %.1f \t psi: %.5f \t posx %.1f \t posy %.1f \n", 
-			vx - ownVel->x, vy - ownVel->y, ownVel->x, ownVel->y, vx, vy, ownPsi, posx, posy);
+		// printf("AttCtrl: vx_err: %.1f \t vy_err: %.1f \t vx: %.1f \t vy: %.1f \t vx_cmd: %.1f \t vy_cmd: %.1f \t psi: %.5f \t posx %.1f \t posy %.1f \n", 
+		// 	vx - ownVel->x, vy - ownVel->y, ownVel->x, ownVel->y, vx, vy, ownPsi, posx, posy);
 	}
 };
 
