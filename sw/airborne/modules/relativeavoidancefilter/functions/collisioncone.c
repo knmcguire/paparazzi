@@ -19,23 +19,21 @@ void collisioncone_update( float *cc,
 	float relvx, float relvy,
 	float radius)
 {
-
 	float range, bearing;
 	cart2polar(relx, rely, &range, &bearing);
 
-	// radius = range+1.0;
-	// keepbounded(&radius, 1.0, 6.0);
+	keepbounded(&range,1.0,5.0);
 
 	// The other two edges are symmetrical about a diagonal extending along the localization bearing.
 	cc[0] = 0.0;
 	cc[1] = 0.0;
 
 	// This is the edge extending upwards to the right (+y)
-	cc[2] = range+5; // x_body
-	cc[3] = (range+5)*tan(atan(radius/range)); // y_body
+	cc[2] = 5.0; // x_body
+	cc[3] = 5.0*tan(atan(radius/range)); // y_body
 
 	// This is the edge exteding upwards to the left (-y)
-	cc[4] = range+5; // x_body
+	cc[4] = cc[2]; // x_body
 	cc[5] = -cc[3];  // y_body
 
 	shape_rotateatorigin(cc, 6, bearing);
@@ -93,7 +91,7 @@ void collisioncone_findnewcmd( float cc[2][6],
 
 	float psi0 = *psi_des;
 	float vx, vy;
-	// int ng = 1;
+	int ng = 1;
 
 	while (*v_des <= 2.0) {
 		polar2cart(*v_des, *psi_des, &vx, &vy);
@@ -107,15 +105,12 @@ void collisioncone_findnewcmd( float cc[2][6],
 		if (flag == 0)
 			break; // Solved
 
-		*psi_des = psi0 + (count * psi_add);
+		*psi_des = psi0 + (ng* count * psi_add);
 		wrapTo2Pi(psi_des);
 
 		// ng = ng * -1;
-		
-		// if (ng > 0)
 		count++;
-		
-		// if (count >= (M_PI)/psi_add) {	
+			
 		if (count >= (2*M_PI)/psi_add) {
 			*v_des = *v_des + *v_des;
 			count = 1;

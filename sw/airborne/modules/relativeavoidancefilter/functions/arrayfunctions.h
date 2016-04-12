@@ -19,6 +19,7 @@ extern bool array_find_int(int length, int *x, int value, int *location);
 
 #ifndef ARM_COMPILER
 extern void array_print(int length, float *x);
+extern void array_print_int(int length, int *x);
 #endif /*ARM_COMPILER*/
 
 extern void array_make_zeros(int length, float *x);

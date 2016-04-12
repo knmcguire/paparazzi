@@ -543,8 +543,8 @@ static void guidance_h_traj_run_speed(bool in_flight)
 	   vX_err_last = vX_err;
 	   vY_err_last = vY_err;
 
-	   float guidance_h_vPgain = 60;
-	   float guidance_h_vIgain = 100;
+	   float guidance_h_vPgain = 30;
+	   float guidance_h_vIgain = 30;
 	   float guidance_h_vDgain = 1;
 	   
 	   float pd_x = vX_err*(((double)guidance_h_vPgain)/100.0f) +

@@ -23,7 +23,8 @@
  * Relative Localization Filter for collision avoidance between drones
  */
 
-#include "modules/relativeavoidancefilter/relativeavoidancefilter.h"
+#include "relativeavoidancefilter.h"
+#include "../../subsystems/navigation/traffic_info.h"
 
 #define NSTATES 9  // Number of state values in EKF
 #define NMEASUREMENTS 8 // Number of measurement values in EKF
@@ -37,7 +38,7 @@
 #define STARTTIME 5.0 // Controller start time
 #define KP_H 0.25 // Horizontal controller gain
 #define KP_V 1.0 // Vertical controller gain
-#define V_NOMINAL 1.0 // Nominal velocity
+#define V_NOMINAL 0.5 // Nominal velocity
 
 #define ASIDE 3.0 // Size of the arena
 
@@ -78,6 +79,13 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	else if (index != -1) { // Store latest message
 	 	msg[index].ID   = ac_id;
 	 	msg[index].RSSI = rssi;
+		
+		struct ac_info_ * ac = get_ac_info(msg[index].ID);
+		float trackedVx, trackedVy;
+		polar2cart(ac->gspeed, ac->course, &trackedVx, &trackedVy);
+		
+		msg[index].h = ac->alt;
+		msg[index].psi = ac->north;
 	}
 
 };
@@ -94,6 +102,7 @@ float absolute(float a)
 		return a;
 }
 
+float psi_des;
 void rafilter_init(void)
 {
 	ntargets = NTAR;
@@ -101,16 +110,15 @@ void rafilter_init(void)
 	array_make_zeros_int(NUAVS-1, IDarray);
 	dirchanged = false;
 	ra_active = false;
+	psi_des = 0.4;
 };
 
-float psi_des;
 void rafilter_periodic(void)
 {
 	// Initialize variables
 	float posx, posy, posz, ownVx, ownVy, ownPsi;
 	float vx_des, vy_des, v_des, vx, vy;	
 	float cc[NUAVS-1][6];
-	float trackedVx, trackedVy, trackedPsi, trackedz;
 	float Y[NMEASUREMENTS];
 	int flag[NUAVS-1];
 	bool flagglobal = false;
@@ -127,26 +135,21 @@ void rafilter_periodic(void)
 	ownVy = ownVel->y;
 	ownPsi = stateGetNedToBodyEulers_f()->psi; //change 
 
+	
+	// Get the Bluetooth message
 	AbiBindMsgRSSI(RSSISENDER_ID, &rssi_ev, bluetoothmsg_cb);
 
 	for (int i = 0; i < nf; i++)
 	{
-		// Get the Bluetooth message
-		AbiBindMsgRSSI(RSSISENDER_ID, &rssi_ev, bluetoothmsg_cb);
-		trackedVx = 0.0;
-		trackedVy = 0.0;
-		trackedz = 0.0;
-		trackedPsi = M_PI;
-	
-		// Construct measurement vector for EKF
+		// Construct measurement vector for EKF using the latest data obtained for each case
 		Y[0] = msg[i].RSSI; // Bluetooth RSSI measurement
 		Y[1] = ownVx;
 		Y[2] = ownVy;
 		Y[3] = ownPsi;
-		Y[4] = trackedVx;
-		Y[5] = trackedVy;
-		Y[6] = trackedPsi;
-		Y[7] = posz - trackedz;
+		Y[4] = msg[i].vx;
+		Y[5] = msg[i].vy;
+		Y[6] = msg[i].psi;
+		Y[7] = posz - msg[i].h;
 
 		// Run the steps of the EKF
 		ekf_filter_predict(&ekf[i]);
@@ -164,9 +167,6 @@ void rafilter_periodic(void)
 			v_des = V_NOMINAL;
 		}
 		else {
-			// wrapToPi(&psi_des); // Keep current heading
-			v_des = V_NOMINAL; // Fix to nominal velocity
-
 			polar2cart(v_des, psi_des, &vx_des, &vy_des);
 			flagglobal = false; // Null assumption
 			for (int i = 0; i < nf; i++) {

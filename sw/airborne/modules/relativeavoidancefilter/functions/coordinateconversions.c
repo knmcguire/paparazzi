@@ -35,14 +35,14 @@ void deg2rad(float deg, float *rad)
 void wrapToPi(float *ang)
 {
 	if (*ang > M_PI) {
-		// while (*ang > M_PI) {		
+		while (*ang > M_PI) {		
 			*ang = *ang - 2*M_PI;
-		// }
+		}
 	}	
 	else if (*ang < -M_PI) {
-		// while (*ang < -M_PI) {
+		while (*ang < -M_PI) {
 			*ang = *ang + 2*M_PI;
-		// }
+		}
 	}
 }
 
@@ -50,27 +50,25 @@ void wrapToPi(float *ang)
 void wrapTo2Pi(float *ang)
 {
 	if (*ang > 2*M_PI) {
-		// while (*ang > 2*M_PI) {		
+		while (*ang > 2*M_PI) {		
 			*ang = *ang - 2*M_PI;
-		// }
+		}
 	}
 
 	else if (*ang < 0.0) {
-		// while (*ang < 0.0) {
+		while (*ang < 0.0) {
 			*ang = *ang + 2*M_PI;
-		// }
+		}
 	}
 }
 
 /* Keeps a value between two bounds */
 void keepbounded(float *value, float min, float max)
 {
-	if (*value < min)
-	{		
+	if (*value < min) {		
 		*value = min;
 	}
-	else if (*value > max)
-	{
+	else if (*value > max) {
 		*value = max;
 	}
 }
