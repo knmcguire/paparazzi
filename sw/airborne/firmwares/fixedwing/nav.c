@@ -34,7 +34,6 @@
 #include "firmwares/fixedwing/stabilization/stabilization_attitude.h"
 #include "firmwares/fixedwing/autopilot.h"
 #include "inter_mcu.h"
-#include "subsystems/navigation/traffic_info.h"
 
 #define RCLost() bit_is_set(fbw_state->status, STATUS_RADIO_REALLY_LOST)
 
@@ -295,10 +294,13 @@ static inline bool_t compute_TOD(uint8_t _af, uint8_t _td, uint8_t _tod, float g
 #define LINE_STOP_FUNCTION {}
 #endif
 
-
+#ifdef TRAFFIC_INFO
+#include "modules/multi/traffic_info.h"
+#endif
 
 static inline void nav_follow(uint8_t _ac_id, float _distance, float _height)
 {
+  #ifdef TRAFFIC_INFO
   struct ac_info_ * ac = get_ac_info(_ac_id);
   NavVerticalAutoThrottleMode(0.);
   NavVerticalAltitudeMode(Max(ac->alt + _height, ground_alt + SECURITY_HEIGHT), 0.);
@@ -312,7 +314,11 @@ static inline void nav_follow(uint8_t _ac_id, float _distance, float _height)
   nav_ground_speed_setpoint = ac->gspeed + NAV_FOLLOW_PGAIN * s;
   nav_ground_speed_loop();
 #endif
+#endif // TRAFFIC_INFO
 }
+
+
+
 
 float nav_altitude = GROUND_ALT + MIN_HEIGHT_CARROT;
 float desired_x, desired_y;

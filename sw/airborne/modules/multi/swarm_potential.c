@@ -44,7 +44,7 @@
 
 #include "autopilot.h"
 
-#include "subsystems/navigation/traffic_info.h"
+#include "modules/multi/traffic_info.h"
 
 #include "generated/airframe.h"           // AC_ID
 

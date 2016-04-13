@@ -13,6 +13,8 @@
     <define name="FOLLOW_OFFSET_Z" value="0"  description="the z offset in ENU (meters) from the plane"/>
   </doc>
 
+  <depends>traffic_info</depends>
+
   <header>
     <file name="follow.h"/>
   </header>
@@ -22,6 +24,5 @@
 
   <makefile>
     <file name="follow.c"/>
-    <define name="TRAFFIC_INFO"/>
   </makefile>
 </module>

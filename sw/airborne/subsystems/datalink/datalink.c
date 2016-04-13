@@ -49,7 +49,7 @@
 #endif
 
 #ifdef TRAFFIC_INFO
-#include "subsystems/navigation/traffic_info.h"
+#include "modules/multi/traffic_info.h"
 #include "generated/flight_plan.h"  // NAV_MSL0
 #endif
 

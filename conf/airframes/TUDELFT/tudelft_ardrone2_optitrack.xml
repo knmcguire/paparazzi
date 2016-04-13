@@ -9,7 +9,6 @@
       <!-- MODEM_HOST is where the data should go to, for short normally your laptop IP address -->
       <configure name="MODEM_HOST" value="192.168.0.22"/>
       <configure name="MODEM_BROADCAST" value="FALSE"/>
-      <define name="TRAFFIC_INFO"/>
       <configure name="USE_BARO_BOARD" value="FALSE"/>
     </target>
 

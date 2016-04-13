@@ -25,6 +25,8 @@
     </dl_settings>
   </settings>
   
+  <depends>traffic_info</depends>
+  
   <header>
     <file name="swarm_nn.h"/>
   </header>
@@ -33,7 +35,6 @@
   <periodic fun="swarm_nn_task()" freq="5" autorun="TRUE"/>
   <makefile>
     <file name="swarm_nn.c"/>
-    <define name="TRAFFIC_INFO"/>
   </makefile>
   
 </module>

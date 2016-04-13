@@ -25,6 +25,8 @@
     </dl_settings>
   </settings>
   
+  <depends>traffic_info</depends>
+  
   <header>
     <file name="swarm_potential.h"/>
   </header>
@@ -33,7 +35,6 @@
   <periodic fun="swarm_potential_task()" freq="10" autorun="TRUE"/>
   <makefile>
     <file name="swarm_potential.c"/>
-    <define name="TRAFFIC_INFO"/>
   </makefile>
   
 </module>

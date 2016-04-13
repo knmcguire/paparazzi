@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2005  Pascal Brisset, Antoine Drouin
+ * Copyright (C) Pascal Brisset, Antoine Drouin (2008), Kirk Scheper (2016)
  *
- * This file is part of paparazzi.
+ * This file is part of paparazzi
  *
  * paparazzi is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,20 +14,17 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with paparazzi; see the file COPYING.  If not, write to
- * the Free Software Foundation, 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
+ * along with paparazzi; see the file COPYING.  If not, see
+ * <http://www.gnu.org/licenses/>.
  */
-
 /**
- * @file subsystems/navigation/traffic_info.h
- *
- * Information relative to the other aircrafts.
- *
+ * @file "modules/mutli/traffic_info.h"
+ * @author Kirk Scheper
+ * Keeps track of other aircraft in airspace
  */
 
-#ifndef TI_H
-#define TI_H
+#ifndef TRAFFIC_INFO_H
+#define TRAFFIC_INFO_H
 
 #define NB_ACS_ID 256
 #define NB_ACS 24

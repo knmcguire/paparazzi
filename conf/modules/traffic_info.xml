@@ -1,6 +1,6 @@
 <!DOCTYPE module SYSTEM "module.dtd">
 
-<module name="traffic_info">
+<module name="traffic_info" dir="multi">
   <doc>
     <description>Keeps track of other aircraft in airspace</description>
   </doc>
@@ -10,6 +10,6 @@
   <init fun="traffic_info_init()"/>
   <makefile>
     <file name="traffic_info.c"/>
+    <define name="TRAFFIC_INFO"/>
   </makefile>
 </module>
-
