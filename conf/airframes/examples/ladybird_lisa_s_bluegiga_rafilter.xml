@@ -176,6 +176,7 @@
    <define name="PGAIN" value="39"/>
    <define name="DGAIN" value="50"/>
    <define name="IGAIN" value="19"/>
+   <define name="USE_SPEED_REF" value="TRUE"/>
  </section>
 
  <section name="SIMULATOR" prefix="NPS_">

@@ -52,7 +52,7 @@ void ekf_filter_get_state(ekf_filter* filter, float *X, float* P){
 			H = Jacobian of h(x)
 	
 */
-void ekf_filter_predict(ekf_filter* filter) {
+void ekf_filter_predict(ekf_filter* filter, btmodel* model) {
 
 	// Fetch dt, dX and A given the current state X and input u
 	linear_filter(filter->X, filter->dt, filter->tmp1, filter->tmp3);
@@ -61,7 +61,7 @@ void ekf_filter_predict(ekf_filter* filter) {
 	fmat_add(N, 1, filter->Xp, filter->X, filter->tmp1); 
 
 	// Get measurement prediction Zp based on Xp and get Jacobian H
-	linear_measure(filter->Xp, filter->Zp, filter->H);
+	linear_measure(filter->Xp, filter->Zp, filter->H, model);
 
 	//P = A * P * A' + Q
 	fmat_mult(N, N, N, filter->tmp1, filter->tmp3, filter->P); // A*P
@@ -130,12 +130,11 @@ void linear_filter(float* X, float dt, float *dX, float* A)
 };
 
 /* Linearized (Jacobian) measure function */
-void linear_measure(float*X, float* Y, float *H)
+void linear_measure(float*X, float* Y, float *H, btmodel *model)
 {
 	int row, col;
-
-	float Pn = -63.0;
-	float gamma = 2;
+	float Pn = model->Pn;
+	float gamma = model->gammal;
 
 	// RSSI measurement
 	Y[0] = Pn - (10.0 * gamma * log10(sqrt(pow(X[0],2.0) + pow(X[1],2.0) + pow(X[8],2.0))));

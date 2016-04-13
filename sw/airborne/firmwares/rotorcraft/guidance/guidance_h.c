@@ -510,7 +510,7 @@ static void guidance_h_traj_run_speed(bool in_flight)
 {
    /* maximum bank angle: default 20 deg*/
    static const int32_t traj_max_bank = Max(BFP_OF_REAL(GUIDANCE_H_MAX_BANK, INT32_ANGLE_FRAC),
-														 BFP_OF_REAL(RadOfDeg(GUIDANCE_H_MAX_BANK), INT32_ANGLE_FRAC));
+					  BFP_OF_REAL(RadOfDeg(GUIDANCE_H_MAX_BANK), INT32_ANGLE_FRAC));
    //static const int32_t total_max_bank = BFP_OF_REAL(RadOfDeg(45), INT32_ANGLE_FRAC);
 	if (in_flight) {
 	   float vRefX = raavoid_speed_f.x; 

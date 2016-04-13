@@ -35,12 +35,17 @@ typedef struct ekf_filter {
 
 } ekf_filter;
 
+typedef struct btmodel {
+  float Pn;
+  float gammal;
+} btmodel;
+
 /*
  * Basic functions describing evolution and measure
  */
 
 extern void linear_filter(float* X, float dt, float *dX, float* A);
-extern void linear_measure(float*X, float* Y, float *H);
+extern void linear_measure(float*X, float* Y, float *H, btmodel *model);
 
 extern void ekf_filter_new(ekf_filter* filter);
 
@@ -52,7 +57,7 @@ extern void ekf_filter_setup(
 
 extern void ekf_filter_reset(ekf_filter *filter);
 
-extern void ekf_filter_predict(ekf_filter *filter);
+extern void ekf_filter_predict(ekf_filter *filter, btmodel *model);
 
 extern void ekf_filter_update(ekf_filter *filter, float *y);
 

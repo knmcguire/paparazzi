@@ -47,6 +47,7 @@
 #endif
 
 ekf_filter ekf[NUAVS-1];
+btmodel model[NUAVS-1];
 int ntargets, nf;
 int IDarray[NUAVS-1];
 bool dirchanged;
@@ -74,6 +75,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		ekf[nf].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
 		ekf[nf].X[1] = 1.0;
 		ekf[nf].dt = 0.2;
+		model[nf].Pn = -65.0;
+		model[nf].gammal = 2.0;
 		nf++;
 	}
 	else if (index != -1) { // Store latest message
@@ -152,7 +155,7 @@ void rafilter_periodic(void)
 		Y[7] = posz - msg[i].h;
 
 		// Run the steps of the EKF
-		ekf_filter_predict(&ekf[i]);
+		ekf_filter_predict(&ekf[i], &model[i]);
 		ekf_filter_update(&ekf[i], Y);
 	}
 
