@@ -35,8 +35,7 @@
 
 void ltp_def_from_ecef_f(struct LtpDef_f *def, struct EcefCoor_f *ecef)
 {
-
-  /* store the origin of the tangeant plane       */
+  /* store the origin of the tangent plane       */
   VECT3_COPY(def->ecef, *ecef);
   /* compute the lla representation of the origin */
   lla_of_ecef_f(&def->lla, &def->ecef);
@@ -60,7 +59,7 @@ void ltp_def_from_ecef_f(struct LtpDef_f *def, struct EcefCoor_f *ecef)
 
 void ltp_def_from_lla_f(struct LtpDef_f *def, struct LlaCoor_f *lla)
 {
-  /* store the origin of the tangeant plane */
+  /* store the origin of the tangent plane */
   LLA_COPY(def->lla, *lla);
   /* compute the ecef representation of the origin */
   ecef_of_lla_f(&def->ecef, &def->lla);

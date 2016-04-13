@@ -65,7 +65,7 @@ bool use_waypoint;
 #endif
 
 #ifndef FORCE_CLIMB_GAIN
-#define FORCE_CLIMB_GAIN 0.5
+#define FORCE_CLIMB_GAIN 0.1
 #endif
 
 #ifndef TARGET_DIST3
@@ -146,39 +146,76 @@ void swarm_nn_periodic(void) {
   //DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.lla_pos.lat,
   //                         &gps.lla_pos.lon, &alt);
 }
-float layer1_out[6];
-const float layer1_weights[4][5] = {
-    {0.53,  -0.292,  0.553344,  0.122, 1.67},
-    {-0.312,  -0.166,  -0.0762323,  0.568, -0.62},
-    {0.548, 0.088, 0.989708,  0.98,  3.1},
-    {-0.781943, -0.575229, -0.363866, 0.610577,  0.77547}};
 
-float layer2_out[2];
-const float layer2_weights[6][2] = {
-    {-0.048,  -0.66 },
-    {-0.692,  -0.439091 },
-    {-0.712438, 0.967283},
-    {-0.624,  -0.57},
-    {-0.052,  0.39646},
-    {0.882447,  -0.668099 }};
+// the following does not include the bias neuron
+static const uint8_t nr_input_neurons = 5;
+static const uint8_t nr_hidden_neurons = 8;
+static const uint8_t nr_output_neurons = 2;
+
+double input_layer_in[6]; //nr_input_neurons+1
+double hidden_layer_out[9]; //nr_hidden_neurons+1
+const double layer1_weights[6][8] =
+{
+{ -0.249, 0.6456, 0.2576, -0.0324,  -0.1644,  0.7892, -0.313, -0.5042,},
+{ 0.0736, 0.9582, 0.6542, 0.5952, -0.7244,  -0.367, -0.2034,  -0.3356,},
+{ 0.1306, -0.6844,  0.8562, 0.1484, -0.4876,  -0.345, -0.611, -0.7448,},
+{ 0.039,  0.5906, 0.822,  0.8968, 0.2194, -0.8234,  -0.0694,  -0.3796,},
+{ -0.044, -0.2248,  0.645,  -0.5442,  -0.5442,  -0.8088,  -0.67,  -0.9184,},
+{ -0.142, -0.363, 2.412,  -1.586, 0.041,  -1.86,  0.443,  1.194,},};
+    /* controid nn
+{
+{ 0.0066, 0.4742, 0.8316, -0.0842,  -0.563, 0.1264, -0.7996,  -0.0832,},
+{ -0.0564,  0.2682, 0.0388, 0.009,  -0.075, 0.9812, -0.7254,  0.7934,},
+{ 0.1564, -0.1882,  -0.1216,  0.0216, -0.3684,  0.448,  0.833,  0.5022,},
+{ -0.8944,  -0.2914,  -0.2838,  -0.0084,  -0.9336,  0.3802, 0.1388, -0.3276,},
+{ 0.1306, 0.7086, -0.18,  -0.4894,  0.924,  -0.5994,  0.4542, 0.9976,},
+{ -0.593, -0.711, -0.9474,  -0.3176,  1.1,  2.585,  1.776,  -0.967,},};
+*/
+
+double layer2_out[2]; //nr_output_neurons
+const double layer2_weights[9][2] =
+{
+{ -0.3672,  -0.3484,},
+{ 0.3754, -0.537,},
+{ 0.886,  0.1956,},
+{ -0.1652,  0.684,},
+{ -0.1538,  -0.1288,},
+{ 0.4614, -0.0138,},
+{ 0.2718, 0.1088,},
+{ 0.1112, 0.0138,},
+{ -0.161, -0.072,},};
+
+/* controid nn
+{
+{ 0.5738, 0.2046,},
+{ 0.3906, -0.6196,},
+{ -0.4542,  0.2314,},
+{ -0.5594,  0.7498,},
+{ 0.3346, -0.5458,},
+{ -0.2122,  0.371,},
+{ 0.3254, -0.2864,},
+{ 0.6944, -0.7304,},
+{ -0.2692,  0.053,},};
+ */
 
 int swarm_nn_task(void)
 {
   struct EnuCoor_f speed_sp = {.x=0., .y=0., .z=0.};
 
   // compute desired velocity
-  int8_t nb = 0;
   uint8_t i, j;
 
   if (gps.fix == 0){return 1;}
-  struct UtmCoor_i my_pos;
-  my_pos.zone = 0;
-  utm_of_lla_i(&my_pos, &gps.lla_pos);
+  struct UtmCoor_i my_pos = (get_ac_info(the_acs[1].ac_id))->utm;
+  //my_pos.zone = 0;
+  //utm_of_lla_i(&my_pos, &gps.lla_pos);
 
   float rx = 0.;
   float ry = 0.;
   float rz = 0.;
   float d  = 0.;
+
+  struct EnuCoor_f my_enu_pos = *stateGetPositionEnu_f();
 
   for (i = 0; i < acs_idx; i++) {
     if (the_acs[i].ac_id == 0 || the_acs[i].ac_id == AC_ID) { continue; }
@@ -196,34 +233,45 @@ int swarm_nn_task(void)
     rx += de;
     ry += dn;
     rz += da;
-    d += sqrtf(dist2);
+    d  += sqrtf(dist2);
   }
 
-  memset(layer1_out, 0, 5);
-  for (j = 0; j < 5; j++)
-  {
-    layer1_out[j] += rx*layer1_weights[0][j];
-    layer1_out[j] += ry*layer1_weights[1][j];
-    layer1_out[j] += d *layer1_weights[2][j];
-    layer1_out[j] += 1.*layer1_weights[3][j];
+  input_layer_in[0]= (double)rx;
+  input_layer_in[1]= (double)ry;
+  input_layer_in[2]= (double)d;
+  input_layer_in[3]= 0;//(double)my_enu_pos.x;    // can add offset here later to move swarm centre
+  input_layer_in[4]= 0;//(double)my_enu_pos.y;
+  input_layer_in[nr_input_neurons] = 1.;   // bias neuron
 
-    layer1_out[j] = tanh(layer1_out[j]);
-  }
-
-  memset(layer2_out, 0, 2);
-  layer1_out[5] = 1;  // set bias node
-  for (i = 0; i < 2; i++)
+  for (i = 0; i < nr_hidden_neurons; i++)
   {
-    for (j = 0; j < 6; j++)
+    hidden_layer_out[i] = 0.;
+    for (j = 0; j <= nr_input_neurons; j++)
     {
-      layer2_out[i] += layer1_out[j]*layer2_weights[j][i];
+      hidden_layer_out[i] += input_layer_in[j]*layer1_weights[j][i];
+    }
+    hidden_layer_out[i] = tanh(hidden_layer_out[i]);
+  }
+
+  hidden_layer_out[nr_hidden_neurons] = 1.;  // set bias node
+  for (i = 0; i < nr_output_neurons; i++)
+  {
+    layer2_out[i] = 0.;
+    for (j = 0; j <= nr_hidden_neurons; j++)
+    {
+      layer2_out[i] += hidden_layer_out[j]*layer2_weights[j][i];
     }
     layer2_out[i] = tanh(layer2_out[i]);
   }
 
-  speed_sp.x = layer2_out[0];
-  speed_sp.y = layer2_out[1];
+  speed_sp.x = force_hor_gain*(float)layer2_out[0];
+  speed_sp.y = force_hor_gain*(float)layer2_out[1];
   speed_sp.z = 0;
+
+  // limit commands
+  BoundAbs(speed_sp.x, 1);
+  BoundAbs(speed_sp.y, 1);
+  BoundAbs(speed_sp.z, 1);
 
   potential_force.east = speed_sp.x;
   potential_force.north = speed_sp.y;
@@ -232,20 +280,25 @@ int swarm_nn_task(void)
   potential_force.speed = ry;
   potential_force.climb = d;
 
-  // limit commands
-  BoundAbs(speed_sp.x, 1);
-  BoundAbs(speed_sp.y, 1);
-  BoundAbs(speed_sp.z, 1);
-
-  autopilot_guided_move_ned(speed_sp.y, speed_sp.x, 0, 0);
+  autopilot_guided_move_ned(speed_sp.y, speed_sp.x, 0, 0);    // speed in enu
 
   struct ac_info_ * ac1 = get_ac_info(the_acs[2].ac_id);
   struct ac_info_ * ac2 = get_ac_info(the_acs[3].ac_id);
-  DOWNLINK_SEND_AC_INFO(DefaultChannel, DefaultDevice, &ac1->ac_id, &ac1->utm.east, &ac1->utm.north,
-                          &ac2->ac_id, &ac2->utm.east, &ac2->utm.north);
 
-  DOWNLINK_SEND_POTENTIAL(DefaultChannel, DefaultDevice, &potential_force.east, &potential_force.north,
-                                  &potential_force.alt, &potential_force.speed, &potential_force.climb);
+  int32_t tempx1 = ac1->utm.east - my_pos.east;
+  int32_t tempy1 = ac1->utm.north - my_pos.north;
+  int32_t tempx2 = ac2->utm.east - my_pos.east;
+  int32_t tempy2 = ac2->utm.north - my_pos.north;
+
+  float dist1 = sqrtf((float)(tempx1*tempx1)/10000. + ((float)(tempy1*tempy1))/10000.);
+  float dist2 = sqrtf((float)(tempx2*tempx2)/10000. + ((float)(tempy2*tempy2))/10000.);
+
+  DOWNLINK_SEND_AC_INFO(DefaultChannel, DefaultDevice, &ac1->ac_id, &tempx1, &tempy1,
+                          &ac2->ac_id, &tempx2, &tempy2);
+
+  DOWNLINK_SEND_SWARMNN(DefaultChannel, DefaultDevice, &potential_force.east, &potential_force.north,
+                                  &potential_force.alt, &potential_force.speed, &potential_force.climb,
+                                  &my_enu_pos.x, &my_enu_pos.y, &dist1, &dist2);
 
   return 1;
 }

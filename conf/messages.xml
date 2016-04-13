@@ -83,8 +83,8 @@
    </message>
 
    <message name="NAVIGATION_REF" id="9">
-     <field name="utm_east"  type="int32" unit="m"/>
-     <field name="utm_north" type="int32" unit="m"/>
+     <field name="utm_east"  type="float" unit="m"/>
+     <field name="utm_north" type="float" unit="m"/>
      <field name="utm_zone" type="uint8"/>
      <field name="ground_alt" type="float" unit="m"/>
    </message>
@@ -1990,7 +1990,17 @@
     <field name="imageBuffer" type="uint8[]"/>
   </message>
 
-  <!--230 is free -->
+  <message name="SWARMNN" id="230">
+    <field name="east" type="float"/>
+    <field name="north" type="float"/>
+    <field name="alt" type="float"/>
+    <field name="speed" type="float"/>
+    <field name="climb" type="float"/>
+    <field name="pos_x" type="float"/>
+    <field name="pos_y" type="float"/>
+    <field name="dist1" type="float"/>
+    <field name="dist2" type="float"/>
+  </message>
 
   <message name="ROTORCRAFT_STATUS" id="231">
     <field name="link_imu_nb_err" type="uint32"/>

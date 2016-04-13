@@ -47,8 +47,8 @@
 
 /** Debugging options */
 uint8_t verbose = 0;
-#define printf_natnet   if(verbose > 1) printf
-#define printf_debug    if(verbose > 0) printf
+#define printf_natnet(...)   if(verbose > 1) fprintf (stderr, __VA_ARGS__)
+#define printf_debug(...)    if(verbose > 0) fprintf (stderr, __VA_ARGS__)
 
 /** NatNet defaults */
 char *natnet_addr               = "255.255.255.255";
@@ -612,13 +612,13 @@ gboolean timeout_transmit_callback(gpointer data)
                  (int)(ecef_pos.x * 100.0),              //int32 ECEF X in CM
                  (int)(ecef_pos.y * 100.0),              //int32 ECEF Y in CM
                  (int)(ecef_pos.z * 100.0),              //int32 ECEF Z in CM
-                 (int)(lla_pos.lat * 10000000.0),        //int32 LLA latitude in rad*1e7
-                 (int)(lla_pos.lon * 10000000.0),        //int32 LLA longitude in rad*1e7
-                 (int)(rigidBodies[i].z * 1000.0),       //int32 LLA altitude in mm above elipsoid
+                 (int)(DegOfRad(lla_pos.lat) * 10000000.0),        //int32 LLA latitude in deg*1e7
+                 (int)(DegOfRad(lla_pos.lon) * 10000000.0),        //int32 LLA longitude in deg*1e7
+                 (int)(lla_pos.alt * 1000.0),            //int32 LLA altitude in mm above elipsoid
                  (int)(rigidBodies[i].z * 1000.0),       //int32 HMSL height above mean sea level in mm
-                 (int)(rigidBodies[i].ecef_vel.x * 100.0), //int32 ECEF velocity X in m/s
-                 (int)(rigidBodies[i].ecef_vel.y * 100.0), //int32 ECEF velocity Y in m/s
-                 (int)(rigidBodies[i].ecef_vel.z * 100.0), //int32 ECEF velocity Z in m/s
+                 (int)(rigidBodies[i].ecef_vel.x * 100.0), //int32 ECEF velocity X in cm/s
+                 (int)(rigidBodies[i].ecef_vel.y * 100.0), //int32 ECEF velocity Y in cm/s
+                 (int)(rigidBodies[i].ecef_vel.z * 100.0), //int32 ECEF velocity Z in cm/s
                  time_in_ms,
                  (int)(heading * 10000000.0));           //int32 Course in rad*1e7
     }
@@ -778,13 +778,11 @@ static void parse_options(int argc, char **argv)
     else if (strcmp(argv[i], "-lla") == 0) {
       check_argcount(argc, argv, i, 3);
 
-      struct EcefCoor_d tracking_ecef;
       struct LlaCoor_d tracking_lla;
       tracking_lla.lat  = atof(argv[++i]);
       tracking_lla.lon  = atof(argv[++i]);
       tracking_lla.alt  = atof(argv[++i]);
-      ecef_of_lla_d(&tracking_ecef, &tracking_lla);
-      ltp_def_from_ecef_d(&tracking_ltp, &tracking_ecef);
+      ltp_def_from_lla_d(&tracking_ltp, &tracking_lla);
     }
     // Set the tracking system offset angle in degrees
     else if (strcmp(argv[i], "-offset_angle") == 0) {
@@ -836,12 +834,12 @@ static void parse_options(int argc, char **argv)
 int main(int argc, char **argv)
 {
   // Set the default tracking system position and angle
-  struct EcefCoor_d tracking_ecef;
-  tracking_ecef.x = 3924332;
-  tracking_ecef.y = 300362;
-  tracking_ecef.z = 5002197;
+  struct LlaCoor_d tracking_lla;
+  tracking_lla.lat = RadOfDeg(51.9906340);
+  tracking_lla.lon = RadOfDeg(4.3767889);
+  tracking_lla.alt = 45.103;
   tracking_offset_angle = 33.0 / 57.6;
-  ltp_def_from_ecef_d(&tracking_ltp, &tracking_ecef);
+  ltp_def_from_lla_d(&tracking_ltp, &tracking_lla);
 
   // Parse the options from cmdline
   parse_options(argc, argv);

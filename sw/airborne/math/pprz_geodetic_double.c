@@ -33,8 +33,7 @@
 
 void ltp_def_from_ecef_d(struct LtpDef_d *def, struct EcefCoor_d *ecef)
 {
-
-  /* store the origin of the tangeant plane       */
+  /* store the origin of the tangent plane       */
   VECT3_COPY(def->ecef, *ecef);
   /* compute the lla representation of the origin */
   lla_of_ecef_d(&def->lla, &def->ecef);
@@ -53,6 +52,31 @@ void ltp_def_from_ecef_d(struct LtpDef_d *def, struct EcefCoor_d *ecef)
   def->ltp_of_ecef.m[7] =  cos_lat * sin_lon;
   def->ltp_of_ecef.m[8] =  sin_lat;
 
+}
+
+void ltp_def_from_lla_d(struct LtpDef_d *def, struct LlaCoor_d *lla)
+{
+  /* store the origin of the tangent plane */
+  LLA_COPY(def->lla, *lla);
+  /* compute the ecef representation of the origin */
+  ecef_of_lla_d(&def->ecef, &def->lla);
+
+  /* store the rotation matrix                    */
+  const double sin_lat = sin(def->lla.lat);
+  const double cos_lat = cos(def->lla.lat);
+  const double sin_lon = sin(def->lla.lon);
+  const double cos_lon = cos(def->lla.lon);
+
+  def->ltp_of_ecef.m[0] = -sin_lon;
+  def->ltp_of_ecef.m[1] =  cos_lon;
+  /* this element is always zero http://en.wikipedia.org/wiki/Geodetic_system#From_ECEF_to_ENU */
+  def->ltp_of_ecef.m[2] = 0.;
+  def->ltp_of_ecef.m[3] = -sin_lat * cos_lon;
+  def->ltp_of_ecef.m[4] = -sin_lat * sin_lon;
+  def->ltp_of_ecef.m[5] =  cos_lat;
+  def->ltp_of_ecef.m[6] =  cos_lat * cos_lon;
+  def->ltp_of_ecef.m[7] =  cos_lat * sin_lon;
+  def->ltp_of_ecef.m[8] =  sin_lat;
 }
 
 /* http://en.wikipedia.org/wiki/Geodetic_system */

@@ -35,7 +35,6 @@
 // #include <stdio.h>
 
 struct LtpDef_i ltp_def;
-struct EnuCoor_i enu_pos, enu_speed;
 
 struct GpsState gps_datalink;
 
@@ -43,8 +42,8 @@ struct GpsState gps_datalink;
 void gps_datalink_init(void)
 {
   gps_datalink.fix = GPS_FIX_NONE;
-  gps_datalink.gspeed = 700; // To enable course setting
-  gps_datalink.cacc = 0; // To enable course setting
+  gps_datalink.gspeed = 700;  // To enable course setting
+  gps_datalink.cacc = 0;      // To enable course setting
 
   struct LlaCoor_i llh_nav0; /* Height above the ellipsoid */
   llh_nav0.lat = NAV_LAT0;
@@ -62,6 +61,8 @@ void gps_datalink_init(void)
 // Parse the REMOTE_GPS_SMALL datalink packet
 void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyz, int16_t heading)
 {
+  struct EnuCoor_i enu_pos, enu_speed;
+
   // Position in ENU coordinates
   enu_pos.x = (int32_t)((pos_xyz >> 21) & 0x7FF); // bits 31-21 x position in cm
   if (enu_pos.x & 0x400) {
@@ -145,9 +146,7 @@ void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t e
   gps_datalink.ecef_vel.z = ecef_zd;
   SetBit(gps_datalink.valid_fields, GPS_VALID_VEL_ECEF_BIT);
 
-  gps_datalink.ned_vel.x = enu_speed.y;
-  gps_datalink.ned_vel.y = enu_speed.x;
-  gps_datalink.ned_vel.z = -enu_speed.z;
+  ned_of_ecef_vect_i(&gps_datalink.ned_vel, &ltp_def , &gps_datalink.ecef_vel);
   SetBit(gps_datalink.valid_fields, GPS_VALID_VEL_NED_BIT);
 
   gps_datalink.course = course;

@@ -59,7 +59,7 @@ void set_ac_info(uint8_t id, uint32_t utm_east, uint32_t utm_north, uint32_t alt
                 uint16_t gspeed, uint16_t climb, uint32_t itow)
 {
   if (acs_idx < NB_ACS) {
-    if (id > 0 && the_acs_id[id] == 0) {
+    if (id > 0 && the_acs_id[id] == 0) {    // new aircraft id
       the_acs_id[id] = acs_idx++;
       the_acs[the_acs_id[id]].ac_id = id;
     }

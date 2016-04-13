@@ -5,7 +5,7 @@
   <firmware name="rotorcraft">
     <target name="ap" board="ardrone2">
       <!-- HOST is the Name or IP of your AC -->
-      <configure name="HOST" value="192.168.0.200"/>
+      <configure name="HOST" value="192.168.0.201"/>
       <!-- MODEM_HOST is where the data should go to, for short normally your laptop IP address -->
       <configure name="MODEM_HOST" value="192.168.0.22"/>
       <configure name="MODEM_BROADCAST" value="FALSE"/>

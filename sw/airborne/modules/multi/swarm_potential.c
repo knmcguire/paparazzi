@@ -61,15 +61,15 @@ float target_dist3;
 bool use_waypoint;
 
 #ifndef FORCE_HOR_GAIN
-#define FORCE_HOR_GAIN 0.5
+#define FORCE_HOR_GAIN 0.1
 #endif
 
 #ifndef FORCE_CLIMB_GAIN
-#define FORCE_CLIMB_GAIN 0.5
+#define FORCE_CLIMB_GAIN 0.1
 #endif
 
 #ifndef TARGET_DIST3
-#define TARGET_DIST3 1.
+#define TARGET_DIST3 2.
 #endif
 
 #ifndef USE_WAYPOINT
@@ -194,13 +194,6 @@ int swarm_potential_task(void)
     //potential_force.east  = de;
     //potential_force.north = dn;
     //potential_force.alt   = da;
-
-    potential_force.east  = (float)(floor(DeciDegOfRad(gps.course)/1e7));
-    potential_force.north = (float)gps.gspeed;
-    potential_force.alt   = (float)-gps.ned_vel.z;
-
-    potential_force.speed   = (float)ac->course;
-    potential_force.climb   = (float)ac->gspeed;
   }
 
   // add waypoint force to get vehicle to waypoint
@@ -214,11 +207,11 @@ int swarm_potential_task(void)
     float dist2 = de * de + dn * dn;// + da * da;
     if (dist2 > 0.01) {   // add deadzone of 10cm from goal
       float dist = sqrtf(dist2);
-      float force = dist2;
+      float force = 2*dist2;
 
       // higher attractive potential to get to goal when close by
       if (dist < 1.){
-        force = dist;
+        force = 2*dist;
       }
 
       potential_force.east  = force*de/dist;
@@ -247,7 +240,11 @@ int swarm_potential_task(void)
   BoundAbs(speed_sp.z, GUIDANCE_H_REF_MAX_SPEED);
 #endif
 
-  autopilot_guided_move_ned(speed_sp.y, speed_sp.x, 0, 0);
+  potential_force.east  = speed_sp.x;
+  potential_force.north = speed_sp.y;
+  potential_force.alt   = speed_sp.z;
+
+  autopilot_guided_move_ned(speed_sp.y, speed_sp.x, 0, 0);    // speed in enu
   /*
   struct EnuCoor_f delta_pos;
   VECT3_SDIV(delta_pos, speed_sp, NAV_FREQ);

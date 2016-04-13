@@ -1,0 +1,15 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="traffic_info">
+  <doc>
+    <description>Keeps track of other aircraft in airspace</description>
+  </doc>
+  <header>
+    <file name="traffic_info.h"/>
+  </header>
+  <init fun="traffic_info_init()"/>
+  <makefile>
+    <file name="traffic_info.c"/>
+  </makefile>
+</module>
+
