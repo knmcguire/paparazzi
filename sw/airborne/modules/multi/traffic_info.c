@@ -26,8 +26,12 @@
 
 #include "modules/multi/traffic_info.h"
 
-//#include "subsystems/navigation/common_nav.h"
 #include "generated/airframe.h"     // AC_ID
+#include "generated/flight_plan.h"  // NAV_MSL0
+
+#include "subsystems/datalink/datalink.h"
+#include "pprzlink/dl_protocol.h"
+
 #include "math/pprz_geodetic_int.h"
 #include "math/pprz_geodetic_float.h"
 #include "math/pprz_geodetic_utm.h"
@@ -46,6 +50,20 @@ void traffic_info_init(void)
   the_acs_id[AC_ID] = 1;
   the_acs[the_acs_id[AC_ID]].ac_id = AC_ID;
   acs_idx = 2;
+}
+
+int parse_acinfo(){
+  set_ac_info(DL_ACINFO_ac_id(dl_buffer),
+    DL_ACINFO_utm_east(dl_buffer),
+    DL_ACINFO_utm_north(dl_buffer),
+    DL_ACINFO_alt(dl_buffer)*10 + NAV_MSL0, // hack because ground station sends hmsl
+    DL_ACINFO_utm_zone(dl_buffer),
+    DL_ACINFO_course(dl_buffer),
+    DL_ACINFO_speed(dl_buffer),
+    DL_ACINFO_climb(dl_buffer),
+    DL_ACINFO_itow(dl_buffer));
+
+  return 1;
 }
 
 struct ac_info_ *get_ac_info(uint8_t _id)
@@ -107,6 +125,3 @@ void set_ac_info_lla(uint8_t id, int32_t lat, int32_t lon, int32_t alt,
     the_acs[the_acs_id[id]].itow = itow;
   }
 }
-
-
-

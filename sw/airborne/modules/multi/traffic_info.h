@@ -77,4 +77,8 @@ extern void set_ac_info(uint8_t id, uint32_t utm_east, uint32_t utm_north, uint3
 extern void set_ac_info_lla(uint8_t id, int32_t lat, int32_t lon, int32_t alt,
                             int16_t course, uint16_t gspeed, int16_t climb, uint32_t itow);
 
+/** Parsing functions called when an ac position message is received
+*/
+extern int parse_acinfo(void);
+
 #endif

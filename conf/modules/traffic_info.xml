@@ -8,6 +8,9 @@
     <file name="traffic_info.h"/>
   </header>
   <init fun="traffic_info_init()"/>
+  
+  <datalink message="ACINFO" fun="parse_acinfo()"/>
+  
   <makefile>
     <file name="traffic_info.c"/>
     <define name="TRAFFIC_INFO"/>

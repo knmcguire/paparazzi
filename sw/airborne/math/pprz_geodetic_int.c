@@ -363,12 +363,12 @@ void ecef_of_lla_i(struct EcefCoor_i *out, struct LlaCoor_i *in)
 #if USE_SINGLE_PRECISION_LLA_ECEF
   /* convert our input to floating point */
   struct LlaCoor_f in_f;
-  LLA_FLOAT_OF_BFP(in_d, *in);
+  LLA_FLOAT_OF_BFP(in_f, *in);
   /* calls the floating point transformation */
   struct EcefCoor_f out_f;
   ecef_of_lla_f(&out_f, &in_f);
   /* convert the output to fixed point       */
-  ECEF_BFP_OF_REAL(*out, out_d);
+  ECEF_BFP_OF_REAL(*out, out_f);
 #else // use double precision by default
   /* convert our input to floating point */
   struct LlaCoor_d in_d;

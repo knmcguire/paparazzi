@@ -38,10 +38,8 @@ struct force_ {
 
 extern struct force_ potential_force;
 
-extern float force_hor_gain;
-extern float force_climb_gain;
-extern float target_dist3;
-extern bool use_waypoint;
+extern float max_hor_speed;
+extern float max_vert_speed;
 
 extern void swarm_nn_init(void);
 extern void swarm_nn_periodic(void);

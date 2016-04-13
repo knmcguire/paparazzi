@@ -36,6 +36,7 @@
   <modules main_freq="512">
     <load name="bat_voltage_ardrone2.xml"/>
     <!--load name="stereocam_droplet.xml" /-->
+	<load name="traffic_info.xml" />
     <load name="swarm_nn.xml" />
   </modules>
 

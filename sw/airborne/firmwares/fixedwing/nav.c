@@ -296,11 +296,9 @@ static inline bool_t compute_TOD(uint8_t _af, uint8_t _td, uint8_t _tod, float g
 
 #ifdef TRAFFIC_INFO
 #include "modules/multi/traffic_info.h"
-#endif
 
 static inline void nav_follow(uint8_t _ac_id, float _distance, float _height)
 {
-  #ifdef TRAFFIC_INFO
   struct ac_info_ * ac = get_ac_info(_ac_id);
   NavVerticalAutoThrottleMode(0.);
   NavVerticalAltitudeMode(Max(ac->alt + _height, ground_alt + SECURITY_HEIGHT), 0.);
@@ -314,9 +312,10 @@ static inline void nav_follow(uint8_t _ac_id, float _distance, float _height)
   nav_ground_speed_setpoint = ac->gspeed + NAV_FOLLOW_PGAIN * s;
   nav_ground_speed_loop();
 #endif
-#endif // TRAFFIC_INFO
 }
-
+#else
+static inline void nav_follow(uint8_t  __attribute__((unused)) _ac_id, uint32_t  __attribute__((unused)) distance, uint32_t  __attribute__((unused)) height){}
+#endif // TRAFFIC_INFO
 
 
 

@@ -27,8 +27,6 @@
 #include "subsystems/gps.h"
 #include "subsystems/gps/gps_datalink.h"
 #include "subsystems/datalink/downlink.h"
-//#include "guidance/guidance_h.h"
-//#include "guidance/guidance_v.h"
 #include "state.h"
 #include "navigation.h"
 
@@ -36,11 +34,6 @@
 
 #include "math/pprz_geodetic_int.h"
 #include "math/pprz_geodetic_double.h"
-
-//#include "math/pprz_algebra_float.h"
-//#include "math/pprz_algebra_int.h"
-//#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
-//#include "firmwares/rotorcraft/guidance/guidance_v.h"
 
 #include "autopilot.h"
 
@@ -55,29 +48,15 @@ int8_t tx_strength[NB_ACS_ID];
 
 struct force_ potential_force;
 
-float force_hor_gain;
-float force_climb_gain;
-float target_dist3;
-bool use_waypoint;
+float max_hor_speed;
+float max_vert_speed;
 
-#ifndef FORCE_HOR_GAIN
-#define FORCE_HOR_GAIN 0.5
+#ifndef MAX_HOR_SPEED
+#define MAX_HOR_SPEED 0.5
 #endif
 
-#ifndef FORCE_CLIMB_GAIN
-#define FORCE_CLIMB_GAIN 0.1
-#endif
-
-#ifndef TARGET_DIST3
-#define TARGET_DIST3 0.5
-#endif
-
-#ifndef USE_WAYPOINT
-#define USE_WAYPOINT FALSE
-#endif
-
-#ifndef SP_WP
-#define SP_WP WP_STDBY
+#ifndef MAX_VERT_SPEED
+#define MAX_VERT_SPEED 0.5
 #endif
 
 abi_event ev;
@@ -86,16 +65,6 @@ void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _
 void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi) {
   tx_strength[the_acs_id[_ac_id]] = _tx_strength;
   rssi[the_acs_id[_ac_id]] = _rssi;
-}
-
-/*
- * return sign of input with bias 1 for an input of zero
- */
-float sign(float x);
-float sign(float x)
-{
-//  return (x < 0) ? -1 : (x > 0);
-  return (x < 0) ? -1 : 1;
 }
 
 #if PERIODIC_TELEMETRY
@@ -117,10 +86,8 @@ void swarm_nn_init(void)
   potential_force.speed = 0.;
   potential_force.climb = 0.;
 
-  force_hor_gain = FORCE_HOR_GAIN;
-  force_climb_gain = FORCE_CLIMB_GAIN;
-  target_dist3 = TARGET_DIST3;
-  use_waypoint = USE_WAYPOINT;
+  max_hor_speed = MAX_HOR_SPEED;
+  max_vert_speed = MAX_VERT_SPEED;
 
   AbiBindMsgRSSI(ABI_BROADCAST, &ev, rssi_cb);
 
@@ -206,7 +173,7 @@ int swarm_nn_task(void)
   uint8_t i, j;
 
   if (gps.fix == 0){return 1;}
-  struct UtmCoor_i my_pos = (get_ac_info(the_acs[1].ac_id))->utm;
+  struct UtmCoor_i my_pos = *stateGetPositionUtm_i();//(get_ac_info(the_acs[1].ac_id))->utm;
   //my_pos.zone = 0;
   //utm_of_lla_i(&my_pos, &gps.lla_pos);
 
@@ -264,9 +231,9 @@ int swarm_nn_task(void)
     layer2_out[i] = tanh(layer2_out[i]);
   }
 
-  speed_sp.x = force_hor_gain*(float)layer2_out[0];
-  speed_sp.y = force_hor_gain*(float)layer2_out[1];
-  speed_sp.z = 0;
+  speed_sp.x = max_hor_speed*(float)layer2_out[0];
+  speed_sp.y = max_hor_speed*(float)layer2_out[1];
+  speed_sp.z = max_vert_speed*0;
 
   // limit commands
   BoundAbs(speed_sp.x, 1);

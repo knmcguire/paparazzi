@@ -50,7 +50,6 @@
 
 #ifdef TRAFFIC_INFO
 #include "modules/multi/traffic_info.h"
-#include "generated/flight_plan.h"  // NAV_MSL0
 #endif
 
 #ifdef RADIO_CONTROL_DATALINK_LED
@@ -242,20 +241,6 @@ void dl_parse_msg(void)
     break;
 #endif  // USE_GPS
 
-#ifdef TRAFFIC_INFO
-    case DL_ACINFO: {
-      set_ac_info(DL_ACINFO_ac_id(dl_buffer),
-          DL_ACINFO_utm_east(dl_buffer),
-          DL_ACINFO_utm_north(dl_buffer),
-          DL_ACINFO_alt(dl_buffer)*10 + NAV_MSL0, // hack because ground station sends hmsl
-          DL_ACINFO_utm_zone(dl_buffer),
-          DL_ACINFO_course(dl_buffer),
-          DL_ACINFO_speed(dl_buffer),
-          DL_ACINFO_climb(dl_buffer),
-          DL_ACINFO_itow(dl_buffer));
-    }
-    break;
-#endif
     default:
       break;
   }
@@ -266,7 +251,7 @@ void dl_parse_msg(void)
   modules_parse_datalink(msg_id);
 }
 
-/* default emtpy WEAK implementation for firmwares without an extra firmware_parse_msg */
+/* default empty WEAK implementation for firmwares without an extra firmware_parse_msg */
 WEAK void firmware_parse_msg(void)
 {
 }

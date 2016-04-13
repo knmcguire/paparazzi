@@ -548,38 +548,23 @@ bool_t nav_set_heading_current(void)
   return FALSE;
 }
 
-/**
- *  \brief Computes \a desired_x, \a desired_y and \a desired_course.
- */
-/*static inline void fly_to_xy(float x, float y) {
-
-void fly_to_xy(float x, float y)
-{
-  struct EnuCoor_f *pos = stateGetPositionEnu_f();
-  desired_x = x;
-  desired_y = y;
-  if (nav_mode == NAV_MODE_COURSE) {
-    h_ctl_course_setpoint = atan2f(x - pos->x, y - pos->y);
-    if (h_ctl_course_setpoint < 0.) {
-      h_ctl_course_setpoint += 2 * M_PI;
-    }
-  }
-}
+#ifdef TRAFFIC_INFO
+#include "modules/multi/traffic_info.h"
 
 void nav_follow(uint8_t _ac_id, uint32_t distance, uint32_t height)
 {
+  struct EnuCoor_i target;
+
   struct ac_info_ * ac = get_ac_info(_ac_id);
-  NavVerticalAltitudeMode(POS_FLOAT_OF_BFP(Max(ac->alt + height, ground_alt + SECURITY_HEIGHT)), 0.);
+
   float alpha = M_PI / 2 - ac->course;
   float ca = cosf(alpha), sa = sinf(alpha);
-  float x = ac->east - distance * ca;
-  float y = ac->north - distance * sa;
-  fly_to_xy(x, y);
-#ifdef NAV_FOLLOW_PGAIN
-  float s = (stateGetPositionEnu_f()->x - x) * ca + (stateGetPositionEnu_f()->y - y) * sa;
-  nav_ground_speed_setpoint = ac->gspeed + NAV_FOLLOW_PGAIN * s;
-  nav_ground_speed_loop();
-#endif
+  target.x = POS_BFP_OF_REAL(ac->utm.east - distance * ca - stateGetPositionUtm_f()->east);
+  target.y = POS_BFP_OF_REAL(ac->utm.north - distance * sa  - stateGetPositionUtm_f()->north);
+  target.z = POS_BFP_OF_REAL(Max(ac->utm.alt + height, SECURITY_HEIGHT));	// todo add ground height to check
 
+  VECT3_COPY(navigation_target, target);
 }
-*/
+#else
+void nav_follow(uint8_t  __attribute__((unused)) _ac_id, uint32_t  __attribute__((unused)) distance, uint32_t  __attribute__((unused)) height){}
+#endif

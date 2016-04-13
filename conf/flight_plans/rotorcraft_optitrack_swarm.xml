@@ -63,6 +63,9 @@
       <call fun="nav_set_heading_deg(0)"/>
       <stay wp="TD3"/>
     </block>
+    <block name="follow" strip_button="Follow">
+	  <follow ac_id="200" distance="1" height="0"/>
+    </block>
     <block name="land here" strip_button="Land Here" strip_icon="land-right.png">
       <call fun="NavSetWaypointHere(WP_STDBY)"/>
     </block>

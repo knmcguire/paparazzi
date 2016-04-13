@@ -471,6 +471,13 @@ static inline void stateSetLocalUtmOrigin_i(struct UtmCoor_i *utm_def)
   ClearBit(state.accel_status, ACCEL_NED_F);
 }
 
+/// Set the local (flat earth) coordinate frame origin from UTM (int).
+static inline void stateSetLocalUtmOrigin_f(struct UtmCoor_f *utm_def_f){
+  struct UtmCoor_i utm_def;
+  UTM_BFP_OF_REAL(utm_def,*utm_def_f);
+  stateSetLocalUtmOrigin_i(&utm_def);
+}
+
 /// Set the local (flat earth) coordinate frame origin (int).
 static inline void stateSetLocalOrigin_i(struct LtpDef_i *ltp_def)
 {
