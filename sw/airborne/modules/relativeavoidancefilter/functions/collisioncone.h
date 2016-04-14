@@ -19,7 +19,7 @@ void collisioncone_update( float *cc,
 
 void collisioncone_fuse( float *cc0, float *cc1 );
 
-int collisioncone_checkdanger( float *cc, 
+bool collisioncone_checkdanger( float *cc, 
 	float ownvx, float ownvy);
 
 void collisioncone_findnewcmd(	float cc[][6], 

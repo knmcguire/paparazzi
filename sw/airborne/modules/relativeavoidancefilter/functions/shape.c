@@ -138,7 +138,7 @@ void shape_shift(float *tr, int size, float x, float y)
 
 */
 
-int shape_checkifpointinarea(float* tr, int size, float* px)
+bool shape_checkifpointinarea(float* tr, int size, float* px)
 {
 	int i;
 
@@ -163,8 +163,8 @@ int shape_checkifpointinarea(float* tr, int size, float* px)
 	}
 	
 	if ((test_a - a) > 0.1)
-		return 0;
+		return false;
 	else 
-		return 1;
+		return true;
 
 }

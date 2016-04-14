@@ -13,6 +13,6 @@ extern void shape_rotateatpoint(float *tr, int size, float ang, float x0, float 
 	
 extern void shape_shift(float *tr, int size, float x_shift, float y_shift);
 
-extern int shape_checkifpointinarea(float* tr, int size, float *px);
+extern bool shape_checkifpointinarea(float* tr, int size, float *px);
 
 #endif

@@ -66,7 +66,7 @@ void collisioncone_fuse( float *cc0, float *cc1)
 }
 
 
-int collisioncone_checkdanger( float *cc, float ownvx, float ownvy)
+bool collisioncone_checkdanger( float *cc, float ownvx, float ownvy)
 {
 	float vv[2];
 	vv[0] = ownvx;
@@ -83,32 +83,31 @@ void collisioncone_findnewcmd( float cc[2][6],
 	float psisearch, int nfilters )
 {
 	int i;
-	int flag = 1;
 	int count = 1;
-
+	int ng = 1;
+	bool flag = true;
 	float psi_add;
 	deg2rad(psisearch, &psi_add);
 
 	float psi0 = *psi_des;
 	float vx, vy;
-	int ng = 1;
 
 	while (*v_des <= 2.0) {
 		polar2cart(*v_des, *psi_des, &vx, &vy);
 
 		for (i = 0; i < nfilters; i++) { // Check if we succeed
 			flag = collisioncone_checkdanger(cc[i], vx, vy);
-			if (flag == 1) // Still problems with at least one drone in at least one collision cone
+			if (flag)
 				break;
 		}
 
-		if (flag == 0)
-			break; // Solved
+		if(!flag) // No issues found
+			return;
 
 		*psi_des = psi0 + (ng* count * psi_add);
 		wrapTo2Pi(psi_des);
 
-		// ng = ng * -1;
+		ng = ng * -1;
 		count++;
 			
 		if (count >= (2*M_PI)/psi_add) {
@@ -116,4 +115,5 @@ void collisioncone_findnewcmd( float cc[2][6],
 			count = 1;
 		}
 	}
+
 };

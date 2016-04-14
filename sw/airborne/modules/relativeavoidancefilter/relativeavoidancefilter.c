@@ -174,8 +174,7 @@ void rafilter_periodic(void)
 			flagglobal = false; // Null assumption
 			for (int i = 0; i < nf; i++) {
 				collisioncone_update(cc[i], ekf[i].X[0], ekf[i].X[1], ekf[i].X[4], ekf[i].X[5], CCSIZE);
-				flag[i] = collisioncone_checkdanger( cc[i], vx_des, vy_des );
-				if ( flag[i] == 1 )
+				if ( collisioncone_checkdanger( cc[i], vx_des, vy_des ) )
 					flagglobal = true;
 			}
 
