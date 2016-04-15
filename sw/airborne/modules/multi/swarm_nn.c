@@ -43,6 +43,10 @@
 
 #include "subsystems/abi.h"               // rssi
 
+#ifdef EXTRA_DOWNLINK_DEVICE
+#include "modules/datalink/extra_pprz_dl.h"
+#endif
+
 int8_t rssi[NB_ACS_ID];
 int8_t tx_strength[NB_ACS_ID];
 
@@ -50,6 +54,7 @@ struct force_ potential_force;
 
 float max_hor_speed;
 float max_vert_speed;
+uint8_t use_height;
 
 #ifndef MAX_HOR_SPEED
 #define MAX_HOR_SPEED 0.5
@@ -57,6 +62,10 @@ float max_vert_speed;
 
 #ifndef MAX_VERT_SPEED
 #define MAX_VERT_SPEED 0.5
+#endif
+
+#ifndef USE_HEIGHT
+#define USE_HEIGHT 0
 #endif
 
 abi_event ev;
@@ -88,11 +97,12 @@ void swarm_nn_init(void)
 
   max_hor_speed = MAX_HOR_SPEED;
   max_vert_speed = MAX_VERT_SPEED;
+  use_height = USE_HEIGHT;
 
   AbiBindMsgRSSI(ABI_BROADCAST, &ev, rssi_cb);
 
 #if PERIODIC_TELEMETRY
-  //register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_POTENTIAL, send_periodic);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GPS_SMALL, send_periodic);
 #endif
 }
 /*
@@ -110,21 +120,27 @@ void swarm_nn_periodic(void) {
 
   int16_t alt = (int16_t)(gps.lla_pos.alt/10);
 
-  //DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.lla_pos.lat,
-  //                         &gps.lla_pos.lon, &alt);
+#ifdef EXTRA_DOWNLINK_DEVICE
+  DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat,
+                           &gps.lla_pos.lon, &alt);
+#else
+  DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.lla_pos.lat,
+                           &gps.lla_pos.lon, &alt);
+#endif
 }
 
 // the following does not include the bias neuron
-static const uint8_t nr_input_neurons = 5;
+static const uint8_t nr_input_neurons = 6;
 static const uint8_t nr_hidden_neurons = 8;
 static const uint8_t nr_output_neurons = 2;
 
-double input_layer_in[6]; //nr_input_neurons+1
+double input_layer_out[7]; //nr_input_neurons+1
 double hidden_layer_out[9]; //nr_hidden_neurons+1
-const double layer1_weights[6][8] =
+const double layer1_weights[7][8] =
 {
 { -0.249, 0.6456, 0.2576, -0.0324,  -0.1644,  0.7892, -0.313, -0.5042,},
 { 0.0736, 0.9582, 0.6542, 0.5952, -0.7244,  -0.367, -0.2034,  -0.3356,},
+{ 0.1306, -0.6844,  0.8562, 0.1484, -0.4876,  -0.345, -0.611, -0.7448,},
 { 0.1306, -0.6844,  0.8562, 0.1484, -0.4876,  -0.345, -0.611, -0.7448,},
 { 0.039,  0.5906, 0.822,  0.8968, 0.2194, -0.8234,  -0.0694,  -0.3796,},
 { -0.044, -0.2248,  0.645,  -0.5442,  -0.5442,  -0.8088,  -0.67,  -0.9184,},
@@ -195,27 +211,29 @@ int swarm_nn_task(void)
     float dn = (ac->utm.north - my_pos.north)/100.; // cha * delta_t
     float da = (ac->utm.alt - my_pos.alt)/1000.; // ac->climb * delta_t   // currently wrong reference in other aircraft
 
-    float dist2 = de * de + dn * dn;// + da * da;
+    float dist2 = de * de + dn * dn;
+    if(use_height) dist2 += + da * da;
 
     rx += de;
     ry += dn;
-    rz += da;
+    if(use_height) rz += da;
     d  += sqrtf(dist2);
   }
 
-  input_layer_in[0]= (double)rx;
-  input_layer_in[1]= (double)ry;
-  input_layer_in[2]= (double)d;
-  input_layer_in[3]= 0;//(double)my_enu_pos.x;    // can add offset here later to move swarm centre
-  input_layer_in[4]= 0;//(double)my_enu_pos.y;
-  input_layer_in[nr_input_neurons] = 1.;   // bias neuron
+  input_layer_out[0]= (double)rx;
+  input_layer_out[1]= (double)ry;
+  input_layer_out[2]= (double)rz;
+  input_layer_out[3]= (double)d;
+  input_layer_out[4]= 0;//(double)my_enu_pos.x;    // todo can add offset here later to move swarm centre
+  input_layer_out[5]= 0;//(double)my_enu_pos.y;
+  input_layer_out[nr_input_neurons] = 1.;   // bias neuron
 
   for (i = 0; i < nr_hidden_neurons; i++)
   {
     hidden_layer_out[i] = 0.;
     for (j = 0; j <= nr_input_neurons; j++)
     {
-      hidden_layer_out[i] += input_layer_in[j]*layer1_weights[j][i];
+      hidden_layer_out[i] += input_layer_out[j]*layer1_weights[j][i];
     }
     hidden_layer_out[i] = tanh(hidden_layer_out[i]);
   }
@@ -233,13 +251,15 @@ int swarm_nn_task(void)
 
   speed_sp.x = max_hor_speed*(float)layer2_out[0];
   speed_sp.y = max_hor_speed*(float)layer2_out[1];
-  speed_sp.z = max_vert_speed*0;
+
+  if(use_height && nr_output_neurons > 2) speed_sp.z = max_vert_speed*(float)layer2_out[2];
 
   // limit commands
   BoundAbs(speed_sp.x, 1);
   BoundAbs(speed_sp.y, 1);
   BoundAbs(speed_sp.z, 1);
 
+  // todo update debug message with altitude stats
   potential_force.east = speed_sp.x;
   potential_force.north = speed_sp.y;
   potential_force.alt = rx;
@@ -247,7 +267,7 @@ int swarm_nn_task(void)
   potential_force.speed = ry;
   potential_force.climb = d;
 
-  autopilot_guided_move_ned(speed_sp.y, speed_sp.x, 0, 0);    // speed in enu
+  autopilot_guided_move_ned(speed_sp.y, speed_sp.x, speed_sp.z, 0);    // speed in enu
 
   struct ac_info_ * ac1 = get_ac_info(the_acs[2].ac_id);
   struct ac_info_ * ac2 = get_ac_info(the_acs[3].ac_id);

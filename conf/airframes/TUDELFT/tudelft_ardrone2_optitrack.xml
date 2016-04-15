@@ -36,8 +36,14 @@
   <modules main_freq="512">
     <load name="bat_voltage_ardrone2.xml"/>
     <!--load name="stereocam_droplet.xml" /-->
-	<load name="traffic_info.xml" />
-    <load name="swarm_nn.xml" />
+	<load name="extra_dl.xml">
+      <define name="UDP1_PORT_OUT" value="5000"/>
+      <define name="UDP1_PORT_IN" value="5000"/>
+      <define name="UDP1_HOST" value="127.0.0.1"/>
+      <configure name="EXTRA_DL_PORT" value="UDP1"/>
+	</load>
+	<load name="traffic_info.xml"/>
+    <load name="swarm_nn.xml"/>
   </modules>
 
   <commands>

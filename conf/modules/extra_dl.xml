@@ -3,21 +3,29 @@
 <module name="extra_dl" dir="datalink">
   <doc>
     <description>Extra datalink (PPRZ transport)</description>
-    <configure name="EXTRA_DL_PORT" value="UARTX" description="Select port for extra datalink"/>
-    <configure name="EXTRA_DL_BAUD" value="B57600" description="Baudrate for extra datalink"/>
+    <configure name="EXTRA_DL_PORT" value="UARTX|UDPX" description="Select port for extra datalink"/>
+    <configure name="EXTRA_DL_BAUD" value="B57600" description="Baudrate for extra datalink if link device is UART"/>
   </doc>
   <header>
     <file name="extra_pprz_dl.h"/>
   </header>
   <init fun="extra_pprz_dl_init()"/>
   <event fun="ExtraDatalinkEvent()"/>
-  <makefile target="ap">
-    <configure name="EXTRA_DL_PORT" case="upper|lower"/>
-    <define name="EXTRA_DOWNLINK_DEVICE" value="$(EXTRA_DL_PORT_LOWER)"/>
-    <define name="USE_$(EXTRA_DL_PORT_UPPER)"/>
-    <define name="$(EXTRA_DL_PORT_UPPER)_BAUD" value="$(EXTRA_DL_BAUD)"/>
+  <makefile>
+    <configure name="EXTRA_DL_PORT" default="uart1" case="upper|lower"/>
+    <raw>
+      ifneq (,$(findstring udp,$(EXTRA_DL_PORT_LOWER)))
+      include $(CFG_SHARED)/udp.makefile
+      $(TARGET).CFLAGS += -DEXTRA_DOWNLINK_DEVICE=$(EXTRA_DL_PORT_LOWER)
+      $(TARGET).CFLAGS += -DUSE_$(EXTRA_DL_PORT_UPPER)
+      else
+      EXTRA_DL_BAUD ?= B57600
+      ap.CFLAGS += -DEXTRA_DOWNLINK_DEVICE=$(EXTRA_DL_PORT_LOWER)
+      ap.CFLAGS += -DUSE_$(EXTRA_DL_PORT_UPPER)
+      ap.CFLAGS += -D$(EXTRA_DL_PORT_UPPER)_BAUD=$(EXTRA_DL_BAUD)
+      endif
+    </raw>
     <file name="extra_pprz_dl.c"/>
-    <file name="pprz_transport.c" dir="subsystems/datalink"/>
+    <file name="pprz_transport.c" dir="pprzlink/src"/>
   </makefile>
 </module>
-

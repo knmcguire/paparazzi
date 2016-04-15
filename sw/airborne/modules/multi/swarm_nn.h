@@ -40,6 +40,7 @@ extern struct force_ potential_force;
 
 extern float max_hor_speed;
 extern float max_vert_speed;
+extern uint8_t use_height;
 
 extern void swarm_nn_init(void);
 extern void swarm_nn_periodic(void);
