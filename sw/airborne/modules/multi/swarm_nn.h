@@ -44,6 +44,5 @@ extern uint8_t use_height;
 
 extern void swarm_nn_init(void);
 extern void swarm_nn_periodic(void);
-extern int swarm_nn_task(void);
 
 #endif // swarm_nn_H

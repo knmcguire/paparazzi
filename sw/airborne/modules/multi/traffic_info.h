@@ -60,8 +60,9 @@ extern struct ac_info_ *get_ac_info(uint8_t id);
  * @param[in] climb Climb rate in m/s
  * @param[in] itow GPS time of week in ms
  */
-extern void set_ac_info(uint8_t id, uint32_t utm_east, uint32_t utm_north, uint32_t alt, uint8_t utm_zone, uint16_t course,
-    uint16_t gspeed, uint16_t climb, uint32_t itow);
+extern void set_ac_info(uint8_t id, uint32_t utm_east, uint32_t utm_north, uint32_t alt, uint8_t utm_zone,
+                        uint16_t course,
+                        uint16_t gspeed, uint16_t climb, uint32_t itow);
 
 /**
  * Set Aircraft info.

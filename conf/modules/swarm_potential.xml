@@ -24,9 +24,9 @@
       </dl_settings>
     </dl_settings>
   </settings>
-  
+
   <depends>traffic_info</depends>
-  
+
   <header>
     <file name="swarm_potential.h"/>
   </header>
@@ -36,5 +36,5 @@
   <makefile>
     <file name="swarm_potential.c"/>
   </makefile>
-  
+
 </module>

@@ -52,16 +52,17 @@ void traffic_info_init(void)
   acs_idx = 2;
 }
 
-int parse_acinfo(){
+int parse_acinfo()
+{
   set_ac_info(DL_ACINFO_ac_id(dl_buffer),
-    DL_ACINFO_utm_east(dl_buffer),
-    DL_ACINFO_utm_north(dl_buffer),
-    DL_ACINFO_alt(dl_buffer)*10 + NAV_MSL0, // hack because ground station sends hmsl
-    DL_ACINFO_utm_zone(dl_buffer),
-    DL_ACINFO_course(dl_buffer),
-    DL_ACINFO_speed(dl_buffer),
-    DL_ACINFO_climb(dl_buffer),
-    DL_ACINFO_itow(dl_buffer));
+              DL_ACINFO_utm_east(dl_buffer),
+              DL_ACINFO_utm_north(dl_buffer),
+              DL_ACINFO_alt(dl_buffer) * 10 + NAV_MSL0, // hack because ground station sends hmsl
+              DL_ACINFO_utm_zone(dl_buffer),
+              DL_ACINFO_course(dl_buffer),
+              DL_ACINFO_speed(dl_buffer),
+              DL_ACINFO_climb(dl_buffer),
+              DL_ACINFO_itow(dl_buffer));
 
   return 1;
 }
@@ -72,7 +73,7 @@ struct ac_info_ *get_ac_info(uint8_t _id)
 }
 
 void set_ac_info(uint8_t id, uint32_t utm_east, uint32_t utm_north, uint32_t alt, uint8_t utm_zone, uint16_t course,
-                uint16_t gspeed, uint16_t climb, uint32_t itow)
+                 uint16_t gspeed, uint16_t climb, uint32_t itow)
 {
   if (acs_idx < NB_ACS) {
     if (id > 0 && the_acs_id[id] == 0) {    // new aircraft id

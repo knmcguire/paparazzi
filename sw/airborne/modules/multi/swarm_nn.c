@@ -50,8 +50,6 @@
 int8_t rssi[NB_ACS_ID];
 int8_t tx_strength[NB_ACS_ID];
 
-struct force_ potential_force;
-
 float max_hor_speed;
 float max_vert_speed;
 uint8_t use_height;
@@ -71,62 +69,19 @@ uint8_t use_height;
 abi_event ev;
 
 void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi);
-void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi) {
+void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi)
+{
   tx_strength[the_acs_id[_ac_id]] = _tx_strength;
   rssi[the_acs_id[_ac_id]] = _rssi;
 }
 
-#if PERIODIC_TELEMETRY
-#include "subsystems/datalink/telemetry.h"
-
-static void send_periodic(struct transport_tx *trans, struct link_device *dev) {
-  pprz_msg_send_POTENTIAL(trans, dev, AC_ID, &potential_force.east, &potential_force.north,
-                                &potential_force.alt, &potential_force.speed, &potential_force.climb);
-}
-
-#endif
-
 void swarm_nn_init(void)
 {
-  potential_force.east = 0.;
-  potential_force.north = 0.;
-  potential_force.alt = 0.;
-
-  potential_force.speed = 0.;
-  potential_force.climb = 0.;
-
   max_hor_speed = MAX_HOR_SPEED;
   max_vert_speed = MAX_VERT_SPEED;
   use_height = USE_HEIGHT;
 
   AbiBindMsgRSSI(ABI_BROADCAST, &ev, rssi_cb);
-
-#if PERIODIC_TELEMETRY
-  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GPS_SMALL, send_periodic);
-#endif
-}
-/*
- * Send my gps position to the other members of the swarm
- */
-void swarm_nn_periodic(void) {
-  /* The GPS messages are most likely too large to be send over either the datalink
-   * The local position is an int32 and the 11 LSBs of the x and y axis are compressed into
-   * a single integer. The z axis is considered unsigned and only the latter 10 LSBs are
-   * used.
-   */
-  uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(gps.course)/1e7)/2)) & 0x7FF) << 21; // bits 31-21 x position in cm
-  multiplex_speed |= (((uint32_t)(gps.gspeed)) & 0x7FF) << 10;         // bits 20-10 y position in cm
-  multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);               // bits 9-0 z position in cm
-
-  int16_t alt = (int16_t)(gps.lla_pos.alt/10);
-
-#ifdef EXTRA_DOWNLINK_DEVICE
-  DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat,
-                           &gps.lla_pos.lon, &alt);
-#else
-  DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.lla_pos.lat,
-                           &gps.lla_pos.lon, &alt);
-#endif
 }
 
 // the following does not include the bias neuron
@@ -136,16 +91,16 @@ static const uint8_t nr_output_neurons = 2;
 
 double input_layer_out[7]; //nr_input_neurons+1
 double hidden_layer_out[9]; //nr_hidden_neurons+1
-const double layer1_weights[7][8] =
-{
-{ -0.249, 0.6456, 0.2576, -0.0324,  -0.1644,  0.7892, -0.313, -0.5042,},
-{ 0.0736, 0.9582, 0.6542, 0.5952, -0.7244,  -0.367, -0.2034,  -0.3356,},
-{ 0.1306, -0.6844,  0.8562, 0.1484, -0.4876,  -0.345, -0.611, -0.7448,},
-{ 0.1306, -0.6844,  0.8562, 0.1484, -0.4876,  -0.345, -0.611, -0.7448,},
-{ 0.039,  0.5906, 0.822,  0.8968, 0.2194, -0.8234,  -0.0694,  -0.3796,},
-{ -0.044, -0.2248,  0.645,  -0.5442,  -0.5442,  -0.8088,  -0.67,  -0.9184,},
-{ -0.142, -0.363, 2.412,  -1.586, 0.041,  -1.86,  0.443,  1.194,},};
-    /* controid nn
+const double layer1_weights[7][8] = {
+  { -0.249, 0.6456, 0.2576, -0.0324,  -0.1644,  0.7892, -0.313, -0.5042,},
+  { 0.0736, 0.9582, 0.6542, 0.5952, -0.7244,  -0.367, -0.2034,  -0.3356,},
+  { 0.1306, -0.6844,  0.8562, 0.1484, -0.4876,  -0.345, -0.611, -0.7448,},
+  { 0.1306, -0.6844,  0.8562, 0.1484, -0.4876,  -0.345, -0.611, -0.7448,},
+  { 0.039,  0.5906, 0.822,  0.8968, 0.2194, -0.8234,  -0.0694,  -0.3796,},
+  { -0.044, -0.2248,  0.645,  -0.5442,  -0.5442,  -0.8088,  -0.67,  -0.9184,},
+  { -0.142, -0.363, 2.412,  -1.586, 0.041,  -1.86,  0.443,  1.194,},
+};
+/* controid nn
 {
 { 0.0066, 0.4742, 0.8316, -0.0842,  -0.563, 0.1264, -0.7996,  -0.0832,},
 { -0.0564,  0.2682, 0.0388, 0.009,  -0.075, 0.9812, -0.7254,  0.7934,},
@@ -156,17 +111,17 @@ const double layer1_weights[7][8] =
 */
 
 double layer2_out[2]; //nr_output_neurons
-const double layer2_weights[9][2] =
-{
-{ -0.3672,  -0.3484,},
-{ 0.3754, -0.537,},
-{ 0.886,  0.1956,},
-{ -0.1652,  0.684,},
-{ -0.1538,  -0.1288,},
-{ 0.4614, -0.0138,},
-{ 0.2718, 0.1088,},
-{ 0.1112, 0.0138,},
-{ -0.161, -0.072,},};
+const double layer2_weights[9][2] = {
+  { -0.3672,  -0.3484,},
+  { 0.3754, -0.537,},
+  { 0.886,  0.1956,},
+  { -0.1652,  0.684,},
+  { -0.1538,  -0.1288,},
+  { 0.4614, -0.0138,},
+  { 0.2718, 0.1088,},
+  { 0.1112, 0.0138,},
+  { -0.161, -0.072,},
+};
 
 /* controid nn
 {
@@ -181,25 +136,56 @@ const double layer2_weights[9][2] =
 { -0.2692,  0.053,},};
  */
 
-int swarm_nn_task(void)
+/*
+ * Send my gps position to the other members of the swarm
+ * Generate velocity commands based on relative position in swarm
+ * using a neural network
+ */
+void swarm_nn_periodic(void)
 {
-  struct EnuCoor_f speed_sp = {.x=0., .y=0., .z=0.};
+  // send my position to others in the swarm
 
-  // compute desired velocity
+  /* The GPS messages are most likely too large to be send over either the datalink
+   * The local position is an int32 and the 11 LSBs of the x and y axis are compressed into
+   * a single integer. The z axis is considered unsigned and only the latter 10 LSBs are
+   * used.
+   */
+  uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(gps.course) / 1e7) / 2)) & 0x7FF) <<
+                             21; // bits 31-21 x position in cm
+  multiplex_speed |= (((uint32_t)(gps.gspeed)) & 0x7FF) << 10;         // bits 20-10 y position in cm
+  multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);               // bits 9-0 z position in cm
+
+  int16_t alt = (int16_t)(gps.lla_pos.alt / 10);
+
+#ifdef EXTRA_DOWNLINK_DEVICE
+  DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat,
+                          &gps.lla_pos.lon, &alt);
+#else
+  DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.lla_pos.lat,
+                          &gps.lla_pos.lon, &alt);
+#endif
+
+
+  /* generate velocity setpoint */
+  struct EnuCoor_f speed_sp = {.x = 0., .y = 0., .z = 0.};
+
+  /* counters */
   uint8_t i, j;
 
-  if (gps.fix == 0){return 1;}
-  struct UtmCoor_i my_pos = *stateGetPositionUtm_i();//(get_ac_info(the_acs[1].ac_id))->utm;
-  //my_pos.zone = 0;
-  //utm_of_lla_i(&my_pos, &gps.lla_pos);
-
+  /* nn inputs */
   float rx = 0.;
   float ry = 0.;
   float rz = 0.;
   float d  = 0.;
 
+  if (gps.fix == 0) {return;}
+  struct UtmCoor_i my_pos = *stateGetPositionUtm_i();//(get_ac_info(the_acs[1].ac_id))->utm;
+  //my_pos.zone = 0;
+  //utm_of_lla_i(&my_pos, &gps.lla_pos);
+
   struct EnuCoor_f my_enu_pos = *stateGetPositionEnu_f();
 
+  // compute nn inputs
   for (i = 0; i < acs_idx; i++) {
     if (the_acs[i].ac_id == 0 || the_acs[i].ac_id == AC_ID) { continue; }
     struct ac_info_ * ac = get_ac_info(the_acs[i].ac_id);
@@ -207,85 +193,75 @@ int swarm_nn_task(void)
     // if AC not responding for too long, continue, else compute force
     //if(delta_t > 5) { continue; }
 
-    float de = (ac->utm.east - my_pos.east)/100.; // + sha * delta_t
-    float dn = (ac->utm.north - my_pos.north)/100.; // cha * delta_t
-    float da = (ac->utm.alt - my_pos.alt)/1000.; // ac->climb * delta_t   // currently wrong reference in other aircraft
+    float de = (ac->utm.east - my_pos.east) / 100.; // + sha * delta_t
+    float dn = (ac->utm.north - my_pos.north) / 100.; // cha * delta_t
+    float da = (ac->utm.alt - my_pos.alt) / 1000.; // ac->climb * delta_t   // currently wrong reference in other aircraft
 
     float dist2 = de * de + dn * dn;
-    if(use_height) dist2 += + da * da;
+    if (use_height) { dist2 += + da * da; }
 
     rx += de;
     ry += dn;
-    if(use_height) rz += da;
+    if (use_height) { rz += da; }
     d  += sqrtf(dist2);
   }
 
-  input_layer_out[0]= (double)rx;
-  input_layer_out[1]= (double)ry;
-  input_layer_out[2]= (double)rz;
-  input_layer_out[3]= (double)d;
-  input_layer_out[4]= 0;//(double)my_enu_pos.x;    // todo can add offset here later to move swarm centre
-  input_layer_out[5]= 0;//(double)my_enu_pos.y;
+  /* set nn inputs */
+  input_layer_out[0] = (double)rx;
+  input_layer_out[1] = (double)ry;
+  input_layer_out[2] = (double)rz;
+  input_layer_out[3] = (double)d;
+  input_layer_out[4] = 0; //(double)my_enu_pos.x;    // todo can add offset here later to move swarm centre
+  input_layer_out[5] = 0; //(double)my_enu_pos.y;
   input_layer_out[nr_input_neurons] = 1.;   // bias neuron
 
-  for (i = 0; i < nr_hidden_neurons; i++)
-  {
+  /* Compute output for hidden layer */
+  for (i = 0; i < nr_hidden_neurons; i++) {
     hidden_layer_out[i] = 0.;
-    for (j = 0; j <= nr_input_neurons; j++)
-    {
-      hidden_layer_out[i] += input_layer_out[j]*layer1_weights[j][i];
+    for (j = 0; j <= nr_input_neurons; j++) {
+      hidden_layer_out[i] += input_layer_out[j] * layer1_weights[j][i];
     }
     hidden_layer_out[i] = tanh(hidden_layer_out[i]);
   }
 
+  /* Compute output for ouput layer */
   hidden_layer_out[nr_hidden_neurons] = 1.;  // set bias node
-  for (i = 0; i < nr_output_neurons; i++)
-  {
+  for (i = 0; i < nr_output_neurons; i++) {
     layer2_out[i] = 0.;
-    for (j = 0; j <= nr_hidden_neurons; j++)
-    {
-      layer2_out[i] += hidden_layer_out[j]*layer2_weights[j][i];
+    for (j = 0; j <= nr_hidden_neurons; j++) {
+      layer2_out[i] += hidden_layer_out[j] * layer2_weights[j][i];
     }
     layer2_out[i] = tanh(layer2_out[i]);
   }
 
-  speed_sp.x = max_hor_speed*(float)layer2_out[0];
-  speed_sp.y = max_hor_speed*(float)layer2_out[1];
+  /* scale output to max speed setting */
+  speed_sp.x = max_hor_speed * (float)layer2_out[0];
+  speed_sp.y = max_hor_speed * (float)layer2_out[1];
+  if (use_height && nr_output_neurons > 2) {
+    speed_sp.z = max_vert_speed * (float)layer2_out[2];
+  }
 
-  if(use_height && nr_output_neurons > 2) speed_sp.z = max_vert_speed*(float)layer2_out[2];
+  /* extra safety check (not strictly required) */
+  BoundAbs(speed_sp.x, max_hor_speed);
+  BoundAbs(speed_sp.y, max_hor_speed);
+  BoundAbs(speed_sp.z, max_vert_speed);
 
-  // limit commands
-  BoundAbs(speed_sp.x, 1);
-  BoundAbs(speed_sp.y, 1);
-  BoundAbs(speed_sp.z, 1);
+  /* set speed */
+  autopilot_guided_move_ned(speed_sp.y, speed_sp.x, speed_sp.z, 0);
 
-  // todo update debug message with altitude stats
-  potential_force.east = speed_sp.x;
-  potential_force.north = speed_sp.y;
-  potential_force.alt = rx;
-
-  potential_force.speed = ry;
-  potential_force.climb = d;
-
-  autopilot_guided_move_ned(speed_sp.y, speed_sp.x, speed_sp.z, 0);    // speed in enu
-
+  /* send log data to gs */
   struct ac_info_ * ac1 = get_ac_info(the_acs[2].ac_id);
   struct ac_info_ * ac2 = get_ac_info(the_acs[3].ac_id);
 
-  int32_t tempx1 = ac1->utm.east - my_pos.east;
-  int32_t tempy1 = ac1->utm.north - my_pos.north;
-  int32_t tempx2 = ac2->utm.east - my_pos.east;
-  int32_t tempy2 = ac2->utm.north - my_pos.north;
+  int32_t tempx1 = (ac1->utm.east  - my_pos.east);
+  int32_t tempy1 = (ac1->utm.north - my_pos.north);
+  int32_t tempx2 = (ac2->utm.east  - my_pos.east);
+  int32_t tempy2 = (ac2->utm.north - my_pos.north);
 
-  float dist1 = sqrtf((float)(tempx1*tempx1)/10000. + ((float)(tempy1*tempy1))/10000.);
-  float dist2 = sqrtf((float)(tempx2*tempx2)/10000. + ((float)(tempy2*tempy2))/10000.);
+  DOWNLINK_SEND_SWARMNN(DefaultChannel, DefaultDevice, &speed_sp.x, &speed_sp.y, &speed_sp.z,
+                        &rx, &ry, &rz, &d,
+                        &my_enu_pos.x, &my_enu_pos.y, &my_enu_pos.z,
+                        &ac1->ac_id, &tempx1, &tempy1,
+                        &ac2->ac_id, &tempx2, &tempy2);
 
-  DOWNLINK_SEND_AC_INFO(DefaultChannel, DefaultDevice, &ac1->ac_id, &tempx1, &tempy1,
-                          &ac2->ac_id, &tempx2, &tempy2);
-
-  DOWNLINK_SEND_SWARMNN(DefaultChannel, DefaultDevice, &potential_force.east, &potential_force.north,
-                                  &potential_force.alt, &potential_force.speed, &potential_force.climb,
-                                  &my_enu_pos.x, &my_enu_pos.y, &dist1, &dist2);
-
-  return 1;
 }

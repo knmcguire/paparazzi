@@ -858,7 +858,7 @@
     <field name="data_rate" type="uint32" unit="bytes/s"/>
     <field name="A2A_msg_rate" type="uint32"/>
   </message>
-  
+
   <!--107 is free -->
   <message name="PIKSI_HEARTBEAT" id="108">
     <field name="heartbeat" type="uint32"/>
@@ -1991,15 +1991,22 @@
   </message>
 
   <message name="SWARMNN" id="230">
-    <field name="east" type="float"/>
-    <field name="north" type="float"/>
-    <field name="alt" type="float"/>
-    <field name="speed" type="float"/>
-    <field name="climb" type="float"/>
-    <field name="pos_x" type="float"/>
-    <field name="pos_y" type="float"/>
-    <field name="dist1" type="float"/>
-    <field name="dist2" type="float"/>
+    <field name="speed_sp_x" type="float"/>
+    <field name="speed_sp_y" type="float"/>
+    <field name="speed_sp_z" type="float"/>
+    <field name="rx" type="float"/>
+    <field name="ry" type="float"/>
+    <field name="rz" type="float"/>
+    <field name="d" type="float"/>
+    <field name="my_pos_x" type="float"/>
+    <field name="my_pos_y" type="float"/>
+    <field name="my_pos_z" type="float"/>
+    <field name="ac_id1" type="uint8" ></field>
+    <field name="pox1x"  type="int32" unit="cm" alt_unit="m" alt_unit_coef="0.01"></field>
+    <field name="pox1y"  type="int32" unit="cm" alt_unit="m" alt_unit_coef="0.01"></field>
+    <field name="ac_id2" type="uint8" ></field>
+    <field name="pox2x"  type="int32" unit="cm" alt_unit="m" alt_unit_coef="0.01"></field>
+    <field name="pox2y"  type="int32" unit="cm" alt_unit="m" alt_unit_coef="0.01"></field>
   </message>
 
   <message name="ROTORCRAFT_STATUS" id="231">
@@ -2172,15 +2179,8 @@
       <field name="yaw_c"  type="float"/>
   </message>
 
-  <message name="AC_INFO" id="251">
-    <field name="ac_id1" type="uint8" ></field>
-    <field name="pox1x"  type="int32" unit="cm" alt_unit="m" alt_unit_coef="0.01"></field>
-    <field name="pox1y"  type="int32" unit="cm" alt_unit="m" alt_unit_coef="0.01"></field>
-    <field name="ac_id2" type="uint8" ></field>
-    <field name="pox2x"  type="int32" unit="cm" alt_unit="m" alt_unit_coef="0.01"></field>
-    <field name="pox2y"  type="int32" unit="cm" alt_unit="m" alt_unit_coef="0.01"></field>
-  </message>
-  
+   <!--251 is free -->
+
    <message name="GPS_SMALL" id="252">
     <field name="multiplex_speed"  type="uint32">bits 31-21 course in decideg : bits 20-10 ground speed in cm/s : bits 9-0 climb speed in cm/s</field>
     <field name="lla_lat"  type="int32" unit="1e7deg" alt_unit="deg" alt_unit_coef="0.0000001"></field>

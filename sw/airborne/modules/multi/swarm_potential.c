@@ -83,7 +83,8 @@ bool use_waypoint;
 abi_event ev;
 
 void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi);
-void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi) {
+void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi)
+{
   tx_strength[the_acs_id[_ac_id]] = _tx_strength;
   rssi[the_acs_id[_ac_id]] = _rssi;
 }
@@ -101,9 +102,10 @@ float sign(float x)
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
 
-static void send_periodic(struct transport_tx *trans, struct link_device *dev) {
+static void send_periodic(struct transport_tx *trans, struct link_device *dev)
+{
   pprz_msg_send_POTENTIAL(trans, dev, AC_ID, &potential_force.east, &potential_force.north,
-                                &potential_force.alt, &potential_force.speed, &potential_force.climb);
+                          &potential_force.alt, &potential_force.speed, &potential_force.climb);
 }
 
 #endif
@@ -131,17 +133,19 @@ void swarm_potential_init(void)
 /*
  * Send my gps position to the other members of the swarm
  */
-void swarm_potential_periodic(void) {
+void swarm_potential_periodic(void)
+{
   /* The GPS messages are most likely too large to be send over either the datalink
    * The local position is an int32 and the 11 LSBs of the x and y axis are compressed into
    * a single integer. The z axis is considered unsigned and only the latter 10 LSBs are
    * used.
    */
-  uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(gps.course)/1e7)/2)) & 0x7FF) << 21; // bits 31-21 x position in cm
+  uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(gps.course) / 1e7) / 2)) & 0x7FF) <<
+                             21; // bits 31-21 x position in cm
   multiplex_speed |= (((uint32_t)(gps.gspeed)) & 0x7FF) << 10;         // bits 20-10 y position in cm
   multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);               // bits 9-0 z position in cm
 
-  int16_t alt = (int16_t)(gps.lla_pos.alt/10);
+  int16_t alt = (int16_t)(gps.lla_pos.alt / 10);
 
   //DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.lla_pos.lat,
   //                        &gps.lla_pos.lon, &alt);
@@ -149,13 +153,13 @@ void swarm_potential_periodic(void) {
 
 int swarm_potential_task(void)
 {
-  struct EnuCoor_f speed_sp = {.x=0., .y=0., .z=0.};
+  struct EnuCoor_f speed_sp = {.x = 0., .y = 0., .z = 0.};
 
   // compute desired velocity
   int8_t nb = 0;
   uint8_t i;
 
-  if (gps.fix == 0){return 1;}
+  if (gps.fix == 0) {return 1;}
   struct UtmCoor_i my_pos;
   my_pos.zone = 0;
   utm_of_lla_i(&my_pos, &gps.lla_pos);
@@ -167,20 +171,20 @@ int swarm_potential_task(void)
     // if AC not responding for too long, continue, else compute force
     //if(delta_t > 5) { continue; }
 
-    float de = (ac->utm.east - my_pos.east)/100.; // + sha * delta_t
-    float dn = (ac->utm.north - my_pos.north)/100.; // cha * delta_t
-    float da = (ac->utm.alt - my_pos.alt)/1000.; // ac->climb * delta_t   // currently wrong reference in other aircraft
+    float de = (ac->utm.east - my_pos.east) / 100.; // + sha * delta_t
+    float dn = (ac->utm.north - my_pos.north) / 100.; // cha * delta_t
+    float da = (ac->utm.alt - my_pos.alt) / 1000.; // ac->climb * delta_t   // currently wrong reference in other aircraft
     float dist2 = de * de + dn * dn;// + da * da;
     if (dist2 == 0.) {continue;}
 
     float dist = sqrtf(dist2);
 
     // potential force equation: x^2 - d0^3/x
-    float force = dist2 - TARGET_DIST3/dist;
+    float force = dist2 - TARGET_DIST3 / dist;
 
-    potential_force.east = (de*force)/dist;
-    potential_force.north= (dn*force)/dist;
-    potential_force.alt = (da*force)/dist;
+    potential_force.east = (de * force) / dist;
+    potential_force.north = (dn * force) / dist;
+    potential_force.alt = (da * force) / dist;
 
     // set carrot
     // include speed of other vehicles for swarm cohesion
@@ -197,7 +201,7 @@ int swarm_potential_task(void)
   }
 
   // add waypoint force to get vehicle to waypoint
-  if (use_waypoint){
+  if (use_waypoint) {
     struct EnuCoor_f my_enu = *stateGetPositionEnu_f();
 
     float de = waypoint_get_x(SP_WP) - my_enu.x;
@@ -207,16 +211,16 @@ int swarm_potential_task(void)
     float dist2 = de * de + dn * dn;// + da * da;
     if (dist2 > 0.01) {   // add deadzone of 10cm from goal
       float dist = sqrtf(dist2);
-      float force = 2*dist2;
+      float force = 2 * dist2;
 
       // higher attractive potential to get to goal when close by
-      if (dist < 1.){
-        force = 2*dist;
+      if (dist < 1.) {
+        force = 2 * dist;
       }
 
-      potential_force.east  = force*de/dist;
-      potential_force.north = force*dn/dist;
-      potential_force.alt   = force*da/dist;
+      potential_force.east  = force * de / dist;
+      potential_force.north = force * dn / dist;
+      potential_force.alt   = force * da / dist;
 
       speed_sp.x += force_hor_gain * potential_force.east;
       speed_sp.y += force_hor_gain * potential_force.north;

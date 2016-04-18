@@ -40,9 +40,9 @@ extern struct pprz_transport extra_pprz_tp;
 
 /* Datalink Event */
 
-#define ExtraDatalinkEvent() {                        		\
-    pprz_check_and_parse(&(EXTRA_DOWNLINK_DEVICE).device, &extra_pprz_tp, dl_buffer, (uint8_t*)(&dl_msg_available)); \
-    DlCheckAndParse();                                  	\
+#define ExtraDatalinkEvent() {                            \
+    pprz_check_and_parse(&(EXTRA_DOWNLINK_DEVICE.device), &extra_pprz_tp, dl_buffer, (uint8_t*)(&dl_msg_available)); \
+    DlCheckAndParse();                                    \
   }
 
 /** Init function */
