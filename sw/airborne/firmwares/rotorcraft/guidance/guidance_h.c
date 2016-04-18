@@ -327,12 +327,19 @@ void guidance_h_read_rc(bool  in_flight)
 	 break;
     case GUIDANCE_H_MODE_HOVER:
 	 stabilization_attitude_read_rc_setpoint_eulers(&guidance_h.rc_sp, in_flight, FALSE, FALSE);
+	 if (ra_active) {
+        guidance_h_traj_run_speed(in_flight); // < does NOT set guidance_h_cmd_earth, but the pitch & roll setpoints directly
+        SetBit(guidance_h.sp.mask, 4);
+        SetBit(guidance_h.sp.mask, 5);
+      }
+      else {
 #if GUIDANCE_H_USE_SPEED_REF
-	 read_rc_setpoint_speed_i(&guidance_h.sp.speed, in_flight);
-	 /* enable x,y velocity setpoints */
-	 SetBit(guidance_h.sp.mask, 4);
-	 SetBit(guidance_h.sp.mask, 5);
+        read_rc_setpoint_speed_i(&guidance_h.sp.speed, in_flight);
+        /* enable x,y velocity setpoints */
+        SetBit(guidance_h.sp.mask, 4);
+        SetBit(guidance_h.sp.mask, 5);
 #endif
+      }
 	 break;
 
 #if GUIDANCE_H_MODE_MODULE_SETTING == GUIDANCE_H_MODE_MODULE
@@ -507,63 +514,80 @@ double vX_err_integral;
 double vY_err_integral;
 
 static void guidance_h_traj_run_speed(bool in_flight) 
-{
-   /* maximum bank angle: default 20 deg*/
-   static const int32_t traj_max_bank = Max(BFP_OF_REAL(GUIDANCE_H_MAX_BANK, INT32_ANGLE_FRAC),
-					  BFP_OF_REAL(RadOfDeg(GUIDANCE_H_MAX_BANK), INT32_ANGLE_FRAC));
-   //static const int32_t total_max_bank = BFP_OF_REAL(RadOfDeg(45), INT32_ANGLE_FRAC);
-	if (in_flight) {
-	   float vRefX = raavoid_speed_f.x; 
-	   float vRefY = raavoid_speed_f.y;
+{	
+	if (in_flight && guidance_h.mode == GUIDANCE_H_MODE_NAV) {
+		/* maximum bank angle: default 20 deg*/
+		static const int32_t traj_max_bank = Max(BFP_OF_REAL(GUIDANCE_H_MAX_BANK, INT32_ANGLE_FRAC),
+			BFP_OF_REAL(RadOfDeg(GUIDANCE_H_MAX_BANK), INT32_ANGLE_FRAC));
+		float vRefX = raavoid_speed_f.x; 
+		float vRefY = raavoid_speed_f.y;
 
-	   // Velocity derivative
-	   float vXDeriv = stateGetSpeedNed_f()->x - vX_last;
-	   float vYDeriv = stateGetSpeedNed_f()->y - vY_last;
-	   
-	   vX_last = stateGetSpeedNed_f()->x;
-	   vY_last = stateGetSpeedNed_f()->y;
+		// Velocity derivative
+		float vXDeriv = stateGetSpeedNed_f()->x - vX_last;
+		float vYDeriv = stateGetSpeedNed_f()->y - vY_last;
 
-	   // Add damping to the commanded velocity
-	   float guidance_h_velocity_feedback_dgain = 1;
-	   vRefX += (((double)guidance_h_velocity_feedback_dgain)/100)*vXDeriv;
-	   vRefY += (((double)guidance_h_velocity_feedback_dgain)/100)*vYDeriv;
+		vX_last = stateGetSpeedNed_f()->x;
+		vY_last = stateGetSpeedNed_f()->y;
 
-	   // Velocity error - FLOAT
-	   float vX_err = vRefX - stateGetSpeedNed_f()->x;
-	   float vY_err = vRefY - stateGetSpeedNed_f()->y;
+		// Add damping to the commanded velocity
+		float guidance_h_velocity_feedback_dgain = 1;
+		vRefX += (((double)guidance_h_velocity_feedback_dgain)/100)*vXDeriv;
+		vRefY += (((double)guidance_h_velocity_feedback_dgain)/100)*vYDeriv;
 
-	   // Derivative of the velocity error - FLOAT (NEEDS TIME SCALING)
-	   float vX_err_dot = vX_err - vX_err_last;
-	   float vY_err_dot = vY_err - vY_err_last;
+		// Velocity error - FLOAT
+		float vX_err = vRefX - stateGetSpeedNed_f()->x;
+		float vY_err = vRefY - stateGetSpeedNed_f()->y;
 
-	   // Integral of the velocity error
-	   vX_err_integral += vX_err;
-	   vY_err_integral += vY_err;
+		// Derivative of the velocity error - FLOAT (NEEDS TIME SCALING)
+		float vX_err_dot = vX_err - vX_err_last;
+		float vY_err_dot = vY_err - vY_err_last;
 
-	   vX_err_last = vX_err;
-	   vY_err_last = vY_err;
+		// Integral of the velocity error
+		vX_err_integral += vX_err;
+		vY_err_integral += vY_err;
 
-	   float guidance_h_vPgain = 30;
-	   float guidance_h_vIgain = 30;
-	   float guidance_h_vDgain = 1;
-	   
-	   float pd_x = vX_err*(((double)guidance_h_vPgain)/100.0f) +
-				 vX_err_integral*(((double)guidance_h_vIgain)/100000.0f) + 
-				 vX_err_dot*(((double)guidance_h_vDgain)/100.0f);
+		vX_err_last = vX_err;
+		vY_err_last = vY_err;
 
-	   float pd_y = vY_err*(((double)guidance_h_vPgain)/100.0f) +
-				 vY_err_integral*(((double)guidance_h_vIgain)/100000.0f)+
-				 vY_err_dot*(((double)guidance_h_vDgain)/100.0f);
+		float guidance_h_vPgain = 30;
+		float guidance_h_vIgain = 30;
+		float guidance_h_vDgain = 1;
 
-	   struct Int32Vect2  attitudeSetpoint;
-	   attitudeSetpoint.x = ANGLE_BFP_OF_REAL(pd_x);
-	   attitudeSetpoint.y = ANGLE_BFP_OF_REAL(pd_y);
+		float pd_x = vX_err*(((double)guidance_h_vPgain)/100.0f) +
+		vX_err_integral*(((double)guidance_h_vIgain)/100000.0f) + 
+		vX_err_dot*(((double)guidance_h_vDgain)/100.0f);
 
-	  /* trim max bank angle from PD */
-	   VECT2_STRIM(attitudeSetpoint, -traj_max_bank, traj_max_bank);
-	   INT_VECT2_ZERO(guidance_h_trim_att_integrator);
-	   quat_from_earth_cmd_i(&stab_att_sp_quat, &attitudeSetpoint, guidance_h.sp.heading);
+		float pd_y = vY_err*(((double)guidance_h_vPgain)/100.0f) +
+		vY_err_integral*(((double)guidance_h_vIgain)/100000.0f)+
+		vY_err_dot*(((double)guidance_h_vDgain)/100.0f);
+
+		struct Int32Vect2  attitudeSetpoint;
+		attitudeSetpoint.x = ANGLE_BFP_OF_REAL(pd_x);
+		attitudeSetpoint.y = ANGLE_BFP_OF_REAL(pd_y);
+
+		/* trim max bank angle from PD */
+		VECT2_STRIM(attitudeSetpoint, -traj_max_bank, traj_max_bank);
+		INT_VECT2_ZERO(guidance_h_trim_att_integrator);
+		quat_from_earth_cmd_i(&stab_att_sp_quat, &attitudeSetpoint, guidance_h.sp.heading);
 	}
+	
+	if (in_flight && guidance_h.mode == GUIDANCE_H_MODE_HOVER) {
+		int64_t rc_x = SPEED_BFP_OF_REAL(raavoid_speed_f.x);
+		int64_t rc_y = SPEED_BFP_OF_REAL(raavoid_speed_f.y);
+
+		/* Rotate from body to NED frame by negative psi angle */
+		int32_t psi = stateGetNedToBodyEulers_i()->psi;
+		int32_t s_psi, c_psi;
+		PPRZ_ITRIG_SIN(s_psi, psi);
+		PPRZ_ITRIG_COS(c_psi, psi);
+		guidance_h.sp.speed.x = (int32_t)(((int64_t)c_psi * rc_x + (int64_t)s_psi * rc_y) >> INT32_TRIG_FRAC);
+		guidance_h.sp.speed.y = (int32_t)((-(int64_t)s_psi * rc_x + (int64_t)c_psi * rc_y) >> INT32_TRIG_FRAC);
+	} 
+	else {
+		guidance_h.sp.speed.x = 0;
+		guidance_h.sp.speed.y = 0;
+	}
+
 }
 
 #if !GUIDANCE_INDI

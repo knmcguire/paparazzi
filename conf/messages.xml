@@ -197,9 +197,11 @@
   </message>
 
   <message name="RAFILTERDATA" id="24">
+    <description>Relative localization data for other tracked MAVs in terms of x y and z in the body axis</description>
     <field name="trackedID"     type="uint8"    unit=""/>
     <field name="x_pos"         type="float"    unit="m"/>
     <field name="y_pos"         type="float"    unit="m"/>
+    <field name="z_pos"         type="float"    unit="m"/>
   </message>
 
   <message name="SVINFO" id="25">

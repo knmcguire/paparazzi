@@ -2,6 +2,7 @@
 #define RANDOMGENERATOR_H
 
 #include "stdlib.h"
+#include "math.h"
 
 /* Initilizer function.
 
@@ -16,5 +17,8 @@ extern float getrand_float(float min, float max);
 
 /* Get a random value of type int between a min and a max */
 extern int getrand_int(int min, int max);
+
+/* Get a random value of type int between a min and a max */
+extern float rand_normal(float mean, float stddev);
 
 #endif
