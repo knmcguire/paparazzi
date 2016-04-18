@@ -105,6 +105,10 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   gps_datalink.hmsl = ltp_def.hmsl + enu_pos.z * 10;
   SetBit(gps_datalink.valid_fields, GPS_VALID_HMSL_BIT);
 
+  utm_of_lla_i(&gps_datalink.utm_pos, &gps_datalink.lla_pos);
+  gps_datalink.utm_pos.alt = gps_datalink.hmsl;
+  SetBit(gps_datalink.valid_fields, GPS_VALID_POS_UTM_BIT);
+
   gps_datalink.course = ((int32_t)heading) * 1e3;
   SetBit(gps_datalink.valid_fields, GPS_VALID_COURSE_BIT);
 
@@ -135,6 +139,10 @@ void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t e
 
   gps_datalink.hmsl        = hmsl;
   SetBit(gps_datalink.valid_fields, GPS_VALID_HMSL_BIT);
+
+  utm_of_lla_i(&gps_datalink.utm_pos, &gps_datalink.lla_pos);
+  gps_datalink.utm_pos.alt = gps_datalink.hmsl;
+  SetBit(gps_datalink.valid_fields, GPS_VALID_POS_UTM_BIT);
 
   gps_datalink.ecef_pos.x = ecef_x;
   gps_datalink.ecef_pos.y = ecef_y;

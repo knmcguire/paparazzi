@@ -488,15 +488,15 @@ void parse_ins_msg(void)
         if (code2 == 0x10) {
           //gps.hmsl = XSENS_DATA_Altitude_h(xsens_msg_buf,offset)* 1000.0f;
         } else if (code2 == 0x20) {
-          // Altitude Elipsoid
-          gps.utm_pos.alt = XSENS_DATA_Altitude_h(xsens_msg_buf, offset) * 1000.0f;
-
           // Compute geoid (MSL) height
           float geoid_h = wgs84_ellipsoid_to_geoid(lla_f.lat, lla_f.lon);
-          gps.hmsl =  gps.utm_pos.alt - (geoid_h * 1000.0f);
+          gps.hmsl =  XSENS_DATA_Altitude(xsens_msg_buf, offset) - (geoid_h * 1000.0f);
           SetBit(gps.valid_fields, GPS_VALID_HMSL_BIT);
 
-          //gps.tow = geoid_h * 1000.0f; //gps.utm_pos.alt;
+          // Altitude msl
+          gps.utm_pos.alt = gps.hmsl;
+
+          //gps.tow = geoid_h * 1000.0f;
         } else if (code2 == 0x40) {
           // LatLong
 #ifdef GPS_LED
@@ -505,18 +505,13 @@ void parse_ins_msg(void)
           gps.last_3dfix_ticks = sys_time.nb_sec_rem;
           gps.last_3dfix_time = sys_time.nb_sec;
           gps.week = 0; // FIXME
-          lla_f.lat = RadOfDeg(XSENS_DATA_LatLon_lat(xsens_msg_buf, offset));
-          lla_f.lon = RadOfDeg(XSENS_DATA_LatLon_lon(xsens_msg_buf, offset));
+          gps.lla_pos.lat = EM7DEG_OF_DEG(XSENS_DATA_LatLon_lat(xsens_msg_buf, offset));
+          gps.lla_pos.lon = EM7DEG_OF_DEG(XSENS_DATA_LatLon_lon(xsens_msg_buf, offset));
+          SetBit(gps.valid_fields, GPS_VALID_POS_LLA_BIT);
 
-          // Set the real UTM zone
-          gps.utm_pos.zone = (DegOfRad(lla_f.lon) + 180) / 6 + 1;
-
-          utm_f.zone = nav_utm_zone0;
-          // convert to utm
-          utm_of_lla_f(&utm_f, &lla_f);
-          // copy results of utm conversion
-          gps.utm_pos.east = utm_f.east * 100;
-          gps.utm_pos.north = utm_f.north * 100;
+          /* Set the real UTM zone */
+          gps.utm_pos.zone = UtmZoneOfLlaLonDeg(gps.lla_pos.lon);
+          utm_of_lla_i(gps.utm_pos, gps.lla_pos);
           SetBit(gps.valid_fields, GPS_VALID_POS_UTM_BIT);
 
           gps_xsens_publish();

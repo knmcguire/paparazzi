@@ -86,7 +86,7 @@ struct EnuCoor_i {
 struct UtmCoor_i {
   int32_t north; ///< in centimeters
   int32_t east;  ///< in centimeters
-  int32_t alt;   ///< in millimeters above WGS84 reference ellipsoid
+  int32_t alt;   ///< in millimeters above mean sea level (geoid)
   uint8_t zone;  ///< UTM zone number
 };
 

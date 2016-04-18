@@ -20,28 +20,22 @@
 /**
  * @file "modules/multi/swarm_nn.c"
  * @author Kirk Scheper
- * This module is generates a command to avoid other vehicles based on their relative gps location
+ * Neural network based swarming algorithm
  */
 
 #include "modules/multi/swarm_nn.h"
-#include "subsystems/gps.h"
-#include "subsystems/gps/gps_datalink.h"
-#include "subsystems/datalink/downlink.h"
-#include "state.h"
-#include "navigation.h"
 
-#include "generated/flight_plan.h"
+#include "generated/airframe.h"             // AC_ID
+#include "subsystems/datalink/downlink.h"   // DefaultChannel, DefaultDevice
 
-#include "math/pprz_geodetic_int.h"
-#include "math/pprz_geodetic_double.h"
+#include "subsystems/gps.h"                 // gps
+#include "state.h"                          // my position
 
-#include "autopilot.h"
+#include "autopilot.h"                      // autopilot_guided_move_ned
 
-#include "modules/multi/traffic_info.h"
+#include "modules/multi/traffic_info.h"     // other aircraft info
 
-#include "generated/airframe.h"           // AC_ID
-
-#include "subsystems/abi.h"               // rssi
+#include "subsystems/abi.h"                 // rssi messages subscription
 
 #ifdef EXTRA_DOWNLINK_DEVICE
 #include "modules/datalink/extra_pprz_dl.h"
@@ -81,6 +75,7 @@ void swarm_nn_init(void)
   max_vert_speed = MAX_VERT_SPEED;
   use_height = USE_HEIGHT;
 
+  /* register for rssi messages */
   AbiBindMsgRSSI(ABI_BROADCAST, &ev, rssi_cb);
 }
 

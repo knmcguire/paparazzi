@@ -57,7 +57,7 @@ int parse_acinfo()
   set_ac_info(DL_ACINFO_ac_id(dl_buffer),
               DL_ACINFO_utm_east(dl_buffer),
               DL_ACINFO_utm_north(dl_buffer),
-              DL_ACINFO_alt(dl_buffer) * 10 + NAV_MSL0, // hack because ground station sends hmsl
+              DL_ACINFO_alt(dl_buffer) * 10,
               DL_ACINFO_utm_zone(dl_buffer),
               DL_ACINFO_course(dl_buffer),
               DL_ACINFO_speed(dl_buffer),

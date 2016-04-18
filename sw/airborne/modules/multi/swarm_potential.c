@@ -27,8 +27,6 @@
 #include "subsystems/gps.h"
 #include "subsystems/gps/gps_datalink.h"
 #include "subsystems/datalink/downlink.h"
-//#include "guidance/guidance_h.h"
-//#include "guidance/guidance_v.h"
 #include "state.h"
 #include "navigation.h"
 
@@ -36,11 +34,6 @@
 
 #include "math/pprz_geodetic_int.h"
 #include "math/pprz_geodetic_double.h"
-
-//#include "math/pprz_algebra_float.h"
-//#include "math/pprz_algebra_int.h"
-//#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
-//#include "firmwares/rotorcraft/guidance/guidance_v.h"
 
 #include "autopilot.h"
 
@@ -162,7 +155,7 @@ int swarm_potential_task(void)
   if (gps.fix == 0) {return 1;}
   struct UtmCoor_i my_pos;
   my_pos.zone = 0;
-  utm_of_lla_i(&my_pos, &gps.lla_pos);
+  utm_of_lla_i(&my_pos, &gps.lla_pos);    // TODO update height to hmsl
 
   for (i = 0; i < acs_idx; i++) {
     if (the_acs[i].ac_id == 0 || the_acs[i].ac_id == AC_ID) { continue; }
@@ -249,18 +242,6 @@ int swarm_potential_task(void)
   potential_force.alt   = speed_sp.z;
 
   autopilot_guided_move_ned(speed_sp.y, speed_sp.x, 0, 0);    // speed in enu
-  /*
-  struct EnuCoor_f delta_pos;
-  VECT3_SDIV(delta_pos, speed_sp, NAV_FREQ);
-
-  struct EnuCoor_f new_wp;
-  new_wp.x = waypoint_get_x(SP_WP) + delta_pos.x;
-  new_wp.y = waypoint_get_y(SP_WP) + delta_pos.y;
-  new_wp.z = waypoint_get_alt(SP_WP) + delta_pos.z;
-
-
-  waypoint_set_enu(SP_WP, &new_wp);*/
-  //navigation_update_wp_from_speed(, speed_sp, 0);
 
   return 1;
 }

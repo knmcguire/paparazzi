@@ -20,23 +20,13 @@
 /**
  * @file "modules/multi/swarm_nn.h"
  * @author Kirk Scheper
- * This module is generates a command to avoid other vehicles based on their relative gps location
+ * Neural network based swarming algorithm
  */
 
 #ifndef SWARM_NN_H
 #define SWARM_NN_H
 
 #include "math/pprz_algebra_int.h"
-
-struct force_ {
-  float east;
-  float north;
-  float alt;
-  float speed;
-  float climb;
-};
-
-extern struct force_ potential_force;
 
 extern float max_hor_speed;
 extern float max_vert_speed;

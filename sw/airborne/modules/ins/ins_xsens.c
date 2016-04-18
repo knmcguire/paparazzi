@@ -536,32 +536,30 @@ void parse_ins_msg(void)
 
       gps.week = 0; // FIXME
       gps.tow = XSENS_DATA_RAWGPS_itow(xsens_msg_buf, offset) * 10;
+
+      // Compute geoid (MSL) height
+      float hmsl = wgs84_ellipsoid_to_geoid(lla_f.lat, lla_f.lon);
+      gps.hmsl =  XSENS_DATA_RAWGPS_alt(xsens_msg_buf, offset) - (hmsl * 1000.0f);
+      SetBit(gps.valid_fields, GPS_VALID_HMSL_BIT);
+
       gps.lla_pos.lat = XSENS_DATA_RAWGPS_lat(xsens_msg_buf, offset);
       gps.lla_pos.lon = XSENS_DATA_RAWGPS_lon(xsens_msg_buf, offset);
       gps.lla_pos.alt = XSENS_DATA_RAWGPS_alt(xsens_msg_buf, offset);
       SetBit(gps.valid_fields, GPS_VALID_POS_LLA_BIT);
 
       /* Set the real UTM zone */
-      gps.utm_pos.zone = (gps.lla_pos.lon / 1e7 + 180) / 6 + 1;
-      LLA_FLOAT_OF_BFP(lla_f, gps.lla_pos);
-      utm_f.zone = nav_utm_zone0;
-      /* convert to utm */
-      utm_of_lla_f(&utm_f, &lla_f);
-      /* copy results of utm conversion */
-      gps.utm_pos.east = utm_f.east * 100;
-      gps.utm_pos.north = utm_f.north * 100;
-      gps.utm_pos.alt = gps.lla_pos.alt;
+      gps.utm_pos.zone = UtmZoneOfLlaLonDeg(gps.lla_pos.lon);
+      utm_of_lla_i(gps.utm_pos, gps.lla_pos);
+      gps.utm_pos.alt = gps.hmsl;
       SetBit(gps.valid_fields, GPS_VALID_POS_UTM_BIT);
 
+      LLA_FLOAT_OF_BFP(lla_f, gps.lla_pos);
+      utm_f.zone = nav_utm_zone0;   // todo, what if origin reinitialised
+      utm_of_lla_f(&utm_f, &lla_f);
       ins_x = utm_f.east;
       ins_y = utm_f.north;
       // Altitude: Xsens LLH gives ellipsoid height
-      ins_z = -(INS_FORMAT)XSENS_DATA_RAWGPS_alt(xsens_msg_buf, offset) / 1000.;
-
-      // Compute geoid (MSL) height
-      float hmsl = wgs84_ellipsoid_to_geoid(lla_f.lat, lla_f.lon);
-      gps.hmsl =  XSENS_DATA_RAWGPS_alt(xsens_msg_buf, offset) - (hmsl * 1000.0f);
-      SetBit(gps.valid_fields, GPS_VALID_HMSL_BIT);
+      ins_z = -(INS_FORMAT)XSENS_DATA_RAWGPS_alt(xsens_msg_buf, offset) / 1000.;  // shouldn't this be in hmsl?
 
       ins_vx = ((INS_FORMAT)XSENS_DATA_RAWGPS_vel_n(xsens_msg_buf, offset)) / 100.;
       ins_vy = ((INS_FORMAT)XSENS_DATA_RAWGPS_vel_e(xsens_msg_buf, offset)) / 100.;
@@ -657,19 +655,22 @@ void parse_ins_msg(void)
       gps.lla_pos.lat = (int32_t)(DegOfRad(lla_f.lat) * 1e7);
       gps.lla_pos.lon = (int32_t)(DegOfRad(lla_f.lon) * 1e7);
       SetBit(gps.valid_fields, GPS_VALID_POS_LLA_BIT);
-      gps.utm_pos.zone = (DegOfRad(lla_f.lon) + 180) / 6 + 1;
-      /* convert to utm */
+
+      LLA_FLOAT_OF_BFP(lla_f, gps.lla_pos);
+      utm_f.zone = nav_utm_zone0;   // todo, what if origin reinitialised
       utm_of_lla_f(&utm_f, &lla_f);
-      /* copy results of utm conversion */
-      gps.utm_pos.east = utm_f.east * 100;
-      gps.utm_pos.north = utm_f.north * 100;
-      SetBit(gps.valid_fields, GPS_VALID_POS_UTM_BIT);
       ins_x = utm_f.east;
       ins_y = utm_f.north;
       ins_z = XSENS_DATA_Position_alt(xsens_msg_buf, offset); //TODO is this hms or above ellipsoid?
       gps.hmsl = ins_z * 1000;
-       SetBit(gps.valid_fields, GPS_VALID_HMSL_BIT);
-      // what about gps.lla_pos.alt and gps.utm_pos.alt ?
+      SetBit(gps.valid_fields, GPS_VALID_HMSL_BIT);
+      // what about gps.lla_pos.alt?
+
+      /* Set the real UTM zone */
+      gps.utm_pos.zone = UtmZoneOfLlaLonDeg(gps.lla_pos.lon);
+      utm_of_lla_i(gps.utm_pos, gps.lla_pos);
+      gps.utm_pos.alt = gps.hmsl;
+      SetBit(gps.valid_fields, GPS_VALID_POS_UTM_BIT);
 
       gps_xsens_publish();
 #endif
