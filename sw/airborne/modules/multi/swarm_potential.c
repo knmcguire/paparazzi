@@ -78,8 +78,8 @@ abi_event ev;
 void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi);
 void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi)
 {
-  tx_strength[the_acs_id[_ac_id]] = _tx_strength;
-  rssi[the_acs_id[_ac_id]] = _rssi;
+  tx_strength[ti_acs_id[_ac_id]] = _tx_strength;
+  rssi[ti_acs_id[_ac_id]] = _rssi;
 }
 
 /*
@@ -157,9 +157,9 @@ int swarm_potential_task(void)
   my_pos.zone = 0;
   utm_of_lla_i(&my_pos, &gps.lla_pos);    // TODO update height to hmsl
 
-  for (i = 0; i < acs_idx; i++) {
-    if (the_acs[i].ac_id == 0 || the_acs[i].ac_id == AC_ID) { continue; }
-    struct ac_info_ * ac = get_ac_info(the_acs[i].ac_id);
+  for (i = 0; i < ti_acs_idx; i++) {
+    if (ti_acs[i].ac_id == 0 || ti_acs[i].ac_id == AC_ID) { continue; }
+    struct ac_info_ * ac = get_ac_info(ti_acs[i].ac_id);
     //float delta_t = ABS((int32_t)(gps.tow - ac->itow) / 1000.);
     // if AC not responding for too long, continue, else compute force
     //if(delta_t > 5) { continue; }

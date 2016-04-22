@@ -59,7 +59,7 @@ clean:
 #include $(PAPARAZZI_SRC)/conf/Makefile.linux
 DRONE = $(PAPARAZZI_HOME)/sw/tools/parrot/ardrone2.py
 
-SUB_DIR = bl
+SUB_DIR = paparazzi
 
 HOST ?= 192.168.1.1
 
@@ -67,7 +67,7 @@ HOST ?= 192.168.1.1
 upload_program: $(TARGET).elf
 	#$(Q)$(DRONE) --host=$(HOST) upload_file $(TARGET).elf $(SUB_DIR)
 	$(Q)$(DRONE) --host=$(HOST) insmod cdc-acm.ko
-	$(Q)$(DRONE) --host=$(HOST) upload_file_and_run $(TARGET).elf .
+	$(Q)$(DRONE) --host=$(HOST) upload_file_and_run $(TARGET).elf $(SUB_DIR)
 	$(Q)$(DRONE) --host=$(HOST) status
 	# --host=$(HOST)
 

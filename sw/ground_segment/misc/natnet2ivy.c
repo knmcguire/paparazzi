@@ -509,6 +509,12 @@ gboolean timeout_transmit_callback(gpointer data)
                  rigidBodies[i].x, rigidBodies[i].y, rigidBodies[i].z,
                  rigidBodies[i].ecef_vel.x, rigidBodies[i].ecef_vel.y, rigidBodies[i].ecef_vel.z);
 
+
+    /* Construct time of day in ms to send instead of time of week (tow), just easier */
+    struct timeval  tv;
+    gettimeofday(&tv, NULL);
+    uint32_t time_of_day = (uint32_t)((tv.tv_sec) * 1000 + (tv.tv_usec) / 1000); // convert tv_sec & tv_usec to millisecond
+
     // Transmit the REMOTE_GPS packet on the ivy bus (either small or big)
     if (small_packets) {
       /* The local position is an int32 and the 11 LSBs of the (signed) x and y axis are compressed into
@@ -576,15 +582,15 @@ gboolean timeout_transmit_callback(gpointer data)
         speed_xyz |= (((uint32_t)(pow(2, 9) * speed.z / fabs(speed.z))) & 0x3FF);       // bits 9-0 speed z in cm/s
       }
 
-      // printf("ENU Vel: %u (%.2f, %.2f, 0.0)\n", speed_xy, speed.x, speed.y);
-
-      // printf("Heading: %.2f\n", heading);
-
+      /* The gps_small msg should always be less than 20 bytes including the pprz header of 6 bytes
+       * This is primarily due to the maximum packet size of the bluetooth msgs of 19 bytes
+       * increases the probability that a complete message will be accepted
+       */
       IvySendMsg("0 REMOTE_GPS_SMALL %d %d %d %d %d", aircrafts[rigidBodies[i].id].ac_id, // uint8 rigid body ID (1 byte)
-                 (uint8_t)rigidBodies[i].nMarkers, // uint8 Number of markers (sv_num) (1 byte)
-                 pos_xyz,                          // uint32 ENU X, Y and Z in CM (4 bytes)
-                 speed_xyz,                        // uint32 ENU velocity X, Y, Z in cm/s (4 bytes)
-                 (int16_t)(heading * 10000));      // int6_t heading in rad*1e4 (2 bytes)
+                (int16_t)(heading * 10000),       // int16_t heading in rad*1e4 (2 bytes)
+                pos_xyz,                          // uint32 ENU X, Y and Z in CM (4 bytes)
+                speed_xyz,                        // uint32 ENU velocity X, Y, Z in cm/s (4 bytes)
+                time_of_day);                     // uint32_t time of day
 
       struct timeval cur_time;
       gettimeofday(&cur_time, NULL);
@@ -602,11 +608,6 @@ gboolean timeout_transmit_callback(gpointer data)
               (int)cur_time.tv_sec,
               (int)cur_time.tv_usec);
     } else {
-      struct timeval  tv;
-      gettimeofday(&tv, NULL);
-
-      uint32_t time_in_ms = (uint32_t)((tv.tv_sec) * 1000 + (tv.tv_usec) / 1000); // convert tv_sec & tv_usec to millisecond
-         
       IvySendMsg("0 REMOTE_GPS %d %d %d %d %d %d %d %d %d %d %d %d %d %d", aircrafts[rigidBodies[i].id].ac_id,
                  rigidBodies[i].nMarkers,                //uint8 Number of markers (sv_num)
                  (int)(ecef_pos.x * 100.0),              //int32 ECEF X in CM
@@ -619,7 +620,7 @@ gboolean timeout_transmit_callback(gpointer data)
                  (int)(rigidBodies[i].ecef_vel.x * 100.0), //int32 ECEF velocity X in cm/s
                  (int)(rigidBodies[i].ecef_vel.y * 100.0), //int32 ECEF velocity Y in cm/s
                  (int)(rigidBodies[i].ecef_vel.z * 100.0), //int32 ECEF velocity Z in cm/s
-                 time_in_ms,
+                 time_of_day,
                  (int)(heading * 10000000.0));           //int32 Course in rad*1e7
     }
 

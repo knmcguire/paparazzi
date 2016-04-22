@@ -112,7 +112,7 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   gps_datalink.course = ((int32_t)heading) * 1e3;
   SetBit(gps_datalink.valid_fields, GPS_VALID_COURSE_BIT);
 
-  gps_datalink.num_sv = num_sv;
+  gps_datalink.num_sv = 4;
   gps_datalink.tow = gps_tow_from_sys_ticks(sys_time.nb_tick);
   gps_datalink.fix = GPS_FIX_3D; // set 3D fix to true
 
@@ -161,11 +161,7 @@ void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t e
   SetBit(gps_datalink.valid_fields, GPS_VALID_COURSE_BIT);
 
   gps_datalink.num_sv = numsv;
-  if (tow == 0) {
-    gps_datalink.tow = gps_tow_from_sys_ticks(sys_time.nb_tick); //tow;
-  } else {
-    gps_datalink.tow = tow;
-  }
+  gps_datalink.tow = tow;
   gps_datalink.fix = GPS_FIX_3D;
 
   // publish new GPS data

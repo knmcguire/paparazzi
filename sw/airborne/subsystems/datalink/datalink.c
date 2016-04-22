@@ -35,7 +35,6 @@
 #include "generated/settings.h"
 
 #include "pprzlink/messages.h"
-#include "pprzlink/dl_protocol.h"
 
 #if defined RADIO_CONTROL && defined RADIO_CONTROL_TYPE_DATALINK
 #include "subsystems/radio_control.h"
@@ -46,10 +45,6 @@
 #endif
 #if defined GPS_DATALINK
 #include "subsystems/gps/gps_datalink.h"
-#endif
-
-#ifdef TRAFFIC_INFO
-#include "modules/multi/traffic_info.h"
 #endif
 
 #ifdef RADIO_CONTROL_DATALINK_LED
@@ -71,62 +66,6 @@ void dl_parse_msg(void)
   /* parse telemetry messages coming from other AC */
   if (sender_id != 0) {
     switch (msg_id) {
-#ifdef TRAFFIC_INFO
-#if 0 // #ifdef DL_GPS_SMALL
-      case DL_GPS_SMALL: {
-        uint32_t multiplex_speed = DL_GPS_SMALL_multiplex_speed(dl_buffer);
-
-        // decode compressed values
-        int16_t course = (int16_t)((multiplex_speed >> 21) & 0x7FF); // bits 31-21 course in decideg
-        if (course & 0x400) {
-          course |= 0xF800;  // fix for twos complements
-        }
-        course *= 2; // scale course by resolution
-        int16_t gspeed = (int16_t)((multiplex_speed >> 10) & 0x7FF); // bits 20-10 ground speed cm/s
-        if (gspeed & 0x400) {
-          gspeed |= 0xF800;  // fix for twos complements
-        }
-        int16_t climb = (int16_t)(multiplex_speed & 0x3FF); // bits 9-0 z climb speed in cm/s
-        if (climb & 0x200) {
-          climb |= 0xFC00;  // fix for twos complements
-        }
-
-        set_ac_info_lla(sender_id,
-                    DL_GPS_SMALL_lla_lat(dl_buffer),
-                    DL_GPS_SMALL_lla_lon(dl_buffer),
-                    (int32_t)DL_GPS_SMALL_alt(dl_buffer)*10,
-                    course,
-                    gspeed,
-                    climb,
-                    gps_tow_from_sys_ticks(sys_time.nb_tick));
-      }
-      break;
-#endif
-      case DL_GPS: {
-        set_ac_info(sender_id,
-          DL_GPS_utm_east(dl_buffer),
-          DL_GPS_utm_north(dl_buffer),
-          DL_GPS_alt(dl_buffer),
-          DL_GPS_utm_zone(dl_buffer),
-          DL_GPS_course(dl_buffer),
-          DL_GPS_speed(dl_buffer),
-          DL_GPS_climb(dl_buffer),
-          DL_GPS_itow(dl_buffer));
-      }
-      break;
-      case DL_GPS_LLA: {
-        set_ac_info_lla(sender_id,
-                        DL_GPS_LLA_lat(dl_buffer),
-                        DL_GPS_LLA_lon(dl_buffer),
-                        DL_GPS_LLA_alt(dl_buffer),
-                        DL_GPS_LLA_course(dl_buffer),
-                        DL_GPS_LLA_speed(dl_buffer),
-                        DL_GPS_LLA_climb(dl_buffer),
-                        DL_GPS_LLA_itow(dl_buffer));
-      }
-      break;
-#endif /* TRAFFIC_INFO */
-
 #ifdef TCAS
       case DL_TCAS_RA: {
         if (DL_TCAS_RESOLVE_ac_id(dl_buffer) == AC_ID && SenderIdOfMsg(dl_buffer) != AC_ID) {
@@ -139,110 +78,109 @@ void dl_parse_msg(void)
         break;
       }
     }
-    return;  // msg was telemetry not datalink so return
-  }
-
-  /* parse telemetry messages coming from ground station */
-  switch (msg_id) {
-    case  DL_PING: {
-      DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
-    }
-    break;
-
-    case DL_SETTING : {
-      if (DL_SETTING_ac_id(dl_buffer) != AC_ID) { break; }
-      uint8_t i = DL_SETTING_index(dl_buffer);
-      float var = DL_SETTING_value(dl_buffer);
-      DlSetting(i, var);
-      DOWNLINK_SEND_DL_VALUE(DefaultChannel, DefaultDevice, &i, &var);
-    }
-    break;
-
-    case DL_GET_SETTING : {
-      if (DL_GET_SETTING_ac_id(dl_buffer) != AC_ID) { break; }
-      uint8_t i = DL_GET_SETTING_index(dl_buffer);
-      float val = settings_get_value(i);
-      DOWNLINK_SEND_DL_VALUE(DefaultChannel, DefaultDevice, &i, &val);
-    }
-    break;
-
-#ifdef RADIO_CONTROL_TYPE_DATALINK
-    case DL_RC_3CH :
-#ifdef RADIO_CONTROL_DATALINK_LED
-      LED_TOGGLE(RADIO_CONTROL_DATALINK_LED);
-#endif
-      parse_rc_3ch_datalink(
-        DL_RC_3CH_throttle_mode(dl_buffer),
-        DL_RC_3CH_roll(dl_buffer),
-        DL_RC_3CH_pitch(dl_buffer));
+  } else {
+    /* parse telemetry messages coming from ground station */
+    switch (msg_id) {
+      case  DL_PING: {
+        DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
+      }
       break;
-    case DL_RC_4CH :
-      if (DL_RC_4CH_ac_id(dl_buffer) == AC_ID) {
+
+      case DL_SETTING : {
+        if (DL_SETTING_ac_id(dl_buffer) != AC_ID) { break; }
+        uint8_t i = DL_SETTING_index(dl_buffer);
+        float var = DL_SETTING_value(dl_buffer);
+        DlSetting(i, var);
+        DOWNLINK_SEND_DL_VALUE(DefaultChannel, DefaultDevice, &i, &var);
+      }
+      break;
+
+      case DL_GET_SETTING : {
+        if (DL_GET_SETTING_ac_id(dl_buffer) != AC_ID) { break; }
+        uint8_t i = DL_GET_SETTING_index(dl_buffer);
+        float val = settings_get_value(i);
+        DOWNLINK_SEND_DL_VALUE(DefaultChannel, DefaultDevice, &i, &val);
+      }
+      break;
+
+  #ifdef RADIO_CONTROL_TYPE_DATALINK
+      case DL_RC_3CH :
 #ifdef RADIO_CONTROL_DATALINK_LED
         LED_TOGGLE(RADIO_CONTROL_DATALINK_LED);
 #endif
-        parse_rc_4ch_datalink(DL_RC_4CH_mode(dl_buffer),
-                              DL_RC_4CH_throttle(dl_buffer),
-                              DL_RC_4CH_roll(dl_buffer),
-                              DL_RC_4CH_pitch(dl_buffer),
-                              DL_RC_4CH_yaw(dl_buffer));
-      }
-      break;
+        parse_rc_3ch_datalink(
+          DL_RC_3CH_throttle_mode(dl_buffer),
+          DL_RC_3CH_roll(dl_buffer),
+          DL_RC_3CH_pitch(dl_buffer));
+        break;
+      case DL_RC_4CH :
+        if (DL_RC_4CH_ac_id(dl_buffer) == AC_ID) {
+#ifdef RADIO_CONTROL_DATALINK_LED
+          LED_TOGGLE(RADIO_CONTROL_DATALINK_LED);
+#endif
+          parse_rc_4ch_datalink(DL_RC_4CH_mode(dl_buffer),
+                                DL_RC_4CH_throttle(dl_buffer),
+                                DL_RC_4CH_roll(dl_buffer),
+                                DL_RC_4CH_pitch(dl_buffer),
+                                DL_RC_4CH_yaw(dl_buffer));
+        }
+        break;
 #endif // RADIO_CONTROL_TYPE_DATALINK
 
 #if USE_GPS
 #ifdef GPS_DATALINK
-    case DL_REMOTE_GPS_SMALL : {
-      // Check if the GPS is for this AC
-      if (DL_REMOTE_GPS_SMALL_ac_id(dl_buffer) != AC_ID) { break; }
+      case DL_REMOTE_GPS_SMALL : {
+        // Check if the GPS is for this AC
+        if (DL_REMOTE_GPS_SMALL_ac_id(dl_buffer) != AC_ID) { break; }
 
-      parse_gps_datalink_small(
-        DL_REMOTE_GPS_SMALL_numsv(dl_buffer),
-        DL_REMOTE_GPS_SMALL_pos_xyz(dl_buffer),
-        DL_REMOTE_GPS_SMALL_speed_xyz(dl_buffer),
-        DL_REMOTE_GPS_SMALL_heading(dl_buffer));
-    }
-    break;
+        parse_gps_datalink_small(
+            DL_REMOTE_GPS_SMALL_heading(dl_buffer),
+            DL_REMOTE_GPS_SMALL_pos_xyz(dl_buffer),
+            DL_REMOTE_GPS_SMALL_speed_xyz(dl_buffer),
+            DL_REMOTE_GPS_SMALL_tow(dl_buffer));
+      }
+      break;
 
-    case DL_REMOTE_GPS : {
-      // Check if the GPS is for this AC
-      if (DL_REMOTE_GPS_ac_id(dl_buffer) != AC_ID) { break; }
+      case DL_REMOTE_GPS : {
+        // Check if the GPS is for this AC
+        if (DL_REMOTE_GPS_ac_id(dl_buffer) != AC_ID) { break; }
 
-      // Parse the GPS
-      parse_gps_datalink(
-        DL_REMOTE_GPS_numsv(dl_buffer),
-        DL_REMOTE_GPS_ecef_x(dl_buffer),
-        DL_REMOTE_GPS_ecef_y(dl_buffer),
-        DL_REMOTE_GPS_ecef_z(dl_buffer),
-        DL_REMOTE_GPS_lat(dl_buffer),
-        DL_REMOTE_GPS_lon(dl_buffer),
-        DL_REMOTE_GPS_alt(dl_buffer),
-        DL_REMOTE_GPS_hmsl(dl_buffer),
-        DL_REMOTE_GPS_ecef_xd(dl_buffer),
-        DL_REMOTE_GPS_ecef_yd(dl_buffer),
-        DL_REMOTE_GPS_ecef_zd(dl_buffer),
-        DL_REMOTE_GPS_tow(dl_buffer),
-        DL_REMOTE_GPS_course(dl_buffer));
-    }
-    break;
+        // Parse the GPS
+        parse_gps_datalink(
+          DL_REMOTE_GPS_numsv(dl_buffer),
+          DL_REMOTE_GPS_ecef_x(dl_buffer),
+          DL_REMOTE_GPS_ecef_y(dl_buffer),
+          DL_REMOTE_GPS_ecef_z(dl_buffer),
+          DL_REMOTE_GPS_lat(dl_buffer),
+          DL_REMOTE_GPS_lon(dl_buffer),
+          DL_REMOTE_GPS_alt(dl_buffer),
+          DL_REMOTE_GPS_hmsl(dl_buffer),
+          DL_REMOTE_GPS_ecef_xd(dl_buffer),
+          DL_REMOTE_GPS_ecef_yd(dl_buffer),
+          DL_REMOTE_GPS_ecef_zd(dl_buffer),
+          DL_REMOTE_GPS_tow(dl_buffer),
+          DL_REMOTE_GPS_course(dl_buffer));
+      }
+      break;
 #endif // GPS_DATALINK
 
-    case DL_GPS_INJECT : {
-      // Check if the GPS is for this AC
-      if (DL_GPS_INJECT_ac_id(dl_buffer) != AC_ID) { break; }
+      case DL_GPS_INJECT : {
+        // Check if the GPS is for this AC
+        if (DL_GPS_INJECT_ac_id(dl_buffer) != AC_ID) { break; }
 
-      // GPS parse data
-      gps_inject_data(
-        DL_GPS_INJECT_packet_id(dl_buffer),
-        DL_GPS_INJECT_data_length(dl_buffer),
-        DL_GPS_INJECT_data(dl_buffer)
-      );
-    }
-    break;
+        // GPS parse data
+        gps_inject_data(
+          DL_GPS_INJECT_packet_id(dl_buffer),
+          DL_GPS_INJECT_data_length(dl_buffer),
+          DL_GPS_INJECT_data(dl_buffer)
+        );
+      }
+      break;
 #endif  // USE_GPS
 
-    default:
-      break;
+      default:
+        break;
+    }
   }
   /* Parse firmware specific datalink */
   firmware_parse_msg();

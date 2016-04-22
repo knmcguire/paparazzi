@@ -39,8 +39,6 @@
 // for memset
 #include <string.h>
 
-//#include "subsystems/datalink/telemetry_common.h"
-//#include "subsystems/datalink/telemetry.h"
 #include "generated/periodic_telemetry.h"
 
 #ifndef BLUEGIGA_SPI_DEV

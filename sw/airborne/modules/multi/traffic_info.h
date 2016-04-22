@@ -26,9 +26,6 @@
 #ifndef TRAFFIC_INFO_H
 #define TRAFFIC_INFO_H
 
-#define NB_ACS_ID 256
-#define NB_ACS 24
-
 #include <inttypes.h>
 #include <math/pprz_geodetic_int.h>
 
@@ -41,9 +38,9 @@ struct ac_info_ {
   uint32_t itow;   ///< ms
 };
 
-extern uint8_t acs_idx;
-extern uint8_t the_acs_id[NB_ACS_ID];
-extern struct ac_info_ the_acs[NB_ACS];
+extern uint8_t ti_acs_idx;
+extern uint8_t ti_acs_id[];
+extern struct ac_info_ ti_acs[];
 
 extern void traffic_info_init(void);
 extern struct ac_info_ *get_ac_info(uint8_t id);
@@ -78,8 +75,8 @@ extern void set_ac_info(uint8_t id, uint32_t utm_east, uint32_t utm_north, uint3
 extern void set_ac_info_lla(uint8_t id, int32_t lat, int32_t lon, int32_t alt,
                             int16_t course, uint16_t gspeed, int16_t climb, uint32_t itow);
 
-/** Parsing functions called when an ac position message is received
+/** Parsing datalink and telemetry functions that contain other vehicle position
 */
-extern int parse_acinfo(void);
+extern int parse_acinfo_dl(void);
 
 #endif

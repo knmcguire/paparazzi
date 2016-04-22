@@ -35,14 +35,9 @@
 
 #include "modules/multi/traffic_info.h"     // other aircraft info
 
-#include "subsystems/abi.h"                 // rssi messages subscription
-
 #ifdef EXTRA_DOWNLINK_DEVICE
 #include "modules/datalink/extra_pprz_dl.h"
 #endif
-
-int8_t rssi[NB_ACS_ID];
-int8_t tx_strength[NB_ACS_ID];
 
 float max_hor_speed;
 float max_vert_speed;
@@ -60,23 +55,11 @@ uint8_t use_height;
 #define USE_HEIGHT 0
 #endif
 
-abi_event ev;
-
-void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi);
-void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi)
-{
-  tx_strength[the_acs_id[_ac_id]] = _tx_strength;
-  rssi[the_acs_id[_ac_id]] = _rssi;
-}
-
 void swarm_nn_init(void)
 {
   max_hor_speed = MAX_HOR_SPEED;
   max_vert_speed = MAX_VERT_SPEED;
   use_height = USE_HEIGHT;
-
-  /* register for rssi messages */
-  AbiBindMsgRSSI(ABI_BROADCAST, &ev, rssi_cb);
 }
 
 // the following does not include the bias neuron
@@ -136,9 +119,17 @@ const double layer2_weights[9][2] = {
  * Generate velocity commands based on relative position in swarm
  * using a neural network
  */
+uint32_t counter = 0;
 void swarm_nn_periodic(void)
 {
-  // send my position to others in the swarm
+  /* This algorithm only works if I have a gps fix. */
+  //if (gps.fix == 0) {
+  //  /* set default speed */
+  //    autopilot_guided_move_ned(0, 0, 0, 0);
+  //    return;
+// }
+
+  /* First send my position to others in the swarm */
 
   /* The GPS messages are most likely too large to be send over either the datalink
    * The local position is an int32 and the 11 LSBs of the x and y axis are compressed into
@@ -150,18 +141,18 @@ void swarm_nn_periodic(void)
   multiplex_speed |= (((uint32_t)(gps.gspeed)) & 0x7FF) << 10;         // bits 20-10 y position in cm
   multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);               // bits 9-0 z position in cm
 
-  int16_t alt = (int16_t)(gps.lla_pos.alt / 10);
+  int16_t alt = (int16_t)(gps.hmsl / 10);
+  counter++;
 
 #ifdef EXTRA_DOWNLINK_DEVICE
-  DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat,
+  DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &counter,
                           &gps.lla_pos.lon, &alt);
 #else
   DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.lla_pos.lat,
                           &gps.lla_pos.lon, &alt);
 #endif
 
-
-  /* generate velocity setpoint */
+  /* initialise velocity setpoint */
   struct EnuCoor_f speed_sp = {.x = 0., .y = 0., .z = 0.};
 
   /* counters */
@@ -173,18 +164,15 @@ void swarm_nn_periodic(void)
   float rz = 0.;
   float d  = 0.;
 
-  if (gps.fix == 0) {return;}
-  struct UtmCoor_i my_pos = *stateGetPositionUtm_i();//(get_ac_info(the_acs[1].ac_id))->utm;
+  struct UtmCoor_i my_pos = (get_ac_info(ti_acs[1].ac_id))->utm; //*stateGetPositionUtm_i();
   //my_pos.zone = 0;
   //utm_of_lla_i(&my_pos, &gps.lla_pos);
 
-  struct EnuCoor_f my_enu_pos = *stateGetPositionEnu_f();
-
   // compute nn inputs
-  for (i = 0; i < acs_idx; i++) {
-    if (the_acs[i].ac_id == 0 || the_acs[i].ac_id == AC_ID) { continue; }
-    struct ac_info_ * ac = get_ac_info(the_acs[i].ac_id);
-    //float delta_t = ABS((int32_t)(gps.tow - ac->itow) / 1000.);
+  for (i = 0; i < ti_acs_idx; i++) {
+    if (ti_acs[i].ac_id == 0 || ti_acs[i].ac_id == AC_ID) { continue; }
+    struct ac_info_ * ac = get_ac_info(ti_acs[i].ac_id);
+    float delta_t = ABS((int32_t)(gps.tow - ac->itow) / 1000.);
     // if AC not responding for too long, continue, else compute force
     //if(delta_t > 5) { continue; }
 
@@ -245,13 +233,15 @@ void swarm_nn_periodic(void)
   autopilot_guided_move_ned(speed_sp.y, speed_sp.x, speed_sp.z, 0);
 
   /* send log data to gs */
-  struct ac_info_ * ac1 = get_ac_info(the_acs[2].ac_id);
-  struct ac_info_ * ac2 = get_ac_info(the_acs[3].ac_id);
+  struct ac_info_ * ac1 = get_ac_info(ti_acs[2].ac_id);
+  struct ac_info_ * ac2 = get_ac_info(ti_acs[3].ac_id);
 
   int32_t tempx1 = (ac1->utm.east  - my_pos.east);
   int32_t tempy1 = (ac1->utm.north - my_pos.north);
   int32_t tempx2 = (ac2->utm.east  - my_pos.east);
   int32_t tempy2 = (ac2->utm.north - my_pos.north);
+
+  struct EnuCoor_f my_enu_pos = *stateGetPositionEnu_f();
 
   DOWNLINK_SEND_SWARMNN(DefaultChannel, DefaultDevice, &speed_sp.x, &speed_sp.y, &speed_sp.z,
                         &rx, &ry, &rz, &d,

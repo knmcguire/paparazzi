@@ -48,7 +48,7 @@
 #endif
 
 int sock;
-int addr_len, bytes_read;
+int bytes_read;
 char recv_data[1024], send_data[1024];
 struct sockaddr_in server_addr, client_addr;
 
@@ -97,7 +97,7 @@ const uint8_t POS_ADV_STDMA_OFFSET = 7;               // stdma offset
 const uint8_t POS_ADV_STDMA_TIMEOUT = 8;              // stdma timeout
 const uint8_t POS_ADV_TX_STRENGTH = 9;                // transmit power dBm
 
-uint8_t broadcast_msg[31];                    // temporary buffer for recieved data waiting to be sent to lisa
+uint8_t broadcast_msg[128];                    // temporary buffer for recieved data waiting to be sent to lisa
 int8_t broadcast_len;
 
 // PPRZ MSG positions
@@ -217,7 +217,7 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
     stdma_next_slot_timeout[temp]  = msg->data.data[POS_ADV_STDMA_TIMEOUT];
   }
 
-  uint8_t data[31];
+  uint8_t data[128];
   // handle spi
   //data[0] = 0xff - msg->data.len - STDMA_ADV_HEADER_LEN;    // encode msg length in header
   //data[1] = msg->data.data[POS_ADV_TX_STRENGTH];            // tx_strength
@@ -225,19 +225,40 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
 
   memcpy(data, msg->data.data + STDMA_ADV_HEADER_LEN, msg->data.len - STDMA_ADV_HEADER_LEN);
 
-//#ifdef DEBUG
+  // msg form {header, length, ac_id, msg_id, [msg], crc_a, crc_b}
+  // rssi message is [rssi, trans_strength}
+  uint8_t rssi_msg[8] = {0x99, 8, data[PPRZ_POS_SENDER_ID], 28, msg->rssi, msg->data.data[POS_ADV_TX_STRENGTH], 0, 0};
+  
+  uint8_t j = 0, ck_a = 0, ck_b = 0;
+  for(j = 1; j < 6; j++){
+    ck_a += rssi_msg[j];
+    ck_b += ck_a;
+  }
+  
+  rssi_msg[6] = ck_a;
+  rssi_msg[7] = ck_b;
+
+  memcpy(data + msg->data.len - STDMA_ADV_HEADER_LEN, rssi_msg, 8);
+
+#ifdef DEBUG
   int i;
   debug_print("recv'd data: ");
-  for (i = 0; i < msg->data.len - STDMA_ADV_HEADER_LEN; i++) {
+  for (i = 0; i < msg->data.len - STDMA_ADV_HEADER_LEN + 8; i++) {
     debug_print("%02x ", data[i]);
   }
   debug_print("\n");
-//#endif
+#endif
 
-  sendto(sock, data, msg->data.len - STDMA_ADV_HEADER_LEN, MSG_DONTWAIT, (struct sockaddr *)&server_addr,
+  printf("%d %d ", server_addr.sin_family, server_addr.sin_port);
+  
+  server_addr.sin_family = AF_INET;
+  ssize_t size = sendto(sock, data, msg->data.len - STDMA_ADV_HEADER_LEN + 8, MSG_DONTWAIT, (struct sockaddr *)&server_addr,
          sizeof(server_addr));
+  if(size < 0){
+    perror("sending");
+  }
 }
-
+  
 uint8_t skip = 0;
 void periodic_fn()
 {
@@ -368,29 +389,28 @@ int main(int argc, char *argv[])
 {
   char *uart_port = "/dev/ttyACM0";
 
-  if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+  if ((sock = socket(PF_INET, SOCK_DGRAM, 0)) == -1) {
     perror("Socket");
     exit(1);
   }
+  
+  int one = 1;
+  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
-  struct hostent *host = (struct hostent *) gethostbyname((char *)"127.0.0.1");
-
-  server_addr.sin_family = AF_INET;
+  server_addr.sin_family = PF_INET;
   server_addr.sin_port = htons(5000);
-  server_addr.sin_addr = *((struct in_addr *)host->h_addr);
+  server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
   bzero(&(server_addr.sin_zero), 8);
 
-  client_addr.sin_family = AF_INET;
+  client_addr.sin_family = PF_INET;
   client_addr.sin_port = htons(5001);
-  client_addr.sin_addr = *((struct in_addr *)host->h_addr);
+  client_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   bzero(&(client_addr.sin_zero), 8);
 
   if (bind(sock, (struct sockaddr *)&client_addr, sizeof(struct sockaddr)) == -1) {
     perror("Bind failed");
     exit(1);
   }
-
-  addr_len = sizeof(struct sockaddr);
 
   bglib_output = output;
 
@@ -437,11 +457,14 @@ int main(int argc, char *argv[])
   adv_data[POS_ADV_STDMA_OFFSET] = 0x0;                // stdma offset
   adv_data[POS_ADV_STDMA_TIMEOUT] = 0x0;                // stdma timeout
 
-  // TX power in dBm, can get tx power from system call
-  adv_data[9] = 0x08;
+  // TX power in dBm for BLED USB Dongle
+  adv_data[9] = 0x03;
+  
+  // set fake initial aircraft id
+  adv_data[STDMA_ADV_HEADER_LEN + PPRZ_POS_SENDER_ID] = 2;
 
   // msg data
-  adv_data_len = 0;
+  adv_data_len = STDMA_ADV_MAX_DATA_LEN;
 
   ble_cmd_gap_set_adv_data(0, STDMA_ADV_HEADER_LEN + adv_data_len, adv_data);          // Set advertisement data
 
@@ -467,21 +490,23 @@ int main(int argc, char *argv[])
   ble_cmd_gap_discover(gap_discover_observation);   // scan for other modules
 
   uint8_t counter = 0;
+  char buffer[128];
+  
+  socklen_t len = sizeof(client_addr);
   // Message loop
   while (1) {
     if (read_message(UART_TIMEOUT) > 0) { break; }
 
-    broadcast_len = recvfrom(sock, broadcast_msg, STDMA_ADV_MAX_DATA_LEN, MSG_DONTWAIT, (struct sockaddr *)&client_addr,
-                             (socklen_t *)sizeof(client_addr));
+    broadcast_len = recvfrom(sock, buffer, 127, MSG_DONTWAIT, (struct sockaddr*)&client_addr, &len);
 
     // only send message 252, in this config, this msg not sent to ground
     // && spi_data(1+PPRZ_POS_LEN:1) <= STDMA_ADV_MAX_DATA_LEN && spi_data(1+PPRZ_POS_LEN:1) > SPI_DATA_LEN 252
     //if (broadcast_msg[PPRZ_POS_STX] == 0x99 && broadcast_msg[PPRZ_POS_MSG_ID] == 252) {
-    if (broadcast_len > 0) {
+    if (broadcast_len > 0 && broadcast_len < STDMA_ADV_MAX_DATA_LEN) {
       adv_data_len = broadcast_len;
-      memcpy(adv_data + STDMA_ADV_HEADER_LEN, broadcast_msg, broadcast_len);
+      memcpy(adv_data + STDMA_ADV_HEADER_LEN, buffer, adv_data_len);
     }
-
+    
     if (!(++counter % 5)) { // 40Hz STDMA
       periodic_fn();
       counter = 0;
