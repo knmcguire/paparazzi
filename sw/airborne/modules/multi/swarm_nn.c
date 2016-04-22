@@ -119,7 +119,6 @@ const double layer2_weights[9][2] = {
  * Generate velocity commands based on relative position in swarm
  * using a neural network
  */
-uint32_t counter = 0;
 void swarm_nn_periodic(void)
 {
   /* This algorithm only works if I have a gps fix. */
@@ -142,10 +141,9 @@ void swarm_nn_periodic(void)
   multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);               // bits 9-0 z position in cm
 
   int16_t alt = (int16_t)(gps.hmsl / 10);
-  counter++;
 
 #ifdef EXTRA_DOWNLINK_DEVICE
-  DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &counter,
+  DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat,
                           &gps.lla_pos.lon, &alt);
 #else
   DOWNLINK_SEND_GPS_SMALL(DefaultChannel, DefaultDevice, &multiplex_speed, &gps.lla_pos.lat,
@@ -164,17 +162,17 @@ void swarm_nn_periodic(void)
   float rz = 0.;
   float d  = 0.;
 
-  struct UtmCoor_i my_pos = (get_ac_info(ti_acs[1].ac_id))->utm; //*stateGetPositionUtm_i();
-  //my_pos.zone = 0;
-  //utm_of_lla_i(&my_pos, &gps.lla_pos);
+  struct UtmCoor_i my_pos = utm_int_from_gps(&gps, 0);
 
   // compute nn inputs
   for (i = 0; i < ti_acs_idx; i++) {
     if (ti_acs[i].ac_id == 0 || ti_acs[i].ac_id == AC_ID) { continue; }
     struct ac_info_ * ac = get_ac_info(ti_acs[i].ac_id);
-    float delta_t = ABS((int32_t)(gps.tow - ac->itow) / 1000.);
+
     // if AC not responding for too long, continue, else compute force
-    //if(delta_t > 5) { continue; }
+    uint32_t delta_t = ABS((int32_t)(gps.tow - ac->itow));
+    printf("%d %d\n", gps.tow, ac->itow);
+    if(delta_t > 5000) { continue; }
 
     float de = (ac->utm.east - my_pos.east) / 100.; // + sha * delta_t
     float dn = (ac->utm.north - my_pos.north) / 100.; // cha * delta_t

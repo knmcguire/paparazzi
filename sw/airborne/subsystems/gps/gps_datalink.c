@@ -59,7 +59,7 @@ void gps_datalink_init(void)
 }
 
 // Parse the REMOTE_GPS_SMALL datalink packet
-void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_xyz, int16_t heading)
+void parse_gps_datalink_small(int16_t heading, uint32_t pos_xyz, uint32_t speed_xyz, uint32_t tow)
 {
   struct EnuCoor_i enu_pos, enu_speed;
 
@@ -113,7 +113,7 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
   SetBit(gps_datalink.valid_fields, GPS_VALID_COURSE_BIT);
 
   gps_datalink.num_sv = 4;
-  gps_datalink.tow = gps_tow_from_sys_ticks(sys_time.nb_tick);
+  gps_datalink.tow = tow;
   gps_datalink.fix = GPS_FIX_3D; // set 3D fix to true
 
   // publish new GPS data
@@ -124,6 +124,7 @@ void parse_gps_datalink_small(uint8_t num_sv, uint32_t pos_xyz, uint32_t speed_x
     gps_datalink.last_3dfix_ticks = sys_time.nb_sec_rem;
     gps_datalink.last_3dfix_time = sys_time.nb_sec;
   }
+
   AbiSendMsgGPS(GPS_DATALINK_ID, now_ts, &gps_datalink);
 }
 
@@ -172,6 +173,7 @@ void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t e
     gps_datalink.last_3dfix_ticks = sys_time.nb_sec_rem;
     gps_datalink.last_3dfix_time = sys_time.nb_sec;
   }
+
   AbiSendMsgGPS(GPS_DATALINK_ID, now_ts, &gps_datalink);
 }
 

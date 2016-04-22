@@ -231,6 +231,8 @@ static void gps_cb(uint8_t sender_id,
   gps = *gps_s;
   AbiSendMsgGPS(GPS_MULTI_ID, now_ts, gps_s);
 #endif
+  gps_time_sync.t0_ticks = sys_time.nb_tick;
+  gps_time_sync.t0_tow = gps.tow;
 }
 
 /*
@@ -325,6 +327,8 @@ uint32_t gps_tow_from_sys_ticks(uint32_t sys_ticks)
   if (itow_now > MSEC_PER_WEEK) {
     itow_now %= MSEC_PER_WEEK;
   }
+
+  printf("gpstime: %d %d %d %d %d\n", gps.tow, gps_time_sync.t0_tow, time_delta, itow_now, MSEC_PER_WEEK);
 
   return itow_now;
 }

@@ -510,10 +510,12 @@ gboolean timeout_transmit_callback(gpointer data)
                  rigidBodies[i].ecef_vel.x, rigidBodies[i].ecef_vel.y, rigidBodies[i].ecef_vel.z);
 
 
-    /* Construct time of day in ms to send instead of time of week (tow), just easier */
-    struct timeval  tv;
-    gettimeofday(&tv, NULL);
-    uint32_t time_of_day = (uint32_t)((tv.tv_sec) * 1000 + (tv.tv_usec) / 1000); // convert tv_sec & tv_usec to millisecond
+    /* Construct time of time of week (tow) */
+    time_t now;
+    time(&now);
+    struct tm *ts = localtime(&now);
+    
+    uint32_t tow = (ts->tm_wday - 1)*(24*60*60*1000) + ts->tm_hour*(60*60*1000) + ts->tm_min*(60*1000) + ts->tm_sec*1000;
 
     // Transmit the REMOTE_GPS packet on the ivy bus (either small or big)
     if (small_packets) {
@@ -590,7 +592,7 @@ gboolean timeout_transmit_callback(gpointer data)
                 (int16_t)(heading * 10000),       // int16_t heading in rad*1e4 (2 bytes)
                 pos_xyz,                          // uint32 ENU X, Y and Z in CM (4 bytes)
                 speed_xyz,                        // uint32 ENU velocity X, Y, Z in cm/s (4 bytes)
-                time_of_day);                     // uint32_t time of day
+                tow);                     // uint32_t time of day
 
       struct timeval cur_time;
       gettimeofday(&cur_time, NULL);
@@ -620,7 +622,7 @@ gboolean timeout_transmit_callback(gpointer data)
                  (int)(rigidBodies[i].ecef_vel.x * 100.0), //int32 ECEF velocity X in cm/s
                  (int)(rigidBodies[i].ecef_vel.y * 100.0), //int32 ECEF velocity Y in cm/s
                  (int)(rigidBodies[i].ecef_vel.z * 100.0), //int32 ECEF velocity Z in cm/s
-                 time_of_day,
+                 tow,
                  (int)(heading * 10000000.0));           //int32 Course in rad*1e7
     }
 
