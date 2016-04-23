@@ -32,8 +32,6 @@
 #include "subsystems/gps.h"
 #include "subsystems/abi.h"
 
-// #include <stdio.h>
-
 struct LtpDef_i ltp_def;
 
 struct GpsState gps_datalink;
@@ -42,9 +40,7 @@ struct GpsState gps_datalink;
 void gps_datalink_init(void)
 {
   gps_datalink.fix = GPS_FIX_NONE;
-  gps_datalink.gspeed = 700;  // To enable course setting
-  gps_datalink.cacc = 0;      // To enable course setting
-  gps_datalink.pdop = gps_datalink.sacc = gps_datalink.pacc = 0;
+  gps_datalink.pdop = gps_datalink.sacc = gps_datalink.pacc = gps_datalink.cacc = 0;
 
   struct LlaCoor_i llh_nav0; /* Height above the ellipsoid */
   llh_nav0.lat = NAV_LAT0;
@@ -101,11 +97,8 @@ void parse_gps_datalink_small(int16_t heading, uint32_t pos_xyz, uint32_t speed_
   ecef_of_enu_vect_i(&gps_datalink.ecef_vel , &ltp_def , &enu_speed);
   SetBit(gps_datalink.valid_fields, GPS_VALID_VEL_ECEF_BIT);
 
-
-  // todo figure out how cacc works and change ins to only use that parameter to set heading and not speed then
-  // we can set the correct gspeed here
-  //gps_datalink.gspeed = (int16_t)sqrt(enu_speed.x*enu_speed.x + enu_speed.y*enu_speed.y);
-  gps_datalink.speed_3d = (int16_t)sqrt(enu_speed.x*enu_speed.x + enu_speed.y*enu_speed.y + enu_speed.z*enu_speed.z);
+  gps_datalink.gspeed = (int16_t)FLOAT_VECT2_NORM(enu_speed);
+  gps_datalink.speed_3d = (int16_t)FLOAT_VECT3_NORM(enu_speed);
 
   gps_datalink.hmsl = ltp_def.hmsl + enu_pos.z * 10;
   SetBit(gps_datalink.valid_fields, GPS_VALID_HMSL_BIT);
@@ -162,10 +155,8 @@ void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t e
   ned_of_ecef_vect_i(&gps_datalink.ned_vel, &ltp_def , &gps_datalink.ecef_vel);
   SetBit(gps_datalink.valid_fields, GPS_VALID_VEL_NED_BIT);
 
-  // todo figure out how cacc works and change ins to only use that parameter to set heading and not speed then
-  // we can set the correct gspeed here
-  //gps_datalink.gspeed = (int16_t)sqrt(gps_datalink.ned_vel.x*gps_datalink.ned_vel.x + gps_datalink.ned_vel.y*gps_datalink.ned_vel.y);
-  gps_datalink.speed_3d = (int16_t)sqrt(gps_datalink.ned_vel.x*gps_datalink.ned_vel.x + gps_datalink.ned_vel.y*gps_datalink.ned_vel.y + gps_datalink.ned_vel.z*gps_datalink.ned_vel.z);
+  gps_datalink.gspeed = (int16_t)FLOAT_VECT2_NORM(gps_datalink.ned_vel);
+  gps_datalink.speed_3d = (int16_t)FLOAT_VECT3_NORM(gps_datalink.ned_vel);
 
   gps_datalink.course = course;
   SetBit(gps_datalink.valid_fields, GPS_VALID_COURSE_BIT);

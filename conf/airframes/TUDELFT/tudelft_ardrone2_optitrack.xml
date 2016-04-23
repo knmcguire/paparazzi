@@ -111,7 +111,7 @@
 
     <!-- Use GPS heading instead of magneto -->
     <define name="USE_GPS_HEADING" value="1"/>
-    <define name="HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
+    <!--define name="HEADING_UPDATE_GPS_MIN_SPEED" value="0"/-->
   </section>
 
   <section name="INS" prefix="INS_">
