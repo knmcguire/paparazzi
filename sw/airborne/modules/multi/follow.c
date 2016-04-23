@@ -65,11 +65,12 @@ void follow_wp(void)
   struct ac_info_ * ac = get_ac_info(FOLLOW_AC_ID);
 
   struct UtmCoor_f my_pos = utm_float_from_gps(&gps, 0);
+  my_pos.alt = gps.hmsl / 1000.;
 
   struct EnuCoor_i enu = stateGetPositionEnu_i();
-  enu.x += POS_BFP_OF_REAL(my_pos.east - ac->east);
-  enu.y += POS_BFP_OF_REAL(my_pos.north - ac->north);
-  enu.z += POS_BFP_OF_REAL(my_pos.alt - ac->alt);
+  enu.x += POS_BFP_OF_REAL(my_pos.east - ac->utm.east);
+  enu.y += POS_BFP_OF_REAL(my_pos.north - ac->utm.north);
+  enu.z += POS_BFP_OF_REAL(my_pos.alt - ac->utm.alt);
 
   // TODO: Add the angle to the north
 

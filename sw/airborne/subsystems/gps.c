@@ -328,8 +328,6 @@ uint32_t gps_tow_from_sys_ticks(uint32_t sys_ticks)
     itow_now %= MSEC_PER_WEEK;
   }
 
-  printf("gpstime: %d %d %d %d %d\n", gps.tow, gps_time_sync.t0_tow, time_delta, itow_now, MSEC_PER_WEEK);
-
   return itow_now;
 }
 

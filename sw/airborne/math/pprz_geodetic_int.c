@@ -60,7 +60,7 @@ void ltp_of_ecef_rmat_from_lla_i(struct Int32RMat *ltp_of_ecef, struct LlaCoor_i
 void ltp_def_from_ecef_i(struct LtpDef_i *def, struct EcefCoor_i *ecef)
 {
 
-  /* store the origin of the tangeant plane */
+  /* store the origin of the tangent plane */
   VECT3_COPY(def->ecef, *ecef);
   /* compute the lla representation of the origin */
   lla_of_ecef_i(&def->lla, &def->ecef);
@@ -72,7 +72,7 @@ void ltp_def_from_ecef_i(struct LtpDef_i *def, struct EcefCoor_i *ecef)
 void ltp_def_from_lla_i(struct LtpDef_i *def, struct LlaCoor_i *lla)
 {
 
-  /* store the origin of the tangeant plane */
+  /* store the origin of the tangent plane */
   LLA_COPY(def->lla, *lla);
   /* compute the ecef representation of the origin */
   ecef_of_lla_i(&def->ecef, &def->lla);
@@ -332,6 +332,10 @@ void ned_of_lla_vect_i(struct NedCoor_i *ned, struct LtpDef_i *def, struct LlaCo
 #include "pprz_geodetic_float.h"
 #include "pprz_geodetic_double.h"
 
+/** Convert a ECEF to LLA.
+ * @param[out] out  LLA in degrees*1e7 and mm above ellipsoid
+ * @param[in]  in   ECEF in cm
+ */
 void lla_of_ecef_i(struct LlaCoor_i *out, struct EcefCoor_i *in)
 {
 
@@ -357,6 +361,10 @@ void lla_of_ecef_i(struct LlaCoor_i *out, struct EcefCoor_i *in)
 
 }
 
+/** Convert a LLA to ECEF.
+ * @param[out] out  ECEF in cm
+ * @param[in]  in   LLA in degrees*1e7 and mm above ellipsoid
+ */
 void ecef_of_lla_i(struct EcefCoor_i *out, struct LlaCoor_i *in)
 {
 
@@ -384,6 +392,10 @@ void ecef_of_lla_i(struct EcefCoor_i *out, struct LlaCoor_i *in)
 
 #include "math/pprz_geodetic_utm.h"
 
+/** Convert a LLA to UTM.
+ * @param[out] out  UTM in cm and mm hmsl alt
+ * @param[in]  in   LLA in degrees*1e7 and mm above ellipsoid
+ */
 void utm_of_lla_i(struct UtmCoor_i *utm, struct LlaCoor_i *lla)
 {
 #if USE_SINGLE_PRECISION_LLA_UTM
@@ -409,6 +421,11 @@ void utm_of_lla_i(struct UtmCoor_i *utm, struct LlaCoor_i *lla)
 #endif
 }
 
+/** Convert a local NED position to ECEF.
+ * @param[out] ecef ECEF position in cm
+ * @param[in]  def  local coordinate system definition
+ * @param[in]  ned  NED position in meter << #INT32_POS_FRAC
+ */
 void lla_of_utm_i(struct LlaCoor_i *lla, struct UtmCoor_i *utm)
 {
 #if USE_SINGLE_PRECISION_LLA_UTM

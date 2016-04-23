@@ -163,6 +163,7 @@ void swarm_nn_periodic(void)
   float d  = 0.;
 
   struct UtmCoor_i my_pos = utm_int_from_gps(&gps, 0);
+  my_pos.alt = gps.hmsl;
 
   // compute nn inputs
   for (i = 0; i < ti_acs_idx; i++) {
@@ -171,15 +172,15 @@ void swarm_nn_periodic(void)
 
     // if AC not responding for too long, continue, else compute force
     uint32_t delta_t = ABS((int32_t)(gps.tow - ac->itow));
-    printf("%d %d\n", gps.tow, ac->itow);
     if(delta_t > 5000) { continue; }
 
-    float de = (ac->utm.east - my_pos.east) / 100.; // + sha * delta_t
-    float dn = (ac->utm.north - my_pos.north) / 100.; // cha * delta_t
-    float da = (ac->utm.alt - my_pos.alt) / 1000.; // ac->climb * delta_t   // currently wrong reference in other aircraft
+    // get distance to other with the assumption of constant velocity since last position message
+    float de = (ac->utm.east - my_pos.east) / 100. + sinf(ac->course) * delta_t / 1000.;
+    float dn = (ac->utm.north - my_pos.north) / 100. + cosf(ac->course) * delta_t / 1000.;
+    float da = (ac->utm.alt - my_pos.alt + ac->climb * delta_t) / 1000.;
 
     float dist2 = de * de + dn * dn;
-    if (use_height) { dist2 += + da * da; }
+    if (use_height) { dist2 += da * da; }
 
     rx += de;
     ry += dn;

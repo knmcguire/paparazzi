@@ -44,6 +44,7 @@ void gps_datalink_init(void)
   gps_datalink.fix = GPS_FIX_NONE;
   gps_datalink.gspeed = 700;  // To enable course setting
   gps_datalink.cacc = 0;      // To enable course setting
+  gps_datalink.pdop = gps_datalink.sacc = gps_datalink.pacc = 0;
 
   struct LlaCoor_i llh_nav0; /* Height above the ellipsoid */
   llh_nav0.lat = NAV_LAT0;
@@ -94,13 +95,17 @@ void parse_gps_datalink_small(int16_t heading, uint32_t pos_xyz, uint32_t speed_
     enu_speed.z |= 0xFFFFFC00;  // sign extend for twos complements
   }
 
+  VECT3_NED_OF_ENU(gps_datalink.ned_vel, enu_speed);
+  SetBit(gps_datalink.valid_fields, GPS_VALID_VEL_NED_BIT);
+
   ecef_of_enu_vect_i(&gps_datalink.ecef_vel , &ltp_def , &enu_speed);
   SetBit(gps_datalink.valid_fields, GPS_VALID_VEL_ECEF_BIT);
 
-  gps_datalink.ned_vel.x = enu_speed.y;
-  gps_datalink.ned_vel.y = enu_speed.x;
-  gps_datalink.ned_vel.z = -enu_speed.z;
-  SetBit(gps_datalink.valid_fields, GPS_VALID_VEL_NED_BIT);
+
+  // todo figure out how cacc works and change ins to only use that parameter to set heading and not speed then
+  // we can set the correct gspeed here
+  //gps_datalink.gspeed = (int16_t)sqrt(enu_speed.x*enu_speed.x + enu_speed.y*enu_speed.y);
+  gps_datalink.speed_3d = (int16_t)sqrt(enu_speed.x*enu_speed.x + enu_speed.y*enu_speed.y + enu_speed.z*enu_speed.z);
 
   gps_datalink.hmsl = ltp_def.hmsl + enu_pos.z * 10;
   SetBit(gps_datalink.valid_fields, GPS_VALID_HMSL_BIT);
@@ -112,7 +117,7 @@ void parse_gps_datalink_small(int16_t heading, uint32_t pos_xyz, uint32_t speed_
   gps_datalink.course = ((int32_t)heading) * 1e3;
   SetBit(gps_datalink.valid_fields, GPS_VALID_COURSE_BIT);
 
-  gps_datalink.num_sv = 4;
+  gps_datalink.num_sv = 7;
   gps_datalink.tow = tow;
   gps_datalink.fix = GPS_FIX_3D; // set 3D fix to true
 
@@ -120,10 +125,9 @@ void parse_gps_datalink_small(int16_t heading, uint32_t pos_xyz, uint32_t speed_
   uint32_t now_ts = get_sys_time_usec();
   gps_datalink.last_msg_ticks = sys_time.nb_sec_rem;
   gps_datalink.last_msg_time = sys_time.nb_sec;
-  if (gps_datalink.fix == GPS_FIX_3D) {
-    gps_datalink.last_3dfix_ticks = sys_time.nb_sec_rem;
-    gps_datalink.last_3dfix_time = sys_time.nb_sec;
-  }
+
+  gps_datalink.last_3dfix_ticks = sys_time.nb_sec_rem;
+  gps_datalink.last_3dfix_time = sys_time.nb_sec;
 
   AbiSendMsgGPS(GPS_DATALINK_ID, now_ts, &gps_datalink);
 }
@@ -158,6 +162,11 @@ void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t e
   ned_of_ecef_vect_i(&gps_datalink.ned_vel, &ltp_def , &gps_datalink.ecef_vel);
   SetBit(gps_datalink.valid_fields, GPS_VALID_VEL_NED_BIT);
 
+  // todo figure out how cacc works and change ins to only use that parameter to set heading and not speed then
+  // we can set the correct gspeed here
+  //gps_datalink.gspeed = (int16_t)sqrt(gps_datalink.ned_vel.x*gps_datalink.ned_vel.x + gps_datalink.ned_vel.y*gps_datalink.ned_vel.y);
+  gps_datalink.speed_3d = (int16_t)sqrt(gps_datalink.ned_vel.x*gps_datalink.ned_vel.x + gps_datalink.ned_vel.y*gps_datalink.ned_vel.y + gps_datalink.ned_vel.z*gps_datalink.ned_vel.z);
+
   gps_datalink.course = course;
   SetBit(gps_datalink.valid_fields, GPS_VALID_COURSE_BIT);
 
@@ -169,10 +178,9 @@ void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t e
   uint32_t now_ts = get_sys_time_usec();
   gps_datalink.last_msg_ticks = sys_time.nb_sec_rem;
   gps_datalink.last_msg_time = sys_time.nb_sec;
-  if (gps_datalink.fix == GPS_FIX_3D) {
-    gps_datalink.last_3dfix_ticks = sys_time.nb_sec_rem;
-    gps_datalink.last_3dfix_time = sys_time.nb_sec;
-  }
+
+  gps_datalink.last_3dfix_ticks = sys_time.nb_sec_rem;
+  gps_datalink.last_3dfix_time = sys_time.nb_sec;
 
   AbiSendMsgGPS(GPS_DATALINK_ID, now_ts, &gps_datalink);
 }

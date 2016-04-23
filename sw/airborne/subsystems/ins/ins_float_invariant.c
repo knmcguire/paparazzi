@@ -412,8 +412,7 @@ void ins_float_invariant_update_gps(struct GpsState *gps_s)
       // position (local ned)
       ins_float_inv.meas.pos_gps.x = utm.north - state.utm_origin_f.north;
       ins_float_inv.meas.pos_gps.y = utm.east - state.utm_origin_f.east;
-      ins_float_inv.meas.pos_gps.z = state.utm_origin_f.alt - (gps_s->hmsl / 1000.0f); // todo kirk check
-      // speed
+      ins_float_inv.meas.pos_gps.z = state.utm_origin_f.alt - (gps_s->hmsl / 1000.0f);
       ins_float_inv.meas.speed_gps.x = gps_s->ned_vel.x / 100.0f;
       ins_float_inv.meas.speed_gps.y = gps_s->ned_vel.y / 100.0f;
       ins_float_inv.meas.speed_gps.z = gps_s->ned_vel.z / 100.0f;
