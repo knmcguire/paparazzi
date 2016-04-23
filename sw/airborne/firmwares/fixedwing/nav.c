@@ -25,24 +25,27 @@
  *
  */
 
-#define NAV_C
-
 #include <math.h>
+#include "std.h"
 
+static unit_t unit __attribute__((unused));
+
+#define NAV_C
 #include "firmwares/fixedwing/nav.h"
-#include "subsystems/gps.h"
 #include "firmwares/fixedwing/stabilization/stabilization_attitude.h"
 #include "firmwares/fixedwing/autopilot.h"
 #include "inter_mcu.h"
+#include "subsystems/gps.h"
 
-#define RCLost() bit_is_set(fbw_state->status, STATUS_RADIO_REALLY_LOST)
+#include "generated/flight_plan.h"
+
 
 enum oval_status oval_status;
 
 float last_x, last_y;
 
 /** Index of last waypoint. Used only in "go" stage in "route" horiz mode */
-static uint8_t last_wp __attribute__((unused));
+uint8_t last_wp __attribute__((unused));
 
 float rc_pitch;
 float carrot_x, carrot_y;
@@ -61,8 +64,8 @@ static float nav_carrot_leg_progress;
 /** length of the current leg (m) */
 static float nav_leg_length;
 
-bool_t nav_in_circle = FALSE;
-bool_t nav_in_segment = FALSE;
+bool nav_in_circle = false;
+bool nav_in_segment = false;
 float nav_circle_x, nav_circle_y, nav_circle_radius;
 float nav_segment_x_1, nav_segment_y_1, nav_segment_x_2, nav_segment_y_2;
 uint8_t horizontal_mode;
@@ -83,7 +86,7 @@ float nav_ground_speed_setpoint, nav_ground_speed_pgain;
 /* Used in nav_survey_rectangle. Defined here for downlink and uplink */
 float nav_survey_shift;
 float nav_survey_west, nav_survey_east, nav_survey_north, nav_survey_south;
-bool_t nav_survey_active;
+bool nav_survey_active;
 
 int nav_mode;
 
@@ -94,13 +97,10 @@ void nav_init_stage(void)
   stage_time = 0;
   nav_circle_radians = 0;
   nav_circle_radians_no_rewind = 0;
-  nav_in_circle = FALSE;
-  nav_in_segment = FALSE;
+  nav_in_circle = false;
+  nav_in_segment = false;
   nav_shift = 0;
 }
-
-#define PowerVoltage() (vsupply/10.)
-#define RcRoll(travel) (fbw_state->channels[RADIO_ROLL]* (float)travel /(float)MAX_PPRZ)
 
 #define MIN_DX ((int16_t)(MAX_PPRZ * 0.05))
 
@@ -148,22 +148,21 @@ void nav_circle_XY(float x, float y, float radius)
   }
   fly_to_xy(x + cosf(alpha_carrot)*radius_carrot,
             y + sinf(alpha_carrot)*radius_carrot);
-  nav_in_circle = TRUE;
+  nav_in_circle = true;
   nav_circle_x = x;
   nav_circle_y = y;
   nav_circle_radius = radius;
 }
 
 
-#define NavGlide(_last_wp, _wp) {                                       \
-    float start_alt = waypoints[_last_wp].a;                            \
-    float diff_alt = waypoints[_wp].a - start_alt;                      \
-    float alt = start_alt + nav_leg_progress * diff_alt;                \
-    float pre_climb = stateGetHorizontalSpeedNorm_f() * diff_alt / nav_leg_length; \
-    NavVerticalAltitudeMode(alt, pre_climb);                            \
-  }
-
-
+void nav_glide(uint8_t start_wp, uint8_t wp)
+{
+  float start_alt = waypoints[start_wp].a;
+  float diff_alt = waypoints[wp].a - start_alt;
+  float alt = start_alt + nav_leg_progress * diff_alt;
+  float pre_climb = stateGetHorizontalSpeedNorm_f() * diff_alt / nav_leg_length;
+  NavVerticalAltitudeMode(alt, pre_climb);
+}
 
 
 #define MAX_DIST_CARROT 250.
@@ -196,13 +195,6 @@ void nav_circle_XY(float x, float y, float radius)
   }
 
 
-#define NavFollow(_ac_id, _distance, _height)   \
-  nav_follow(_ac_id, _distance, _height);
-
-
-static unit_t unit __attribute__((unused));
-
-static inline void nav_follow(uint8_t _ac_id, float _distance, float _height);
 
 #ifdef NAV_GROUND_SPEED_PGAIN
 /** \brief Computes cruise throttle from ground speed setpoint
@@ -222,8 +214,8 @@ static void nav_ground_speed_loop(void)
 }
 #endif
 
-static float baseleg_out_qdr;
-static inline bool_t nav_compute_baseleg(uint8_t wp_af, uint8_t wp_td, uint8_t wp_baseleg, float radius)
+float baseleg_out_qdr;
+bool nav_compute_baseleg(uint8_t wp_af, uint8_t wp_td, uint8_t wp_baseleg, float radius)
 {
   nav_radius = radius;
 
@@ -243,10 +235,10 @@ static inline bool_t nav_compute_baseleg(uint8_t wp_af, uint8_t wp_td, uint8_t w
     baseleg_out_qdr += M_PI;
   }
 
-  return FALSE;
+  return false;
 }
 
-static inline bool_t nav_compute_final_from_glide(uint8_t wp_af, uint8_t wp_td, float glide)
+bool nav_compute_final_from_glide(uint8_t wp_af, uint8_t wp_td, float glide)
 {
 
   float x_0 = waypoints[wp_td].x - waypoints[wp_af].x;
@@ -262,14 +254,14 @@ static inline bool_t nav_compute_final_from_glide(uint8_t wp_af, uint8_t wp_td, 
   waypoints[wp_af].y = waypoints[wp_td].y + y_1 * h_0 * glide;
   waypoints[wp_af].a = waypoints[wp_af].a;
 
-  return FALSE;
+  return false;
 }
 
 
 /* For a landing UPWIND.
    Computes Top Of Descent waypoint from Touch Down and Approach Fix
    waypoints, using glide airspeed, glide vertical speed and wind */
-static inline bool_t compute_TOD(uint8_t _af, uint8_t _td, uint8_t _tod, float glide_airspeed, float glide_vspeed)
+static inline bool compute_TOD(uint8_t _af, uint8_t _td, uint8_t _tod, float glide_airspeed, float glide_vspeed)
 {
   struct FloatVect2 *wind = stateGetHorizontalWindspeed_f();
   float td_af_x = WaypointX(_af) - WaypointX(_td);
@@ -280,11 +272,8 @@ static inline bool_t compute_TOD(uint8_t _af, uint8_t _td, uint8_t _tod, float g
   WaypointX(_tod) = WaypointX(_td) + td_af_x / td_af * td_tod;
   WaypointY(_tod) = WaypointY(_td) + td_af_y / td_af * td_tod;
   WaypointAlt(_tod) = WaypointAlt(_af);
-  return FALSE;
+  return false;
 }
-
-
-#include "generated/flight_plan.h"
 
 
 #ifndef LINE_START_FUNCTION
@@ -297,7 +286,8 @@ static inline bool_t compute_TOD(uint8_t _af, uint8_t _td, uint8_t _tod, float g
 #ifdef TRAFFIC_INFO
 #include "modules/multi/traffic_info.h"
 
-static inline void nav_follow(uint8_t _ac_id, float _distance, float _height)
+
+void nav_follow(uint8_t _ac_id, float _distance, float _height)
 {
   struct ac_info_ * ac = get_ac_info(_ac_id);
   NavVerticalAutoThrottleMode(0.);
@@ -337,7 +327,7 @@ float fp_climb; /* m/s */
  *
  *  @return true if the position (x, y) is reached
  */
-bool_t nav_approaching_xy(float x, float y, float from_x, float from_y, float approaching_time)
+bool nav_approaching_xy(float x, float y, float from_x, float from_y, float approaching_time)
 {
   /** distance to waypoint in x */
   float pw_x = x - stateGetPositionEnu_f()->x;
@@ -357,7 +347,7 @@ bool_t nav_approaching_xy(float x, float y, float from_x, float from_y, float ap
     dist2_to_wp = pw_x * pw_x + pw_y * pw_y;
     float min_dist = approaching_time * stateGetHorizontalSpeedNorm_f();
     if (dist2_to_wp < min_dist * min_dist) {
-      return TRUE;
+      return true;
     }
     float scal_prod = (x - from_x) * pw_x + (y - from_y) * pw_y;
     return (scal_prod < 0.);
@@ -408,7 +398,7 @@ void nav_route_xy(float last_wp_x, float last_wp_y, float wp_x, float wp_y)
   float carrot = CARROT * NOMINAL_AIRSPEED;
 
   nav_carrot_leg_progress = nav_leg_progress + Max(carrot / nav_leg_length, 0.);
-  nav_in_segment = TRUE;
+  nav_in_segment = true;
   nav_segment_x_1 = last_wp_x;
   nav_segment_y_1 = last_wp_y;
   nav_segment_x_2 = wp_x;
@@ -454,7 +444,7 @@ void nav_home(void)
  */
 void nav_periodic_task(void)
 {
-  nav_survey_active = FALSE;
+  nav_survey_active = false;
 
   compute_dist2_to_home();
   dist2_to_wp = 0.;
@@ -497,10 +487,10 @@ static void send_wp_moved(struct transport_tx *trans, struct link_device *dev)
   DownlinkSendWp(trans, dev, i);
 }
 
-bool_t DownlinkSendWpNr(uint8_t _wp)
+bool DownlinkSendWpNr(uint8_t _wp)
 {
   DownlinkSendWp(&(DefaultChannel).trans_tx, &(DefaultDevice).device, _wp);
-  return FALSE;
+  return false;
 }
 
 

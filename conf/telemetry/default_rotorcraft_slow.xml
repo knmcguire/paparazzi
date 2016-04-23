@@ -7,30 +7,28 @@
 
     <mode name="default" key_press="d">
       <message name="AUTOPILOT_VERSION"      period="11.1"/>
-      <message name="DL_VALUE"               period="2.1"/>
+      <message name="DL_VALUE"               period="1.1"/>
       <message name="ROTORCRAFT_STATUS"      period="3.2"/>
-      <message name="ROTORCRAFT_FP"          period="0.24"/>
+      <message name="ROTORCRAFT_FP"          period="0.5"/>
       <message name="ALIVE"                  period="3.1"/>
       <message name="INS_REF"                period="5.1"/>
       <message name="ROTORCRAFT_NAV_STATUS"  period="2.6"/>
       <message name="WP_MOVED"               period="2.3"/>
-      <!--message name="ROTORCRAFT_CAM"         period="2."/-->
-      <!--message name="GPS_INT"                period=".75"/-->
-      <message name="INS"                    period=".51"/>
-      <!--message name="I2C_ERRORS"             period="6.1"/-->
-      <!--message name="UART_ERRORS"            period="4.1"/-->
+      <message name="ROTORCRAFT_CAM"         period="2."/>
+      <message name="GPS_INT"                period=".75"/>
+      <message name="INS"                    period=".75"/>
+      <message name="I2C_ERRORS"             period="6.1"/>
+      <message name="UART_ERRORS"            period="4.1"/>
       <message name="SUPERBITRF"             period="4"/>
       <message name="BLUEGIGA"               period="4"/>
       <message name="ENERGY"                 period="3.5"/>
       <message name="DATALINK_REPORT"        period="6.1"/>
-      <!--message name="STATE_FILTER_STATUS"    period="4.2"/-->
-      <!--message name="AIR_DATA"               period="2.3"/>
+      <message name="STATE_FILTER_STATUS"    period="4.2"/>
+      <message name="AIR_DATA"               period="2.3"/>
       <message name="SURVEY"                 period="4.5"/>
       <message name="OPTIC_FLOW_EST"         period="0.5"/>
-      <message name="VECTORNAV_INFO"         period="0.5"/-->
-      <message name="POTENTIAL"              period="0.51"/>
-      <!--message name="GUIDANCE_H_REF_INT"     period="0.5"/>
-      <message name="RC"     period="0.5"/-->
+      <message name="VECTORNAV_INFO"         period="0.5"/>
+      <message name="FBW_STATUS"             period="2"/>
     </mode>
 
     <mode name="ppm">
@@ -144,15 +142,6 @@
       <!--<message name="INS2"              period=".05"/>
       <message name="INS3"              period=".20"/>-->
       <message name="INS_REF"           period="5.1"/>
-    </mode>
-    
-    <mode name="gps">
-      <message name="INS_REF"           period="5.1"/>
-    </mode>
-    
-    <mode name="mission">
-      <message name="GPS"               period="1.2"/>
-      <message name="POTENTIAL"         period="1.1"/>
     </mode>
 
   </process>

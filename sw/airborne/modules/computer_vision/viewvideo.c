@@ -110,8 +110,8 @@ struct viewvideo_t viewvideo = {
  * Handles all the video streaming and saving of the image shots
  * This is a sepereate thread, so it needs to be thread safe!
  */
-bool_t viewvideo_function(struct image_t *img);
-bool_t viewvideo_function(struct image_t *img)
+struct image_t* viewvideo_function(struct image_t *img);
+struct image_t* viewvideo_function(struct image_t *img)
 {
   // Resize image if needed
   struct image_t img_small;
@@ -189,7 +189,7 @@ bool_t viewvideo_function(struct image_t *img)
   // Free all buffers
   image_free(&img_jpeg);
   image_free(&img_small);
-  return TRUE;
+  return NULL; // No new images were created
 }
 
 /**
@@ -201,7 +201,7 @@ void viewvideo_init(void)
 
   cv_add(viewvideo_function);
 
-  viewvideo.is_streaming = TRUE;
+  viewvideo.is_streaming = true;
 
 #if VIEWVIDEO_USE_NETCAT
   // Create an Netcat receiver file for the streaming

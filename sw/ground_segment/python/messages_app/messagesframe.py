@@ -14,7 +14,7 @@ sys.path.append(PPRZ_SRC + "/sw/ext/pprzlink/lib/v1.0/python")
 
 PPRZ_HOME = getenv("PAPARAZZI_HOME", PPRZ_SRC)
 
-from ivy_msg_interface import IvyMessagesInterface
+from pprzlink.ivy import IvyMessagesInterface
 from pprzlink.message import PprzMessage
 
 WIDTH = 450
@@ -172,7 +172,9 @@ class MessagesFrame(wx.Frame):
         self.timer = threading.Timer(0.1, self.update_leds)
         self.timer.start()
         self.msg_class = msg_class
-        self.interface = IvyMessagesInterface(self.message_recv)
+        self.interface = IvyMessagesInterface("Paparazzi Messages Viewer")
+        self.interface.subscribe(self.message_recv)
+
 
     def OnClose(self, event):
         self.timer.cancel()

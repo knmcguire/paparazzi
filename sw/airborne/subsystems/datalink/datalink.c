@@ -55,7 +55,7 @@
 #define MOfMm(_x) (((float)(_x))/1000.)
 
 #if USE_NPS
-bool_t datalink_enabled = TRUE;
+bool datalink_enabled = true;
 #endif
 
 void dl_parse_msg(void)

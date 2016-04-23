@@ -33,11 +33,21 @@
 #include "std.h"
 
 #ifndef UART_RX_BUFFER_SIZE
+#ifdef STM32F4  //the F4 has enough memory
+#define UART_RX_BUFFER_SIZE 256
+#else
 #define UART_RX_BUFFER_SIZE 128
 #endif
+#endif
+
 #ifndef UART_TX_BUFFER_SIZE
+#ifdef STM32F4  //the F4 has enough memory, and the PX4 bootloader needs more then 128
+#define UART_TX_BUFFER_SIZE 256
+#else
 #define UART_TX_BUFFER_SIZE 128
 #endif
+#endif
+
 #define UART_DEV_NAME_SIZE 16
 
 /*
@@ -66,7 +76,7 @@ struct uart_periph {
   uint8_t tx_buf[UART_TX_BUFFER_SIZE];
   uint16_t tx_insert_idx;
   uint16_t tx_extract_idx;
-  uint8_t tx_running;
+  volatile uint8_t tx_running;
   /** UART Register */
   void *reg_addr;
   /** UART Baudrate */
@@ -84,9 +94,11 @@ struct uart_periph {
 extern void uart_periph_init(struct uart_periph *p);
 extern void uart_periph_set_baudrate(struct uart_periph *p, uint32_t baud);
 extern void uart_periph_set_bits_stop_parity(struct uart_periph *p, uint8_t bits, uint8_t stop, uint8_t parity);
-extern void uart_periph_set_mode(struct uart_periph *p, bool_t tx_enabled, bool_t rx_enabled, bool_t hw_flow_control);
-extern void uart_put_byte(struct uart_periph *p, uint8_t data);
-extern bool_t uart_check_free_space(struct uart_periph *p, uint8_t len);
+extern void uart_periph_set_mode(struct uart_periph *p, bool tx_enabled, bool rx_enabled, bool hw_flow_control);
+extern void uart_put_byte(struct uart_periph *p, long fd, uint8_t data);
+extern void uart_put_buffer(struct uart_periph *p, long fd, const uint8_t *data, uint16_t len);
+extern bool uart_check_free_space(struct uart_periph *p, long *fd, uint16_t len);
+extern void uart_send_message(struct uart_periph *p, long fd);
 extern uint8_t uart_getch(struct uart_periph *p);
 
 /**

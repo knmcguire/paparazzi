@@ -11,18 +11,14 @@ from time import sleep
 PPRZ_SRC = getenv("PAPARAZZI_SRC", path.normpath(path.join(path.dirname(path.abspath(__file__)), '../../../')))
 sys.path.append(PPRZ_SRC + "/sw/ext/pprzlink/lib/v1.0/python")
 
-from ivy_msg_interface import IvyMessagesInterface
+from pprzlink.ivy import IvyMessagesInterface
 from pprzlink.message import PprzMessage
 
 
 class WaypointMover(object):
     def __init__(self, verbose=False):
         self.verbose = verbose
-        self._interface = IvyMessagesInterface(self.message_recv)
-
-    def message_recv(self, ac_id, msg):
-        if self.verbose:
-            print("Got msg %s" % msg.name)
+        self._interface = IvyMessagesInterface("WaypointMover")
 
     def shutdown(self):
         print("Shutting down ivy interface...")

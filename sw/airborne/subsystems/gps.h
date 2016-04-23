@@ -149,11 +149,11 @@ extern void gps_inject_data(uint8_t packet_id, uint8_t length, uint8_t *data);
 #define GPS_TIMEOUT 2
 #endif
 
-static inline bool_t gps_has_been_good(void)
+static inline bool gps_has_been_good(void)
 {
-  static bool_t gps_had_valid_fix = FALSE;
+  static bool gps_had_valid_fix = false;
   if (GpsFixValid()) {
-    gps_had_valid_fix = TRUE;
+    gps_had_valid_fix = true;
   }
   return gps_had_valid_fix;
 }
@@ -187,16 +187,16 @@ extern uint32_t gps_tow_from_sys_ticks(uint32_t sys_ticks);
 /**
  * Convenience function to get utm position in float from GPS structure.
  * Beware that altitude is initialized to zero but not set to the correct value
- * @param[in] gps pointer to the gps structure
+ * @param[in] gps_s pointer to the gps structure
  * @param[in] zone set the utm zone in which the position should be computed, 0 to try to get it automatically from lla position
  * @return utm position in float
  */
-extern struct UtmCoor_f utm_float_from_gps(struct GpsState *gps, uint8_t zone);
+extern struct UtmCoor_f utm_float_from_gps(struct GpsState *gps_s, uint8_t zone);
 
 /**
  * Convenience function to get utm position in int from GPS structure.
  * Beware that altitude is initialized to zero but not set to the correct value
- * @param[in] gps pointer to the gps structure
+ * @param[in] gps_s pointer to the gps structure
  * @param[in] zone set the utm zone in which the position should be computed, 0 to try to get it automatically from lla position
  * @return utm position in fixed point (cm)
  */

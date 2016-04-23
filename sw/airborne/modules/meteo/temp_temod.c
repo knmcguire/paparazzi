@@ -38,7 +38,7 @@
 #include "sdLog.h"
 #include "subsystems/chibios-libopencm3/chibios_sdlog.h"
 #include "subsystems/gps.h"
-bool_t log_temod_started;
+bool log_temod_started;
 #endif
 
 float ftmd_temperature;
@@ -60,7 +60,7 @@ void temod_init(void)
   tmd_trans.status = I2CTransDone;
 
 #if TEMP_TEMOD_SDLOG
-  log_temod_started = FALSE;
+  log_temod_started = false;
 #endif
 }
 
@@ -90,8 +90,8 @@ void temod_event(void)
 #if TEMP_TEMOD_SDLOG
   if (pprzLogFile != -1) {
     if (!log_temod_started) {
-      sdLogWriteLog(pprzLogFile, "TEMOD: Temp(degC) H(usec) GPS_fix TOW(ms) Week Lat(1e7rad) Lon(1e7rad) HMSL(mm) gpseed(cm/s) course(1e7rad) climb(cm/s)\n");
-      log_temod_started = TRUE;
+      sdLogWriteLog(pprzLogFile, "TEMOD: Temp(degC) GPS_fix TOW(ms) Week Lat(1e7deg) Lon(1e7deg) HMSL(mm) gspeed(cm/s) course(1e7deg) climb(cm/s)\n");
+      log_temod_started = true;
     }
     else {
       sdLogWriteLog(pprzLogFile, "temod: %9.4f    %d %d %d   %d %d %d   %d %d %d\n",

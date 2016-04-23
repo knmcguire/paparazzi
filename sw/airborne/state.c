@@ -48,9 +48,9 @@ void stateInit(void)
   state.ned_to_body_orientation.status = 0;
   state.rate_status = 0;
   state.wind_air_status = 0;
-  state.ned_initialized_i = FALSE;
-  state.ned_initialized_f = FALSE;
-  state.utm_initialized_i = FALSE;
+  state.ned_initialized_i = false;
+  state.ned_initialized_f = false;
+  state.utm_initialized_f = false;
 }
 
 
@@ -364,13 +364,11 @@ void stateCalcPositionUtm_i(void)
   if (bit_is_set(state.pos_status, POS_LLA_I)) {
     state.utm_pos_i.zone = 0;
     utm_of_lla_i(&state.utm_pos_i, &state.lla_pos_i);
-    printf("LLA_i\n");
   } else if (bit_is_set(state.pos_status, POS_LLA_F)) {
     state.utm_pos_i.zone = 0;
     utm_of_lla_f(&state.utm_pos_f, &state.lla_pos_f);
     SetBit(state.pos_status, POS_UTM_F);
     UTM_BFP_OF_REAL(state.utm_pos_i, state.utm_pos_f);
-    printf("LLA_f\n");
   } else if (state.utm_initialized_i) {
     if (bit_is_set(state.pos_status, POS_ENU_I)) {
       UTM_OF_ENU_ADD(state.utm_pos_i, state.enu_pos_i, state.utm_origin_i);

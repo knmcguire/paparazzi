@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 #set -x
 
 # if no arguments given, start with interactive terminal
 if test $# -lt 1; then
-    args="-t -i flixr/pprz-dev /sbin/my_init -- bash"
+    args="-t -i flixr/pprz-dev"
 else
     # Use this script with derived images, and pass your 'docker run' args
     args="$@"
@@ -107,6 +107,8 @@ docker run \
     ${SHARE_PAPARAZZI_HOME_OPTS} \
     --rm $args
 
+# remember exit status
+EXIT_STATUS=$?
 
 ############################################################
 # cleanup after exiting from docker container
@@ -119,3 +121,5 @@ rm -f $XAUTH
 if [ $UNAME == "Darwin" ]; then
     pkill -f "$TCPPROXY"
 fi
+
+exit $EXIT_STATUS

@@ -29,22 +29,43 @@
 
 #include "std.h"
 #include "subsystems/commands.h"
+#include "pprzlink/pprz_transport.h"
 
 #define INTERMCU_AP   0
 #define INTERMCU_FBW  1
 
+#ifndef INTERMCU_LOST_CNT
 #define INTERMCU_LOST_CNT 25  /* 50ms with a 512Hz timer TODO fixed value */
+#endif
+
+#include BOARD_CONFIG
 
 enum intermcu_status {
   INTERMCU_OK,
   INTERMCU_LOST
 };
 
-struct intermcu_t {
-  enum intermcu_status status;
-  uint8_t time_since_last_frame;
+enum intermcu_PX4_baud_status {
+  PX4_BAUD,
+  CHANGING_BAUD,
+  PPRZ_BAUD
 };
-extern struct intermcu_t inter_mcu;
+
+struct intermcu_t {
+  struct link_device *device;       ///< Device used for communication
+  struct pprz_transport transport;  ///< Transport over communication line (PPRZ)
+  enum intermcu_status status;      ///< Status of the INTERMCU
+  uint8_t time_since_last_frame;    ///< Time since last frame
+  bool enabled;                     ///< If the InterMCU communication is enabled
+  bool msg_available;               ///< If we have an InterMCU message
+
+#ifdef BOARD_PX4IO
+  enum intermcu_PX4_baud_status stable_px4_baud;
+#endif
+};
+extern struct intermcu_t intermcu;
+
+
 
 void intermcu_init(void);
 void intermcu_periodic(void);

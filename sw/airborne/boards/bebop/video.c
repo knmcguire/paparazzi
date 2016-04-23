@@ -59,18 +59,18 @@ struct video_config_t front_camera = {
   .filters = VIDEO_FILTER_DEBAYER
 };
 
-static bool_t write_reg(int fd, char *addr_val, uint8_t cnt)
+static bool write_reg(int fd, char *addr_val, uint8_t cnt)
 {
   char resp[cnt - 2];
   uint8_t i;
 
   if (write(fd, addr_val, cnt) != cnt) {
     printf("Write failed!\n");
-    return FALSE;
+    return false;
   }
   if (write(fd, addr_val, 2) != 2) {
     printf("Write2 failed!\n");
-    return FALSE;
+    return false;
   }
   while (read(fd, resp, cnt - 2) != cnt - 2) { ; }
   for (i = 0; i < cnt - 2; i++) {
@@ -79,15 +79,15 @@ static bool_t write_reg(int fd, char *addr_val, uint8_t cnt)
       return write_reg(fd, addr_val, cnt);
     }
   }
-  return TRUE;
+  return true;
 }
 
-static bool_t _write(int fd, char *data, uint8_t cnt)
+static bool _write(int fd, char *data, uint8_t cnt)
 {
   if (write(fd, data, cnt) != cnt) {
     printf("Failed!\n");
   }
-  return TRUE;
+  return true;
 }
 
 #pragma GCC diagnostic push
@@ -487,15 +487,15 @@ void mt9f002_init(void)
   mt9f002_write_reg16(MT9F002_P_GB_P4Q3, 0);
   mt9f002_write_reg16(MT9F002_P_GB_P4Q4, 0);
 
-  mt9f002_write_reg16(MT9F002_GREEN1_GAIN, 4176);
-  mt9f002_write_reg16(MT9F002_BLUE_GAIN, 4176);
-  mt9f002_write_reg16(MT9F002_RED_GAIN, 4176);
-  mt9f002_write_reg16(MT9F002_GREEN2_GAIN, 4176);
-  mt9f002_write_reg16(MT9F002_GLOBAL_GAIN, 4176);
+  mt9f002_write_reg16(MT9F002_GREEN1_GAIN, 19583);
+  mt9f002_write_reg16(MT9F002_BLUE_GAIN, 19583);
+  mt9f002_write_reg16(MT9F002_RED_GAIN, 19583);
+  mt9f002_write_reg16(MT9F002_GREEN2_GAIN, 19583);
+  mt9f002_write_reg16(MT9F002_GLOBAL_GAIN, 19583);
   mt9f002_write_reg16(MT9F002_ANALOG_GAIN_CODE_GLOBAL, 10);
   mt9f002_write_reg16(MT9F002_ANALOG_GAIN_CODE_GREENR, 10);
   mt9f002_write_reg16(MT9F002_ANALOG_GAIN_CODE_RED, 10);
-  mt9f002_write_reg16(MT9F002_ANALOG_GAIN_CODE_BLUE, 10);
+  mt9f002_write_reg16(MT9F002_ANALOG_GAIN_CODE_BLUE, 14);
   mt9f002_write_reg16(MT9F002_ANALOG_GAIN_CODE_GREENB, 10);
   mt9f002_write_reg16(MT9F002_CALIB_GREEN1_ASC1, 4224);
   mt9f002_write_reg16(MT9F002_CALIB_BLUE_ASC1, 4224);

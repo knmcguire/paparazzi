@@ -60,7 +60,7 @@ struct GpsTimeSync gps_ubx_time_sync;
 void gps_ubx_init(void)
 {
   gps_ubx.status = UNINIT;
-  gps_ubx.msg_available = FALSE;
+  gps_ubx.msg_available = false;
   gps_ubx.error_cnt = 0;
   gps_ubx.error_last = GPS_UBX_ERR_NONE;
 
@@ -263,7 +263,7 @@ void gps_ubx_parse(uint8_t c)
         gps_ubx.error_last = GPS_UBX_ERR_CHECKSUM;
         goto error;
       }
-      gps_ubx.msg_available = TRUE;
+      gps_ubx.msg_available = true;
       goto restart;
       break;
     default:
@@ -280,15 +280,15 @@ restart:
 
 static void ubx_send_1byte(struct link_device *dev, uint8_t byte)
 {
-  dev->put_byte(dev->periph, byte);
+  dev->put_byte(dev->periph, 0, byte);
   gps_ubx.send_ck_a += byte;
   gps_ubx.send_ck_b += gps_ubx.send_ck_a;
 }
 
 void ubx_header(struct link_device *dev, uint8_t nav_id, uint8_t msg_id, uint16_t len)
 {
-  dev->put_byte(dev->periph, UBX_SYNC1);
-  dev->put_byte(dev->periph, UBX_SYNC2);
+  dev->put_byte(dev->periph, 0, UBX_SYNC1);
+  dev->put_byte(dev->periph, 0, UBX_SYNC2);
   gps_ubx.send_ck_a = 0;
   gps_ubx.send_ck_b = 0;
   ubx_send_1byte(dev, nav_id);
@@ -299,9 +299,9 @@ void ubx_header(struct link_device *dev, uint8_t nav_id, uint8_t msg_id, uint16_
 
 void ubx_trailer(struct link_device *dev)
 {
-  dev->put_byte(dev->periph, gps_ubx.send_ck_a);
-  dev->put_byte(dev->periph, gps_ubx.send_ck_b);
-  dev->send_message(dev->periph);
+  dev->put_byte(dev->periph, 0, gps_ubx.send_ck_a);
+  dev->put_byte(dev->periph, 0, gps_ubx.send_ck_b);
+  dev->send_message(dev->periph, 0);
 }
 
 void ubx_send_bytes(struct link_device *dev, uint8_t len, uint8_t *bytes)
@@ -344,7 +344,7 @@ void gps_ubx_msg(void)
     }
     AbiSendMsgGPS(GPS_UBX_ID, now_ts, &gps_ubx.state);
   }
-  gps_ubx.msg_available = FALSE;
+  gps_ubx.msg_available = false;
 }
 
 void gps_ubx_register(void)

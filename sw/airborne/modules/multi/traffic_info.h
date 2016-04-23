@@ -1,7 +1,7 @@
 /*
  * Copyright (C) Pascal Brisset, Antoine Drouin (2008), Kirk Scheper (2016)
  *
- * This file is part of paparazzi
+ * This file is part of paparazzi.
  *
  * paparazzi is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,17 +14,19 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with paparazzi; see the file COPYING.  If not, see
- * <http://www.gnu.org/licenses/>.
+ * along with paparazzi; see the file COPYING.  If not, write to
+ * the Free Software Foundation, 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
  */
+
 /**
  * @file "modules/mutli/traffic_info.h"
  * @author Kirk Scheper
  * Keeps track of other aircraft in airspace
  */
 
-#ifndef TRAFFIC_INFO_H
-#define TRAFFIC_INFO_H
+#ifndef TI_H
+#define TI_H
 
 #include <inttypes.h>
 #include <math/pprz_geodetic_int.h>
@@ -48,9 +50,9 @@ extern struct ac_info_ *get_ac_info(uint8_t id);
 /**
  * Set Aircraft info.
  * @param[in] id aircraft id, 0 is reserved for GCS, 1 for this aircraft (id=AC_ID)
- * @param[in] utm_east UTM east on cm
+ * @param[in] utm_east UTM east in cm
  * @param[in] utm_north UTM north in cm
- * @param[in] alt Altitude in mm above the geoid
+ * @param[in] alt Altitude in m above MSL
  * @param[in] utm_zone UTM zone
  * @param[in] course Course in decideg (CW)
  * @param[in] gspeed Ground speed in m/s
@@ -66,7 +68,7 @@ extern void set_ac_info(uint8_t id, uint32_t utm_east, uint32_t utm_north, uint3
  * @param[in] id aircraft id, 0 is reserved for GCS, 1 for this aircraft (id=AC_ID)
  * @param[in] lat Latitude in 1e7deg
  * @param[in] lon Longitude in 1e7deg
- * @param[in] alt Altitude in mm above the gedoi
+ * @param[in] alt Altitude in mm above MSL
  * @param[in] course Course in decideg (CW)
  * @param[in] gspeed Ground speed in cm/s
  * @param[in] climb Climb rate in cm/s

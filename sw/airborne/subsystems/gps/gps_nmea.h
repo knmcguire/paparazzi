@@ -46,10 +46,9 @@ extern void gps_nmea_event(void);
 extern void gps_nmea_register(void);
 
 struct GpsNmea {
-  bool_t msg_available;
-  bool_t pos_available;
-  bool_t is_configured;       ///< flag set to TRUE if configuration is finished
-  bool_t have_gsv;            ///< flag set to TRUE if GPGSV message received
+  bool msg_available;       ///< flag set to TRUE if a new msg/sentence is available to be parsed
+  bool is_configured;       ///< flag set to TRUE if configuration is finished
+  bool have_gsv;            ///< flag set to TRUE if GPGSV message received
   uint8_t gps_nb_ovrn;        ///< number if incomplete nmea-messages
   char msg_buf[NMEA_MAXLEN];  ///< buffer for storing one nmea-line
   int msg_len;
@@ -70,10 +69,10 @@ extern struct GpsNmea gps_nmea;
 
 extern void nmea_configure(void);
 extern void nmea_parse_char(uint8_t c);
-extern void nmea_parse_msg(void);
+extern bool nmea_parse_msg(void);
 extern uint8_t nmea_calc_crc(const char *buff, int buff_sz);
 extern void nmea_parse_prop_init(void);
-extern void nmea_parse_prop_msg(void);
+extern bool nmea_parse_prop_msg(void);
 extern void nmea_gps_msg(void);
 
 /** Read until a certain character, placed here for proprietary includes */

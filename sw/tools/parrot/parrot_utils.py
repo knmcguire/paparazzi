@@ -55,12 +55,13 @@ def check_running(tn):
     ps_aux = execute_command(tn, 'ps')
     running = ""
 
-    if 'program.elf' in ps_aux:
-        running += ' Native (program.elf),'
+
     if 'dragon-prog' in ps_aux:
         running += ' Native (dragon-prog),'
     if 'ap.elf' in ps_aux:
         running += ' Paparazzi (ap.elf),'
+    if 'program.elf' in ps_aux:
+        running += ' Native (program.elf),'
     if 'gst-launch' in ps_aux:
         running += ' GStreamer (gst-launch)'
     return running[1:]
@@ -78,10 +79,10 @@ def uploadfile(ftp, filename, content):
     try:
         ftp.storbinary("STOR " + filename, content)
     except ftplib.error_temp:
-        print("FTP UPLOAD ERROR: Uploading FAILED: Probably your ARDrone memory is full.")
+        print("FTP UPLOAD ERROR: Uploading FAILED: Probably your drone onboard storage memory is full. Remove old JPG or other data?")
         sys.exit()
     except:
-        print("FTP UPLOAD ERROR: Maybe your ARDrone memory is full?", sys.exc_info()[0])
+        print("FTP UPLOAD ERROR: Maybe your drone onboard storage memory is full? Remove old JPG or other data?)", sys.exc_info()[0])
         sys.exit()
 
 

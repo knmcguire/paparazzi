@@ -45,6 +45,8 @@
  * position, velocity, attitude, etc. It handles coordinate system and
  * fixed-/floating-point conversion on the fly when needed.
  *
+ * <b>IMPORTANT: Don't access the members of the #state struct directly, use the stateSet* and stateGet* functions!</b>
+ *
  * You can set e.g. the position in any coordinate system you wish:
  * stateSetPositionNed_i() to set the position in fixed-point NED coordinates.
  * If you need to read the position somewhere else in a different representation,
@@ -164,7 +166,7 @@ struct State {
   /**
    * true if local int coordinate frame is initialsed
    */
-  bool_t ned_initialized_i;
+  bool ned_initialized_i;
 
   /**
    * Position in North East Down coordinates.
@@ -223,7 +225,7 @@ struct State {
   struct LtpDef_f ned_origin_f;
 
   /// True if local float coordinate frame is initialised
-  bool_t ned_initialized_f;
+  bool ned_initialized_f;
 
   /**
    * Definition of the origin of Utm coordinate system.
@@ -235,7 +237,7 @@ struct State {
   struct UtmCoor_i utm_origin_i;
 
   /// True if utm origin (int) coordinate frame is initialised
-  bool_t utm_initialized_i;
+  bool utm_initialized_i;
 
   /**
    * Definition of the origin of Utm coordinate system.
@@ -247,7 +249,7 @@ struct State {
   struct UtmCoor_i utm_origin_f;
 
   /// True if utm origin (int) coordinate frame is initialised
-  bool_t utm_initialized_f;
+  bool utm_initialized_f;
 
   /**
    * Position in North East Down coordinates.
@@ -471,13 +473,6 @@ static inline void stateSetLocalUtmOrigin_i(struct UtmCoor_i *utm_def)
   ClearBit(state.accel_status, ACCEL_NED_F);
 }
 
-/// Set the local (flat earth) coordinate frame origin from UTM (int).
-static inline void stateSetLocalUtmOrigin_f(struct UtmCoor_f *utm_def_f){
-  struct UtmCoor_i utm_def;
-  UTM_BFP_OF_REAL(utm_def,*utm_def_f);
-  stateSetLocalUtmOrigin_i(&utm_def);
-}
-
 /// Set the local (flat earth) coordinate frame origin (int).
 static inline void stateSetLocalOrigin_i(struct LtpDef_i *ltp_def)
 {
@@ -494,12 +489,23 @@ static inline void stateSetLocalOrigin_i(struct LtpDef_i *ltp_def)
   ClearBit(state.accel_status, ACCEL_NED_I);
   ClearBit(state.accel_status, ACCEL_NED_F);
 
-  state.ned_initialized_i = TRUE;
-  state.ned_initialized_f = TRUE;
+  state.ned_initialized_i = true;
+  state.ned_initialized_f = true;
 
   struct UtmCoor_i utm_def;
   utm_of_lla_i(&utm_def, &state.ned_origin_i.lla);
   stateSetLocalUtmOrigin_i(&utm_def);
+  state.utm_initialized_i = true;
+}
+
+/// Set the local (flat earth) coordinate frame origin from UTM (float).
+static inline void stateSetLocalUtmOrigin_f(struct UtmCoor_f *utm_def_f)
+{
+  struct UtmCoor_i utm_def;
+  UTM_BFP_OF_REAL(utm_def,*utm_def_f);
+  stateSetLocalUtmOrigin_i(&utm_def);
+
+  state.utm_initialized_f = true;
 }
 /*******************************************************************************
  *                                                                             *
@@ -522,14 +528,14 @@ extern void stateCalcPositionLla_f(void);
 /*********************** validity test functions ******************/
 
 /// Test if local coordinates are valid.
-static inline bool_t stateIsLocalCoordinateValid(void)
+static inline bool stateIsLocalCoordinateValid(void)
 {
-  return ((state.ned_initialized_i || state.ned_initialized_f || state.utm_initialized_i)
+  return ((state.ned_initialized_i || state.ned_initialized_f || state.utm_initialized_f)
           && (state.pos_status & (POS_LOCAL_COORD)));
 }
 
 /// Test if global coordinates are valid.
-static inline bool_t stateIsGlobalCoordinateValid(void)
+static inline bool stateIsGlobalCoordinateValid(void)
 {
   return ((state.pos_status & (POS_GLOBAL_COORD)) || stateIsLocalCoordinateValid());
 }
@@ -675,7 +681,7 @@ static inline void stateSetPosition_f(
     state.pos_status |= (1 << POS_LLA_F);
   }
   if (utm_pos != NULL) {
-    UTM_COPY(state.utm_pos_f, *utm_pos);
+    state.utm_pos_f = *utm_pos;
     state.pos_status |= (1 << POS_UTM_F);
   }
 }
@@ -1002,7 +1008,7 @@ extern void stateCalcAccelEcef_f(void);
 /*********************** validity test functions ******************/
 
 /// Test if accelerations are valid.
-static inline bool_t stateIsAccelValid(void)
+static inline bool stateIsAccelValid(void)
 {
   return (state.accel_status);
 }
@@ -1091,7 +1097,7 @@ static inline struct EcefCoor_f *stateGetAccelEcef_f(void)
 /*********************** validity test functions ******************/
 
 /// Test if attitudes are valid.
-static inline bool_t stateIsAttitudeValid(void)
+static inline bool stateIsAttitudeValid(void)
 {
   return (orienationCheckValid(&state.ned_to_body_orientation));
 }
@@ -1189,7 +1195,7 @@ extern void stateCalcBodyRates_f(void);
 /*********************** validity test functions ******************/
 
 /// Test if rates are valid.
-static inline bool_t stateIsRateValid(void)
+static inline bool stateIsRateValid(void)
 {
   return (state.rate_status);
 }
@@ -1254,25 +1260,25 @@ extern void stateCalcAirspeed_f(void);
 /************************ validity test function *******************/
 
 /// test if wind speed is available.
-static inline bool_t stateIsWindspeedValid(void)
+static inline bool stateIsWindspeedValid(void)
 {
   return (state.wind_air_status &= ~((1 << WINDSPEED_I) | (1 << WINDSPEED_F)));
 }
 
 /// test if air speed is available.
-static inline bool_t stateIsAirspeedValid(void)
+static inline bool stateIsAirspeedValid(void)
 {
   return (state.wind_air_status &= ~((1 << AIRSPEED_I) | (1 << AIRSPEED_F)));
 }
 
 /// test if angle of attack is available.
-static inline bool_t stateIsAngleOfAttackValid(void)
+static inline bool stateIsAngleOfAttackValid(void)
 {
   return (state.wind_air_status &= ~(1 << AOA_F));
 }
 
 /// test if sideslip is available.
-static inline bool_t stateIsSideslipValid(void)
+static inline bool stateIsSideslipValid(void)
 {
   return (state.wind_air_status &= ~(1 << SIDESLIP_F));
 }

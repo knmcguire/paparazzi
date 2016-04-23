@@ -26,7 +26,7 @@
 #include "nps_fdm.h"
 
 struct GpsState gps_nps;
-bool_t gps_has_fix;
+bool gps_has_fix;
 
 void gps_feed_value(void)
 {
@@ -93,7 +93,7 @@ void gps_feed_value(void)
 
 void gps_nps_init(void)
 {
-  gps_has_fix = TRUE;
+  gps_has_fix = true;
 }
 
 /*
