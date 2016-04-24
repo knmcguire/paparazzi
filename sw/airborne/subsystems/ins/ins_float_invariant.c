@@ -408,7 +408,7 @@ void ins_float_invariant_update_gps(struct GpsState *gps_s)
       ECEF_FLOAT_OF_BFP(ecef_vel, gps_s->ecef_vel);
       ned_of_ecef_vect_f(&ins_float_inv.meas.speed_gps, &state.ned_origin_f, &ecef_vel);
     } else if (state.utm_initialized_f) {
-      struct UtmCoor_f utm = utm_float_from_gps(gps_s, nav_utm_zone0);
+      struct UtmCoor_f utm = utm_float_from_gps(gps_s, 0);
       // position (local ned)
       ins_float_inv.meas.pos_gps.x = utm.north - state.utm_origin_f.north;
       ins_float_inv.meas.pos_gps.y = utm.east - state.utm_origin_f.east;

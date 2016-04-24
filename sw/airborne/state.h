@@ -246,7 +246,7 @@ struct State {
    * initialized.
    * (float version)
    */
-  struct UtmCoor_i utm_origin_f;
+  struct UtmCoor_f utm_origin_f;
 
   /// True if utm origin (int) coordinate frame is initialised
   bool utm_initialized_f;

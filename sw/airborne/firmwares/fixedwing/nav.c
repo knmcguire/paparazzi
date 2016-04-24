@@ -304,7 +304,7 @@ void nav_follow(uint8_t _ac_id, float _distance, float _height)
 #endif
 }
 #else
-static inline void nav_follow(uint8_t  __attribute__((unused)) _ac_id, uint32_t  __attribute__((unused)) distance, uint32_t  __attribute__((unused)) height){}
+void nav_follow(uint8_t  __attribute__((unused)) _ac_id, float  __attribute__((unused)) distance, float  __attribute__((unused)) height){}
 #endif // TRAFFIC_INFO
 
 
