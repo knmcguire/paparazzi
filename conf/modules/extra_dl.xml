@@ -13,21 +13,16 @@
   <event fun="ExtraDatalinkEvent()"/>
   <makefile target="ap">
     <configure name="EXTRA_DL_PORT" default="uart1" case="upper|lower"/>
+    <define name="EXTRA_DOWNLINK_DEVICE" value="$(EXTRA_DL_PORT_LOWER)"/>
+    <define name="USE_$(EXTRA_DL_PORT_UPPER)"/>
     <raw>
       ifneq (,$(findstring udp,$(EXTRA_DL_PORT_LOWER)))
       include $(CFG_SHARED)/udp.makefile
-      $(TARGET).CFLAGS += -DEXTRA_DOWNLINK_DEVICE=$(EXTRA_DL_PORT_LOWER)
-      $(TARGET).CFLAGS += -DUSE_$(EXTRA_DL_PORT_UPPER)
       else
       EXTRA_DL_BAUD ?= B57600
-      ap.CFLAGS += -DEXTRA_DOWNLINK_DEVICE=$(EXTRA_DL_PORT_LOWER)
-      ap.CFLAGS += -DUSE_$(EXTRA_DL_PORT_UPPER)
-      ap.CFLAGS += -D$(EXTRA_DL_PORT_UPPER)_BAUD=$(EXTRA_DL_BAUD)
+      $(TARGET).CFLAGS += -D$(EXTRA_DL_PORT_UPPER)_BAUD=$(EXTRA_DL_BAUD)
       endif
     </raw>
-    <define name="EXTRA_DOWNLINK_DEVICE" value="$(EXTRA_DL_PORT_LOWER)"/>
-    <define name="USE_$(EXTRA_DL_PORT_UPPER)"/>
-    <define name="$(EXTRA_DL_PORT_UPPER)_BAUD" value="$(EXTRA_DL_BAUD)"/>
     <file name="extra_pprz_dl.c"/>
     <file name="pprz_transport.c" dir="pprzlink/src"/>
   </makefile>

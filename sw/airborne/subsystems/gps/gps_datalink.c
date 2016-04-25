@@ -40,7 +40,10 @@ struct GpsState gps_datalink;
 void gps_datalink_init(void)
 {
   gps_datalink.fix = GPS_FIX_NONE;
-  gps_datalink.pdop = gps_datalink.sacc = gps_datalink.pacc = gps_datalink.cacc = 0;
+  gps_datalink.pdop = 0;
+  gps_datalink.sacc = 0;
+  gps_datalink.pacc = 0;
+  gps_datalink.cacc = 0;
 
   struct LlaCoor_i llh_nav0; /* Height above the ellipsoid */
   llh_nav0.lat = NAV_LAT0;
@@ -49,10 +52,6 @@ void gps_datalink_init(void)
   llh_nav0.alt = NAV_ALT0 + NAV_MSL0;
 
   ltp_def_from_lla_i(&ltp_def, &llh_nav0);
-
-  gps_time_sync.t0_ticks = sys_time.nb_tick;
-  gps_time_sync.t0_tow = 0;
-  gps_time_sync.t0_tow_frac = 0;
 }
 
 // Parse the REMOTE_GPS_SMALL datalink packet
@@ -103,10 +102,6 @@ void parse_gps_datalink_small(int16_t heading, uint32_t pos_xyz, uint32_t speed_
   gps_datalink.hmsl = ltp_def.hmsl + enu_pos.z * 10;
   SetBit(gps_datalink.valid_fields, GPS_VALID_HMSL_BIT);
 
-  utm_of_lla_i(&gps_datalink.utm_pos, &gps_datalink.lla_pos);
-  gps_datalink.utm_pos.alt = gps_datalink.hmsl;
-  SetBit(gps_datalink.valid_fields, GPS_VALID_POS_UTM_BIT);
-
   gps_datalink.course = ((int32_t)heading) * 1e3;
   SetBit(gps_datalink.valid_fields, GPS_VALID_COURSE_BIT);
 
@@ -137,10 +132,6 @@ void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, int32_t e
 
   gps_datalink.hmsl        = hmsl;
   SetBit(gps_datalink.valid_fields, GPS_VALID_HMSL_BIT);
-
-  utm_of_lla_i(&gps_datalink.utm_pos, &gps_datalink.lla_pos);
-  gps_datalink.utm_pos.alt = gps_datalink.hmsl;
-  SetBit(gps_datalink.valid_fields, GPS_VALID_POS_UTM_BIT);
 
   gps_datalink.ecef_pos.x = ecef_x;
   gps_datalink.ecef_pos.y = ecef_y;
