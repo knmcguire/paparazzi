@@ -424,15 +424,12 @@ void autopilot_set_mode(uint8_t new_autopilot_mode)
       case AP_MODE_RC_DIRECT:
         guidance_h_mode_changed(GUIDANCE_H_MODE_RC_DIRECT);
         break;
-      case AP_MODE_RATE_RC_CLIMB:
+#if USE_STABILIZATION_RATE
       case AP_MODE_RATE_DIRECT:
       case AP_MODE_RATE_Z_HOLD:
-#if USE_STABILIZATION_RATE
         guidance_h_mode_changed(GUIDANCE_H_MODE_RATE);
-#else
-        return;
-#endif
         break;
+#endif
       case AP_MODE_ATTITUDE_RC_CLIMB:
       case AP_MODE_ATTITUDE_DIRECT:
       case AP_MODE_ATTITUDE_CLIMB:
@@ -520,7 +517,6 @@ void autopilot_set_mode(uint8_t new_autopilot_mode)
       default:
         break;
     }
-    //if switching to rate mode but rate mode is not defined, the function returned
     autopilot_mode = new_autopilot_mode;
   }
 

@@ -24,13 +24,10 @@
  */
 
 #include "relativeavoidancefilter.h"
+#include "modules/datalink/extra_pprz_dl.h"
 
 #define PSISEARCH 30.0 // Search space for Psi
 #define STARTTIME 5.0 // Controller start time
-
-#ifndef RSSISENDER_ID
-	#define RSSISENDER_ID ABI_BROADCAST
-#endif
 
 ekf_filter ekf[NUAVS-1]; // EKF structure
 btmodel model[NUAVS-1];  // Bluetooth model structure 
@@ -39,16 +36,19 @@ uint32_t now_ts[NUAVS-1]; // Time of last received message from each MAV
 
 uint8_t nf; // Number of filters registered
 float psi_des, v_des; // Desired psi_des
+float vx_des, vy_des;
+float RSSIarray[NUAVS-1];
 
 static abi_event rssi_ev;
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
-	uint8_t ac_id, int8_t source_strength __attribute__((unused)), int8_t rssi);
+	uint8_t ac_id, int8_t source_strength, int8_t rssi);
 // static float rand_normal(float mean, float stdev);
 
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
-	uint8_t ac_id, int8_t source_strength __attribute__((unused)), int8_t rssi)
+	uint8_t ac_id, int8_t source_strength, int8_t rssi)
 {
 	int i= -1; // Initialize index
+	printf("message received with rssi %d for drone %d number %d \n", rssi,ac_id,i);
 
 	// If it's a new ID we start a new EKF for it
 	if ((!array_find_int(2, IDarray, ac_id, &i)) && (nf < NUAVS-1)) {
@@ -63,8 +63,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		ekf[nf].R[0] = pow(RSSINOISE,2.0);
 		ekf[nf].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
 		ekf[nf].X[1] = 1.0;
-		ekf[nf].dt = 0.2;
-		model[nf].Pn = -65.0;
+		ekf[nf].dt   = 0.2;
+		model[nf].Pn = -63.0 - 8.0 + source_strength; // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
 		model[nf].gammal = 2.0;
 		nf++;
 	}
@@ -72,37 +72,42 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	// If we do recognize the ID, then we can update the measurement message data
 	else if (i != -1) {
 
-		// Update the time between messages
-		ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
-		now_ts[i] = get_sys_time_usec();
+		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED)
+		{
+			// Update the time between messages
+			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
+			now_ts[i] = get_sys_time_usec();
+			
+			// Get the aircraft info for that ID
+			struct ac_info_ * ac = get_ac_info(ac_id);
+			float trackedVx, trackedVy;
+			float angle;
+			deg2rad(ac->course*10, &angle);
+			
+			polar2cart(ac->gspeed*100, angle, &trackedVx, &trackedVy); // get x and y velocities
 
-		// Get the aircraft info for that ID
-		struct ac_info_ * ac = get_ac_info(ac_id);
-		float trackedVx, trackedVy;
-		polar2cart(ac->gspeed, ac->course, &trackedVx, &trackedVy); // get x and y velocities
-		
-		// Construct measurement vector for EKF using the latest data obtained for each case
-		float Y[8];
-		Y[0] = rssi + rand_normal(0.0, 5.0); // Bluetooth RSSI measurement
-		Y[1] = stateGetSpeedNed_f()->x + rand_normal(0.0, 0.2); // next three are updated in the periodic function
-		Y[2] = stateGetSpeedNed_f()->y + rand_normal(0.0, 0.2);
-		Y[3] = stateGetNedToBodyEulers_f()->psi + rand_normal(0.0, 0.2);
-		Y[4] = 0.0 + rand_normal(0.0, 0.2); //trackedVx;
-		Y[5] = 0.0 + rand_normal(0.0, 0.2); //trackedVy;
-		Y[6] = 0.0 + rand_normal(0.0, 0.2); //ac->north;
-		Y[7] = 0.0 + rand_normal(0.0, 0.2); //stateGetPositionNed_f()->z - ac->alt;
+			// Construct measurement vector for EKF using the latest data obtained for each case
+			float Y[8];
+			RSSIarray[i] = rssi;
+			Y[0] = rssi;// + rand_normal(0.0, 5.0); // Bluetooth RSSI measurement
+			Y[1] = stateGetSpeedNed_f()->x + rand_normal(0.0, 0.2); // next three are updated in the periodic function
+			Y[2] = stateGetSpeedNed_f()->y + rand_normal(0.0, 0.2);
+			Y[3] = 0.0; //stateGetNedToBodyEulers_f()->psi + rand_normal(0.0, 0.2);
+			Y[4] = 0.0; //trackedVx;
+			Y[5] = 0.0; //trackedVy;
+			Y[6] = 0.0; // + rand_normal(0.0, 0.2); //ac->north;
+			Y[7] = 0.0 + rand_normal(0.0, 0.2); //stateGetPositionNed_f()->z - ac->alt;
 
-		// Run the steps of the EKF
-		ekf_filter_predict(&ekf[i], &model[i]);
-		ekf_filter_update(&ekf[i], Y);
-		// MESSAGE RECEIVED!
-		// printf("message received with rssi %d for drone %d number %d \n", rssi,ac_id,i);
-		printf("\n");
-		printf("Y: \t");
-		fmat_print(1, 8, Y);
-		printf("X: \t");
-		fmat_print(1, 9, ekf[i].X);
+			// Run the steps of the EKF
+			ekf_filter_predict(&ekf[i], &model[i]);
+			ekf_filter_update(&ekf[i], Y);
 
+			printf("\n ");
+			printf("Y: \t");
+			fmat_print(1, 8, Y);
+			printf("X: \t");
+			fmat_print(1, 9, ekf[i].X);
+		}
 	}
 };
 
@@ -112,7 +117,10 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	uint8_t i;
 	for (i = 0; i < nf; i++) {
 		pprz_msg_send_RAFILTERDATA(trans, dev, AC_ID,
-			&i, &ekf[i].X[0], &ekf[i].X[1], &ekf[i].X[8]);
+			&i, &RSSIarray[i], 
+			&ekf[i].X[0], &ekf[i].X[1], 
+			&ekf[i].X[2], &ekf[i].X[3],
+			&ekf[i].X[4], &ekf[i].X[5], &vx_des, &vy_des);
 	}
 };
 
@@ -120,85 +128,83 @@ void rafilter_init(void)
 {   
 	randomgen_init();
 	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
-	nf = 0; // Number of known objects
-	ra_active = true; // Activate avoidance filter
+	nf = 0; 		      // Number of known objects
+	// ra_active = true;    // Activate avoidance filter
 	
-	psi_des = 0.0; // Initial desired direction
-	v_des = V_NOMINAL; // Initial desired velocity
+	psi_des = 0.0; 	 // Initial desired direction
+	v_des = V_NOMINAL;   // Initial desired velocity
 
 	// Subscribe to the ABI RSSI messages
-	AbiBindMsgRSSI(RSSISENDER_ID, &rssi_ev, bluetoothmsg_cb);
+	AbiBindMsgRSSI(ABI_BROADCAST, &rssi_ev, bluetoothmsg_cb);
+
 	// Send out the filter data
 	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_RAFILTERDATA, send_rafilterdata);
 };
 
 
-
-int ii = 0;
-#define SENDER_ID 1
-
 void rafilter_periodic(void)
 {	
 	// FAKE MESSAGE for testing purposes from the 0.0 position!
-	float d = sqrt(pow(stateGetPositionEnu_f()->x,2)+pow(stateGetPositionEnu_f()->y,2));
-	AbiSendMsgRSSI(SENDER_ID, 2, 2,  (int)(-65 -2*10*log10(d)));
-
-	if (ii < 100)
-		guidance_h_mode_changed(4);
-	else
-		ii++;
+	// float d = sqrt(pow(stateGetPositionEnu_f()->x,2)+pow(stateGetPositionEnu_f()->y,2));
+	// AbiSendMsgRSSI(1, 2, 2,  (int)(-65 -2*10*log10(d)));
 
 	// Initialize variables
-	float vx_des, vy_des;
 	float cc[NUAVS-1][6];
 
-	if(ra_active)
-	{
-		float posx = stateGetPositionEnu_f()->x;
-		float posy = stateGetPositionEnu_f()->y;
-		float ownPsi = stateGetNedToBodyEulers_f()->psi; //change 
-		bool flagglobal = false; // Null assumption
-		
-		if ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) {
-			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
-			// printf("going back inside\n");
-			ENUearthToNEDbody(-posx, -posy, ownPsi, &vx_des, &vy_des); // (Gazebo specific?)
-			cart2polar(vx_des, vy_des, &v_des, &psi_des);
-			
-			v_des = V_NOMINAL;
-		}
-		else {
-			polar2cart(v_des, psi_des, &vx_des, &vy_des);
-			uint8_t i;
-			for ( i = 0; i < nf; i++ ) {
-				float dist = sqrt(pow(ekf[i].X[0],2) + pow(ekf[i].X[1],2));
-				collisioncone_update(cc[i], ekf[i].X[0], ekf[i].X[1], ekf[i].X[4], ekf[i].X[5], dist+CCSIZE);
-				if ( collisioncone_checkdanger( cc[i], vx_des, vy_des ) )
-					flagglobal = true; // We have a problem
-			}
+	float posx = stateGetPositionNed_f()->x;
+	float posy = stateGetPositionNed_f()->y;
 
-			if (flagglobal) { // If the desired velocity doesn't work, then let's find the next best thing according to VO
-				v_des = V_NOMINAL;
-				collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nf);
-			}
-		}
+	float velx = stateGetSpeedNed_f()->x;
+	float vely = stateGetSpeedNed_f()->y;
 
-		// if (guidance_h.mode == GUIDANCE_H_MODE_NAV) {
-			polar2cart(v_des, psi_des, &vx_des, &vy_des);
-			NEDbodyToENUearth(vx_des, vy_des, ownPsi, &raavoid_speed_f.y, &raavoid_speed_f.x);
-		// }
-		// else if (guidance_h.mode == GUIDANCE_H_MODE_HOVER) {
-			// polar2cart(v_des, psi_des, &raavoid_speed_f.x, &raavoid_speed_f.y);
-		// }
-		/*
-		x and y need to be inverted.
-		My understanding is that a change in x needs to correlate with a change in pitch (y-axis)
-		and that a change in y needs to correlate with a change in roll (x-axis)
-		which is what the controller sends the commands to
-		*/
+	float temp;
+	float course;
+	cart2polar(velx, vely, &temp, &course);
 
-		// printf("AttCtrl: vx_err: %.1f \t vy_err: %.1f \t vx: %.1f \t vy: %.1f \t vx_cmd: %.1f \t vy_cmd: %.1f \t psi: %.5f \t posx %.1f \t posy %.1f \n", 
-		// 	vx - ownVel->x, vy - ownVel->y, ownVel->x, ownVel->y, vx, vy, ownPsi, posx, posy);
+
+
+	uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(course) / 1e7) / 2)) & 0x7FF) <<
+	                        21; // bits 31-21 x position in cm
+	multiplex_speed |= (((uint32_t)(gps.gspeed)) & 0x7FF) << 10;         // bits 20-10 y position in cm
+	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);               // bits 9-0 z position in cm
+
+	int16_t alt = (int16_t)(gps.hmsl / 10);
+
+	DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat,
+                          &gps.lla_pos.lon, &alt);
+
+
+
+	// float ownPsi = stateGetNedToBodyEulers_f()->psi; //change 
+	bool flagglobal = false; // Null assumption
+	
+	if ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) {
+		//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
+		// printf("going back inside\n");
+		// ENUearthToNEDbody(-posx, -posy, ownPsi, &vx_des, &vy_des); // (Gazebo specific?)
+		cart2polar(0-posx,0-posy, &v_des, &psi_des);
+		v_des = V_NOMINAL;
 	}
+	else {
+		polar2cart(v_des, psi_des, &vx_des, &vy_des);
+		uint8_t i;
+		for ( i = 0; i < nf; i++ ) {
+			float dist = sqrt(pow(ekf[i].X[0],2) + pow(ekf[i].X[1],2));
+			collisioncone_update(cc[i], ekf[i].X[0], ekf[i].X[1], ekf[i].X[4], ekf[i].X[5], dist+CCSIZE);
+			if ( collisioncone_checkdanger( cc[i], vx_des, vy_des ) )
+				flagglobal = true; // We have a problem
+		}
+
+		if (flagglobal) { // If the desired velocity doesn't work, then let's find the next best thing according to VO
+			v_des = V_NOMINAL;
+			collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nf);
+		}
+	}
+
+	polar2cart(v_des, psi_des, &vx_des, &vy_des);
+	// NEDbodyToENUearth(vx_des, vy_des, ownPsi, &raavoid_speed_f.y, &raavoid_speed_f.x);
+
+	autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);
+	// 10.5 volts battery change
 
 };

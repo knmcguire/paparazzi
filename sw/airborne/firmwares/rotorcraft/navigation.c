@@ -409,6 +409,7 @@ void nav_init_stage(void)
   VECT3_COPY(nav_last_point, *stateGetPositionEnu_i());
   stage_time = 0;
   nav_circle_radians = 0;
+  horizontal_mode = HORIZONTAL_MODE_WAYPOINT;
 }
 
 #include <stdio.h>
@@ -504,7 +505,7 @@ void compute_dist2_to_home(void)
   too_far_from_home = dist2_to_home > max_dist2_from_home;
 }
 
-/** Set nav_heading in radians. */
+/** Set nav_heading in degrees. */
 bool nav_set_heading_rad(float rad)
 {
   nav_heading = ANGLE_BFP_OF_REAL(rad);
@@ -657,24 +658,3 @@ void nav_oval(uint8_t p1, uint8_t p2, float radius)
       return;
   }
 }
-
-#ifdef TRAFFIC_INFO
-#include "modules/multi/traffic_info.h"
-
-void nav_follow(uint8_t _ac_id, uint32_t distance, uint32_t height)
-{
-  struct EnuCoor_i target;
-
-  struct ac_info_ * ac = get_ac_info(_ac_id);
-
-  float alpha = M_PI / 2 - ac->course;
-  float ca = cosf(alpha), sa = sinf(alpha);
-  target.x = POS_BFP_OF_REAL(ac->utm.east - distance * ca - stateGetPositionUtm_f()->east);
-  target.y = POS_BFP_OF_REAL(ac->utm.north - distance * sa  - stateGetPositionUtm_f()->north);
-  target.z = POS_BFP_OF_REAL(Max(ac->utm.alt + height, SECURITY_HEIGHT));	// todo add ground height to check
-
-  VECT3_COPY(navigation_target, target);
-}
-#else
-void nav_follow(uint8_t  __attribute__((unused)) _ac_id, uint32_t  __attribute__((unused)) distance, uint32_t  __attribute__((unused)) height){}
-#endif
