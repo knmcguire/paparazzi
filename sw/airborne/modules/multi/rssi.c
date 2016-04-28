@@ -49,8 +49,6 @@ void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _
 {
   if(sender_id != RSSI_MODULE_ID)
     set_rssi(_ac_id, _tx_strength, _rssi);
-
-  printf("callback\n");
 }
 
 void rssi_init()
