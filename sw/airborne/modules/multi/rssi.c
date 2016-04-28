@@ -47,7 +47,10 @@ abi_event ev;
 void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi);
 void rssi_cb(uint8_t sender_id __attribute__((unused)), uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi)
 {
-  set_rssi(_ac_id, _tx_strength, _rssi);
+  if(sender_id != RSSI_MODULE_ID)
+    set_rssi(_ac_id, _tx_strength, _rssi);
+
+  printf("callback\n");
 }
 
 void rssi_init()
@@ -73,6 +76,8 @@ void parse_rssi_dl(void)
              DL_RSSI_tx_power(dl_buffer),
              DL_RSSI_rssi(dl_buffer));
   }
+
+  AbiSendMsgRSSI(RSSI_MODULE_ID, sender_id, DL_RSSI_tx_power(dl_buffer), DL_RSSI_rssi(dl_buffer));
 }
 
 void set_rssi(uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi)
