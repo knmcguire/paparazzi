@@ -89,6 +89,7 @@ static inline void DlCheckAndParse(void)
 #endif
 
   if (dl_msg_available) {
+    printf("message received\n");
     datalink_time = 0;
     datalink_nb_msgs++;
     dl_parse_msg();
