@@ -176,12 +176,12 @@ void stereocam_to_state(float dphi, float dtheta)
   stereocam_data.data[23] = (uint8_t)((velocity_rot_state.x) * 10 + 127); // dm/s
   stereocam_data.data[24] = (uint8_t)((velocity_rot_state.y) * 10 + 127); // dm/s*/
 
-  int16_t vel_x_state = (int16_t)(velocity_rot_state.x * 100);
-  int16_t vel_y_state = (int16_t)(velocity_rot_state.y * 100);
+  int16_t vel_x_state = (int16_t)(vel_x_opti  * 100);
+  int16_t vel_y_state = (int16_t)(vel_y_opti  * 100);
 
   //todo: retrieve optitrack in int16
-  int16_t vel_x_opti_int = (int16_t)(vel_x_opti * 100);
-  int16_t vel_y_opti_int = (int16_t)(vel_y_opti * 100);
+  int16_t vel_x_opti_int = (int16_t)(opti_vel.x * 100);
+  int16_t vel_y_opti_int = (int16_t)(opti_vel.y * 100);
   int16_t pos_x_opti_int = (int16_t)(gps_stereocam.ecef_pos.x);
   int16_t pos_y_opti_int = (int16_t)(gps_stereocam.ecef_pos.y);
 

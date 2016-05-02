@@ -187,6 +187,7 @@
 
   <section name="AHRS" prefix="AHRS_">
     <!--     Delft magnetic field -->
+    <define name="GRAVITY_HEURISTIC_FACTOR" value ="0"/>
     <define name="H_X" value="0.39049610"/>
     <define name="H_Y" value="0.00278894"/>
     <define name="H_Z" value="0.92060036"/>
