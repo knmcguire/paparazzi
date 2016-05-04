@@ -7,11 +7,10 @@
       <!-- HOST is the Name or IP of your AC -->
       <configure name="HOST" value="192.168.0.202"/>
       <!-- MODEM_HOST is where the data should go to, for short normally your laptop IP address -->
-      <configure name="MODEM_HOST" value="192.168.0.22"/>
+      <configure name="MODEM_HOST" value="192.168.0.45"/>
       <configure name="MODEM_BROADCAST" value="FALSE"/>
       <configure name="USE_BARO_BOARD" value="FALSE"/>
     </target>
-
 
     <target name="nps" board="pc">
       <subsystem name="fdm" type="jsbsim"/>
@@ -20,16 +19,6 @@
     <define name="FAILSAFE_DESCENT_SPEED" value="0.5"/>
     <define name="USE_SONAR" value="0"/>
     <configure name="USE_MAGNETOMETER" value="0"/>
-
-    <section name="RELATIVEAVOIDANCEFILTER" prefix="">
-      <define name="CCSIZE" value="1.2"/> <!-- Size of collision cone (=1.0 + 2*diameter)-->
-      <define name="ASIDE" value="2.0"/> <!-- Size of arena -->
-      <define name="NUAVS" value="2"/> <!-- Number of UAVs flying (including itself) -->
-      <define name="RSSINOISE" value="5.0"/> <!-- (Expected) Noise on RSSI -->
-      <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements -->
-      <define name="V_NOMINAL" value="0.3"/> <!-- Nominal velocity -->
-    </section>
-
 	<!-- Subsystem section -->
     <subsystem name="telemetry" type="transparent_udp"/>
     <!--subsystem name="telemetry" type="transparent_usb"/-->
@@ -43,19 +32,26 @@
     <subsystem name="ins" type="extended"/>
   </firmware>
 
+     <section name="RELATIVEAVOIDANCEFILTER" prefix="">
+      <define name="CCSIZE" value="1.6"/> <!-- Size of collision cone (=1.0 + 2*radius)-->
+      <define name="ASIDE" value="2.0"/> <!-- Size of arena -->
+      <define name="NUAVS" value="2"/> <!-- Number of UAVs flying (including itself) -->
+      <define name="RSSINOISE" value="5.0"/> <!-- (Expected) Noise on RSSI -->
+      <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements -->
+      <define name="V_NOMINAL" value="0.5"/> <!-- Nominal velocity -->
+     </section>
+
   <modules main_freq="512">
-    <load name="bat_voltage_ardrone2.xml"/>
-    <!--load name="stereocam_droplet.xml" /-->
+  <load name="bat_voltage_ardrone2.xml"/>
 	<load name="extra_dl.xml">
       <configure name="EXTRA_DL_PORT" value="UDP1"/>
       <define name="UDP1_PORT_IN" value="5000"/>
       <define name="UDP1_PORT_OUT" value="5001"/>
       <define name="UDP1_HOST" value="127.0.0.1"/>
 	</load>
-	<load name="traffic_info.xml"/>
-    <!-- <load name="swarm_nn.xml"/> -->
+	  <load name="traffic_info.xml"/>
     <load name="rssi.xml"/>
-    <module name="relativeavoidancefilter.xml"/>
+    <load name="relativeavoidancefilter.xml"/>
   </modules>
 
   <commands>
