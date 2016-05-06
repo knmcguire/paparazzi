@@ -24,7 +24,6 @@
  */
 
 #include "relativeavoidancefilter.h"
-#include "modules/datalink/extra_pprz_dl.h"
 
 #define PSISEARCH 15.0 		// Search grid for psi_des
 
@@ -39,6 +38,7 @@ float vx_des, vy_des;		// Desired velocities in NED frame
 float RSSIarray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
 bool firsttime;
 float calpsi;
+float magprev;
 
 static abi_event rssi_ev;
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
@@ -48,7 +48,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	uint8_t ac_id, int8_t source_strength, int8_t rssi)
 {
 	int i= -1; // Initialize index
-	printf("message received with rssi %d for drone %d number %d \n", rssi,ac_id,i);
+	printf("message received with rssi %d for drone %d number %d \n", rssi, ac_id, i);
 
 	// If it's a new ID we start a new EKF for it
 	if ((!array_find_int(2, IDarray, ac_id, &i)) && (nf < NUAVS-1)) {
@@ -70,7 +70,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	}
 
 	// If we do recognize the ID, then we can update the measurement message data
-	else if ((i != -1) || (nf == 1) ) {
+	else if ((i != -1) || (nf == (NUAVS-1)) ) {
 
 		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED)
 		{
@@ -82,9 +82,12 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			struct ac_info_ * ac = get_ac_info(ac_id);
 			float trackedVx, trackedVy;
 			float angle;
-			deg2rad(ac->course/10, &angle); // decidegrees
-			polar2cart(ac->gspeed/100, angle, &trackedVx, &trackedVy); // get x and y velocities (cm/s)
-
+			deg2rad   (((float)ac->course)/10.0, &angle); // decidegrees
+			polar2cart(((float)ac->gspeed)/100.0, angle, &trackedVx, &trackedVy); // get x and y velocities (cm/s)
+			
+			// See UtmCoor for north pos in z
+			// printf("%s\n", );
+			printf("course %d , gspeed %d \n", ac->course, ac->gspeed);
 			// Construct measurement vector for EKF using the latest data obtained for each case
 			float Y[8];
 			RSSIarray[i] = rssi;
@@ -121,16 +124,15 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 
 void rafilter_init(void)
 {
-	firsttime = true;
 	randomgen_init();    // Initialize the random generator (for simulation purposes)
 	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
-	nf = 0; 		      // Number of known objects
 	
-
-	psi_des = 0.0;
-	v_des   = V_NOMINAL; // Initial desired velocity
-
-	calpsi = getrand_float(-M_PI, M_PI); // Initial desired direction
+	nf 		= 0; 	   	   // Number of active filters
+	psi_des   = 0.0;	   // Initialize
+	v_des     = V_NOMINAL; // Initial desired velocity
+	firsttime = true;
+	magprev   = 3.0; 	   // Just a random high value
+	calpsi    = getrand_float(-M_PI, M_PI); // Initial desired direction
 
 	// Subscribe to the ABI RSSI messages
 	AbiBindMsgRSSI(ABI_BROADCAST, &rssi_ev, bluetoothmsg_cb);
@@ -148,28 +150,18 @@ void rafilter_periodic(void)
 	// AbiSendMsgRSSI(1, 2, 2,  (int)(-65 -2*10*log10(d)));
 
 	/*********************************************
-		Initialize variables
-	*********************************************/
-	float cc[NUAVS-1][6];
-	float temp, course;
-
-	float posx = stateGetPositionNed_f()->x;
-	float posy = stateGetPositionNed_f()->y;
-
-	float velx = stateGetSpeedNed_f()->x;
-	float vely = stateGetSpeedNed_f()->y;
-
-	cart2polar(velx, vely, &temp, &course);
-
-	
-	/*********************************************
 		Sending speed directly between drones
 	*********************************************/
+	float velx = stateGetSpeedNed_f()->x;
+	float vely = stateGetSpeedNed_f()->y;
+	float temp, course;
+
+	cart2polar(velx, vely, &temp, &course);
 
 	uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(course) / 1e7) / 2)) & 0x7FF) <<
 	                        21; // bits 31-21 x position in cm
 	multiplex_speed |= (((uint32_t)(gps.gspeed)) & 0x7FF) << 10;         // bits 20-10 y position in cm
-	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);               // bits 9-0 z position in cm
+	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);           // bits 9-0 z position in cm
 
 	int16_t alt = (int16_t)(gps.hmsl / 10);
 
@@ -187,6 +179,12 @@ void rafilter_periodic(void)
 	}
 	else 
 	{
+		float cc[NUAVS-1][6];
+
+		// pos in x and y just for arena border detection!
+		float posx = stateGetPositionNed_f()->x; 
+		float posy = stateGetPositionNed_f()->y;
+
 		timer  = get_sys_time_usec()/pow(10,6);
 		t_elps = timer - timerstart;
 
@@ -202,10 +200,17 @@ void rafilter_periodic(void)
 		}
 
 		else {
-			firsttime = false;	
-			bool flagglobal = false; // Null assumption
-			
-			if ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) {
+			firsttime = false;				// Switch -- no longer the first time
+			bool flagglobal = false; 		// Null assumption
+			bool wallgettingcloser = false; 	// Null assumption
+
+			// Wall detection algorithm
+			if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
+				wallgettingcloser = true;
+			}
+			magprev = sqrt(pow(posx,2) + pow(posy,2));
+
+			if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wallgettingcloser) {
 				//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
 				cart2polar(0-posx,0-posy, &v_des, &psi_des);
 				v_des = V_NOMINAL;

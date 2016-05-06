@@ -45,7 +45,6 @@
       <stay climb="0.5" vmode="climb" wp="CLIMB"/>
     </block>
     <block name="Standby" key="s" strip_button="Standby" strip_icon="home.png">
-      <set value="FALSE" var="ra_active"/>
       <call fun="NavSetWaypointHere(WP_STDBY)"/>
       <stay wp="STDBY"/>
     </block>
