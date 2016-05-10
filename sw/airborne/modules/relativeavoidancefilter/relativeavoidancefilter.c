@@ -80,14 +80,12 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			
 			// Get the aircraft info for that ID
 			struct ac_info_ * ac = get_ac_info(ac_id);
-			float trackedVx, trackedVy;
-			float angle;
+			float angle, trackedVx, trackedVy;
+			
 			deg2rad   (((float)ac->course)/10.0, &angle); // decidegrees
 			polar2cart(((float)ac->gspeed)/100.0, angle, &trackedVx, &trackedVy); // get x and y velocities (cm/s)
-			
+
 			// See UtmCoor for north pos in z
-			// printf("%s\n", );
-			printf("course %d , gspeed %d \n", ac->course, ac->gspeed);
 			// Construct measurement vector for EKF using the latest data obtained for each case
 			float Y[8];
 			RSSIarray[i] = rssi;
@@ -127,7 +125,7 @@ void rafilter_init(void)
 	randomgen_init();    // Initialize the random generator (for simulation purposes)
 	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
 	
-	nf 		= 0; 	   	   // Number of active filters
+	nf 		= 0; 	   // Number of active filters
 	psi_des   = 0.0;	   // Initialize
 	v_des     = V_NOMINAL; // Initial desired velocity
 	firsttime = true;
@@ -154,9 +152,12 @@ void rafilter_periodic(void)
 	*********************************************/
 	float velx = stateGetSpeedNed_f()->x;
 	float vely = stateGetSpeedNed_f()->y;
-	float temp, course;
+	float temp, crs;
 
-	cart2polar(velx, vely, &temp, &course);
+	// Convert Course to the proper format
+	cart2polar(velx, vely, &temp, &crs); 	// Get the total speed and course
+	wrapTo2Pi(&crs); // Wrap to 2 Pi since the sent result is unsigned
+	int32_t course = (int32_t)(crs*(1e7)); 	// Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
 
 	uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(course) / 1e7) / 2)) & 0x7FF) <<
 	                        21; // bits 31-21 x position in cm
@@ -174,7 +175,7 @@ void rafilter_periodic(void)
 	*********************************************/
 
 	if (guidance_h.mode != GUIDANCE_H_MODE_GUIDED) {
-		timerstart = get_sys_time_usec()/pow(10,6); 		// Elapsed time
+		timerstart = get_sys_time_usec()/pow(10,6); 	// Elapsed time
 		v_des = 0.0;
 	}
 	else 
@@ -235,7 +236,6 @@ void rafilter_periodic(void)
 
 		polar2cart(v_des, psi_des, &vx_des, &vy_des);
 		autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);
-
 	}
 
 };
