@@ -100,7 +100,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			Y[4] = trackedVx + rand_normal(0.0, 0.2);
 			Y[5] = trackedVy + rand_normal(0.0, 0.2);
 			Y[6] = 0.0 + rand_normal(0.0, 0.2); //ac->north;
-			Y[7] = (stateGetPositionNed_f()->z) - (1000.0*(float)ac->utm.alt); //utm.alt is in mm above 0
+			Y[7] = (-(float)ac->utm.alt/1000.0) - (stateGetPositionNed_f()->z); //utm.alt is in mm above 0
 			
 			// Run the steps of the EKF
 			ekf_filter_predict(&ekf[i], &model[i]);
