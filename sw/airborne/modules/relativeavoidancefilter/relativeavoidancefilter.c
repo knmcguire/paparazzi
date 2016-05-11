@@ -26,19 +26,21 @@
 #include "relativeavoidancefilter.h"
 
 #define PSISEARCH 15.0 		// Search grid for psi_des
+#define VCAL 1.0			// Velocity during calibration round
 
 ekf_filter ekf[NUAVS-1]; 	// EKF structure
 btmodel model[NUAVS-1];  	// Bluetooth model structure 
 int IDarray[NUAVS-1]; 		// Array of IDs of other MAVs
+int8_t srcstrength[NUAVS-1];  // Source strength
 uint32_t now_ts[NUAVS-1]; 	// Time of last received message from each MAV
 
 uint8_t nf; 				// Number of filters registered
 float psi_des, v_des; 		// psi_des = desired course w.r.t. north, v_des = magnitude of velocity
 float vx_des, vy_des;		// Desired velocities in NED frame
 float RSSIarray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
-bool firsttime;
-float calpsi;
-float magprev;
+bool firsttime;			// Bool value that checks when the script becomes active for the first time
+float calpsi;				// Calibration heading in the beginning
+float magprev;				// Previous magnitude from 0,0 (for simulated wall detection)
 
 static abi_event rssi_ev;
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
@@ -53,6 +55,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	// If it's a new ID we start a new EKF for it
 	if ((!array_find_int(2, IDarray, ac_id, &i)) && (nf < NUAVS-1)) {
 		IDarray[nf] = ac_id;
+		srcstrength[nf] = source_strength;
 		ekf_filter_new(&ekf[nf]); // Initialize an ekf filter for each target tracker
 
 		// Set up the Q and R matrices and all the rest.
@@ -63,8 +66,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		ekf[nf].R[0]   = pow(RSSINOISE,2.0);
 		ekf[nf].X[0]   = 1.0; // Initial positions cannot be zero or else you'll divide by zero
 		ekf[nf].X[1]   = 1.0;
-		ekf[nf].dt     = 0.2;
-		model[nf].Pn   = -63.0 - 8.0 + source_strength; // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
+		ekf[nf].dt     = 0.2; // Initial assumption (STDMA code runs at 5Hz)
+		model[nf].Pn   = -63.0 - 8.0 + (float)source_strength; // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
 		model[nf].gammal = 2.0;
 		nf++;
 	}
@@ -87,17 +90,18 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 
 			// See UtmCoor for north pos in z
 			// Construct measurement vector for EKF using the latest data obtained for each case
+
 			float Y[8];
 			RSSIarray[i] = rssi;
-			Y[0] = rssi;// + rand_normal(0.0, 5.0); // Bluetooth RSSI measurement
+			Y[0] = (float)rssi;// + rand_normal(0.0, 5.0); // Bluetooth RSSI measurement
 			Y[1] = stateGetSpeedNed_f()->x + rand_normal(0.0, 0.2); // next three are updated in the periodic function
 			Y[2] = stateGetSpeedNed_f()->y + rand_normal(0.0, 0.2);
 			Y[3] = 0.0 + rand_normal(0.0, 0.2);
 			Y[4] = trackedVx + rand_normal(0.0, 0.2);
 			Y[5] = trackedVy + rand_normal(0.0, 0.2);
 			Y[6] = 0.0 + rand_normal(0.0, 0.2); //ac->north;
-			Y[7] = 0.0 + rand_normal(0.0, 0.2); //stateGetPositionNed_f()->z - ac->alt;
-
+			Y[7] = (stateGetPositionNed_f()->z) - (1000.0*(float)ac->utm.alt); //utm.alt is in mm above 0
+			
 			// Run the steps of the EKF
 			ekf_filter_predict(&ekf[i], &model[i]);
 			ekf_filter_update (&ekf[i], Y);
@@ -112,11 +116,15 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	uint8_t i;
 	for (i = 0; i < nf; i++) {
 		pprz_msg_send_RAFILTERDATA(trans, dev, AC_ID,
-			&i, &RSSIarray[i], 
-			&ekf[i].X[0], &ekf[i].X[1], 
-			&ekf[i].X[2], &ekf[i].X[3],
-			&ekf[i].X[4], &ekf[i].X[5],
-			&vx_des, &vy_des);
+			&IDarray[i],			    // ID or filtered aircraft number
+			&RSSIarray[i], 		    // Received ID and RSSI
+			&srcstrength[i],		    // Source strength
+			&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
+			&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
+			&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
+			&ekf[i].X[6], &ekf[i].X[7],  // Orientation own , orientation other
+			&ekf[i].X[8], 			    // Height separation
+			&vx_des, &vy_des);		    // Commanded velocities
 	}
 };
 
@@ -145,7 +153,7 @@ void rafilter_periodic(void)
 {	
 	// FAKE MESSAGE for testing purposes from the 0.0 position if a BT source is not available!
 	// float d = sqrt(pow(stateGetPositionEnu_f()->x,2)+pow(stateGetPositionEnu_f()->y,2));
-	// AbiSendMsgRSSI(1, 2, 2,  (int)(-65 -2*10*log10(d)));
+	// AbiSendMsgRSSI(1, 2, 2,  (int)(-63 -2*10*log10(d)));
 
 	/*********************************************
 		Sending speed directly between drones
@@ -156,7 +164,7 @@ void rafilter_periodic(void)
 
 	// Convert Course to the proper format
 	cart2polar(velx, vely, &temp, &crs); 	// Get the total speed and course
-	wrapTo2Pi(&crs); // Wrap to 2 Pi since the sent result is unsigned
+	wrapTo2Pi(&crs); 					// Wrap to 2 Pi since the sent result is unsigned
 	int32_t course = (int32_t)(crs*(1e7)); 	// Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
 
 	uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(course) / 1e7) / 2)) & 0x7FF) <<
@@ -178,11 +186,10 @@ void rafilter_periodic(void)
 		timerstart = get_sys_time_usec()/pow(10,6); 	// Elapsed time
 		v_des = 0.0;
 	}
-	else 
-	{
+	else {
 		float cc[NUAVS-1][6];
 
-		// pos in x and y just for arena border detection!
+		// Pos in X and Y just for arena border detection!
 		float posx = stateGetPositionNed_f()->x; 
 		float posy = stateGetPositionNed_f()->y;
 
@@ -192,15 +199,18 @@ void rafilter_periodic(void)
 		/*********************************************
 			Calibration maneuver
 		*********************************************/
-		if ( t_elps < 4.0 && firsttime ) {
-			float vcal = 1.0;
-			if      ( t_elps < 1.0 ) { psi_des =  calpsi            ; v_des = vcal; }
-			else if ( t_elps < 2.0 ) { psi_des =  calpsi+(M_PI/2)   ; v_des = vcal; }
-			else if ( t_elps < 3.0 ) { psi_des =  calpsi+(M_PI)     ; v_des = vcal; }
-			else if ( t_elps < 4.0 ) { psi_des =  calpsi+(3*M_PI/2) ; v_des = vcal; }
+
+		if ( t_elps < 5.0 && firsttime ) {
+			if      ( t_elps < 1.0 ) { psi_des = calpsi            ; }
+			else if ( t_elps < 2.0 ) { psi_des = calpsi+(M_PI/2)   ; }
+			else if ( t_elps < 3.0 ) { psi_des = calpsi+(M_PI)     ; }
+			else if ( t_elps < 4.0 ) { psi_des = calpsi+(3*M_PI/2) ; }
+			else if ( t_elps < 5.0 ) { psi_des = calpsi		     ; }
+			v_des = VCAL;
 		}
 
 		else {
+		
 			firsttime = false;				// Switch -- no longer the first time
 			bool flagglobal = false; 		// Null assumption
 			bool wallgettingcloser = false; 	// Null assumption
@@ -217,6 +227,7 @@ void rafilter_periodic(void)
 				v_des = V_NOMINAL;
 			}
 			else {
+
 				polar2cart(v_des, psi_des, &vx_des, &vy_des);
 				uint8_t i;
 				for ( i = 0; i < nf; i++ ) {
@@ -230,6 +241,7 @@ void rafilter_periodic(void)
 					v_des = V_NOMINAL;
 					collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nf);
 				}
+
 			}
 
 		}
