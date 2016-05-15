@@ -35,7 +35,6 @@
      <section name="RELATIVEAVOIDANCEFILTER" prefix="">
       <define name="CCSIZE" value="1.6"/> <!-- Size of collision cone (= 1.0 + 2*radius)-->
       <define name="ASIDE" value="2.0"/> <!-- Size of arena -->
-      <define name="NUAVS" value="2"/> <!-- Number of UAVs flying (including itself) -->
       <define name="RSSINOISE" value="5.0"/> <!-- (Expected) Noise on RSSI -->
       <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements -->
       <define name="V_NOMINAL" value="0.5"/> <!-- Desired nominal velocity -->

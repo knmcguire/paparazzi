@@ -27,6 +27,7 @@
 
 #define PSISEARCH 15.0 		// Search grid for psi_des
 #define VCAL 1.0			// Velocity during calibration round
+#define NUAVS 5			// Maximum expected number of drones
 
 ekf_filter ekf[NUAVS-1]; 	// EKF structure
 btmodel model[NUAVS-1];  	// Bluetooth model structure 
@@ -34,13 +35,15 @@ int IDarray[NUAVS-1]; 		// Array of IDs of other MAVs
 int8_t srcstrength[NUAVS-1];  // Source strength
 uint32_t now_ts[NUAVS-1]; 	// Time of last received message from each MAV
 
-uint8_t nf; 				// Number of filters registered
+int nf; 				// Number of filters registered
 float psi_des, v_des; 		// psi_des = desired course w.r.t. north, v_des = magnitude of velocity
 float vx_des, vy_des;		// Desired velocities in NED frame
 float RSSIarray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
 bool firsttime;			// Bool value that checks when the script becomes active for the first time
 float calpsi;				// Calibration heading in the beginning
 float magprev;				// Previous magnitude from 0,0 (for simulated wall detection)
+
+float timer, timerstart, t_elps;
 
 static abi_event rssi_ev;
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
@@ -51,9 +54,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 {
 	int i= -1; // Initialize index
 	printf("message received with rssi %d for drone %d number %d \n", rssi, ac_id, i);
-
 	// If it's a new ID we start a new EKF for it
-	if ((!array_find_int(2, IDarray, ac_id, &i)) && (nf < NUAVS-1)) {
+	if ((!array_find_int(NUAVS-1, IDarray, ac_id, &i)) && (nf < NUAVS-1)) {
 		IDarray[nf] = ac_id;
 		srcstrength[nf] = source_strength;
 		ekf_filter_new(&ekf[nf]); // Initialize an ekf filter for each target tracker
@@ -74,6 +76,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 
 	// If we do recognize the ID, then we can update the measurement message data
 	else if ((i != -1) || (nf == (NUAVS-1)) ) {
+		RSSIarray[i] = rssi;
 
 		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED)
 		{
@@ -92,7 +95,6 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			// Construct measurement vector for EKF using the latest data obtained for each case
 
 			float Y[8];
-			RSSIarray[i] = rssi;
 			Y[0] = (float)rssi;// + rand_normal(0.0, 5.0); // Bluetooth RSSI measurement
 			Y[1] = stateGetSpeedNed_f()->x + rand_normal(0.0, 0.2); // next three are updated in the periodic function
 			Y[2] = stateGetSpeedNed_f()->y + rand_normal(0.0, 0.2);
@@ -110,11 +112,31 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	}
 };
 
+bool alternate;
 static void send_rafilterdata(struct transport_tx *trans, struct link_device *dev)
 {	
 	// Store the relative localization data
 	uint8_t i;
-	for (i = 0; i < nf; i++) {
+
+	if (nf > 1)
+	{
+		if (alternate)
+		{
+			alternate = false;
+			i = 1;
+		}
+		else
+		{
+			alternate = true;
+			i = 0;
+		}
+	}
+	else 
+	{
+			i = 0;
+	}
+	
+	// for (i = 0; i < nf; i++) {
 		pprz_msg_send_RAFILTERDATA(trans, dev, AC_ID,
 			&IDarray[i],			    // ID or filtered aircraft number
 			&RSSIarray[i], 		    // Received ID and RSSI
@@ -125,7 +147,7 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 			&ekf[i].X[6], &ekf[i].X[7],  // Orientation own , orientation other
 			&ekf[i].X[8], 			    // Height separation
 			&vx_des, &vy_des);		    // Commanded velocities
-	}
+	// }
 };
 
 void rafilter_init(void)
@@ -133,6 +155,7 @@ void rafilter_init(void)
 	randomgen_init();    // Initialize the random generator (for simulation purposes)
 	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
 	
+	alternate = 0;
 	nf 		= 0; 	   // Number of active filters
 	psi_des   = 0.0;	   // Initialize
 	v_des     = V_NOMINAL; // Initial desired velocity
@@ -147,7 +170,6 @@ void rafilter_init(void)
 	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_RAFILTERDATA, send_rafilterdata);
 };
 
-float timer, timerstart, t_elps;
 
 void rafilter_periodic(void)
 {	
@@ -187,7 +209,7 @@ void rafilter_periodic(void)
 		v_des = 0.0;
 	}
 	else {
-		float cc[NUAVS-1][6];
+		float cc[nf][6];
 
 		// Pos in X and Y just for arena border detection!
 		float posx = stateGetPositionNed_f()->x; 
@@ -227,6 +249,15 @@ void rafilter_periodic(void)
 				v_des = V_NOMINAL;
 			}
 			else {
+				#ifdef FOLLOW
+				if (magprev < 1.5)
+				{
+					cart2polar(ekf[0].X[0], ekf[0].X[1], &v_des, &psi_des);
+					v_des = V_NOMINAL;
+				}
+				else
+				{
+				#endif
 
 				polar2cart(v_des, psi_des, &vx_des, &vy_des);
 				uint8_t i;
@@ -242,12 +273,16 @@ void rafilter_periodic(void)
 					collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nf);
 				}
 
+				#ifdef FOLLOW
+				}
+				#endif
 			}
 
 		}
 
 		polar2cart(v_des, psi_des, &vx_des, &vy_des);
 		autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);
+	
 	}
 
 };
