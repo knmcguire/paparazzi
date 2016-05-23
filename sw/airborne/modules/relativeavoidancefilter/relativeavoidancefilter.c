@@ -93,7 +93,6 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 
 			// See UtmCoor for north pos in z
 			// Construct measurement vector for EKF using the latest data obtained for each case
-
 			float Y[8];
 			Y[0] = (float)rssi;// + rand_normal(0.0, 5.0); // Bluetooth RSSI measurement
 			Y[1] = stateGetSpeedNed_f()->x + rand_normal(0.0, 0.2); // next three are updated in the periodic function
@@ -118,36 +117,30 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	// Store the relative localization data
 	uint8_t i;
 
-	if (nf > 1)
-	{
-		if (alternate)
-		{
+	if (nf == 2) {
+		if (alternate) {
 			alternate = false;
 			i = 1;
 		}
-		else
-		{
+		else {
 			alternate = true;
 			i = 0;
 		}
 	}
-	else 
-	{
-			i = 0;
+	else { //only data on first
+		i = 0;
 	}
 	
-	// for (i = 0; i < nf; i++) {
-		pprz_msg_send_RAFILTERDATA(trans, dev, AC_ID,
-			&IDarray[i],			    // ID or filtered aircraft number
-			&RSSIarray[i], 		    // Received ID and RSSI
-			&srcstrength[i],		    // Source strength
-			&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
-			&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
-			&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
-			&ekf[i].X[6], &ekf[i].X[7],  // Orientation own , orientation other
-			&ekf[i].X[8], 			    // Height separation
-			&vx_des, &vy_des);		    // Commanded velocities
-	// }
+	pprz_msg_send_RAFILTERDATA(trans, dev, AC_ID,
+		&IDarray[i],			    // ID or filtered aircraft number
+		&RSSIarray[i], 		    // Received ID and RSSI
+		&srcstrength[i],		    // Source strength
+		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
+		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
+		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
+		&ekf[i].X[6], &ekf[i].X[7],  // Orientation own , orientation other
+		&ekf[i].X[8], 			    // Height separation
+		&vx_des, &vy_des);		    // Commanded velocities
 };
 
 void rafilter_init(void)
@@ -249,16 +242,15 @@ void rafilter_periodic(void)
 				v_des = V_NOMINAL;
 			}
 			else {
-				#ifdef FOLLOW
-				if (magprev < 1.5)
-				{
-					cart2polar(ekf[0].X[0], ekf[0].X[1], &v_des, &psi_des);
-					v_des = V_NOMINAL;
-				}
-				else
-				{
-				#endif
-
+				// #ifdef FOLLOW
+				// if (magprev < 1.5)
+				// {
+				// 	cart2polar(ekf[0].X[0], ekf[0].X[1], &v_des, &psi_des);
+				// 	v_des = V_NOMINAL;
+				// }
+				// else
+				// {
+				// #endif
 				polar2cart(v_des, psi_des, &vx_des, &vy_des);
 				uint8_t i;
 				for ( i = 0; i < nf; i++ ) {
@@ -272,10 +264,9 @@ void rafilter_periodic(void)
 					v_des = V_NOMINAL;
 					collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nf);
 				}
-
-				#ifdef FOLLOW
-				}
-				#endif
+				// #ifdef FOLLOW
+				// }
+				// #endif
 			}
 
 		}
