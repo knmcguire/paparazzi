@@ -238,7 +238,7 @@ void rafilter_periodic(void)
 			uint8_t i;
 			for ( i = 0; i < nf; i++ ) {
 				float dist = sqrt(pow(ekf[i].X[0],2) + pow(ekf[i].X[1],2));
-				float eps = 1.0*ASIDE*tan(M_PI/4) - MAVSIZE - ASIDE;
+				float eps = 1.0*ASIDE*tan((M_PI/2+mavsize)/2) - MAVSIZE - ASIDE;
 				
 				collisioncone_update(cc[i], ccvec[i][0], ccvec[i][1], ccvec[i][2], ccvec[i][3], dist+MAVSIZE+eps);			
 				
