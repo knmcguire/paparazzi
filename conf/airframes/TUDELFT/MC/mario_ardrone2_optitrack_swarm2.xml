@@ -33,7 +33,7 @@
   </firmware>
 
      <section name="RELATIVEAVOIDANCEFILTER" prefix="">
-      <define name="CCSIZE" value="1.6"/> <!-- Size of collision cone (= 1.0 + 2*radius)-->
+      <define name="MAVSIZE" value="0.6"/> <!-- Size of collision cone (= 1.0 + 2*radius)-->
       <define name="ASIDE" value="2.0"/> <!-- Size of arena -->
       <define name="RSSINOISE" value="5.0"/> <!-- (Expected) Noise on RSSI -->
       <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements -->

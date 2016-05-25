@@ -27,24 +27,26 @@
 
 #define PSISEARCH 15.0 		// Search grid for psi_des
 #define VCAL 1.0			// Velocity during calibration round
-#define NUAVS 5			// Maximum expected number of drones
+#define NUAVS 5				// Maximum expected number of drones
+#define MAF_SIZE_POS 3  	// Moving Average Filter size;
+#define MAF_SIZE_VEL 3  	// Moving Average Filter size;
 
 ekf_filter ekf[NUAVS-1]; 	// EKF structure
 btmodel model[NUAVS-1];  	// Bluetooth model structure 
 int IDarray[NUAVS-1]; 		// Array of IDs of other MAVs
-int8_t srcstrength[NUAVS-1];  // Source strength
+int8_t srcstrength[NUAVS-1];// Source strength
 uint32_t now_ts[NUAVS-1]; 	// Time of last received message from each MAV
 
-int nf; 				// Number of filters registered
+int nf; 					// Number of filters registered
 float psi_des, v_des; 		// psi_des = desired course w.r.t. north, v_des = magnitude of velocity
 float vx_des, vy_des;		// Desired velocities in NED frame
 float RSSIarray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
-bool firsttime;			// Bool value that checks when the script becomes active for the first time
-float calpsi;				// Calibration heading in the beginning
 float magprev;				// Previous magnitude from 0,0 (for simulated wall detection)
 
-float timer, timerstart, t_elps;
-
+float ccvec[NUAVS-1][4];
+float x_est[NUAVS-1][MAF_SIZE_POS], y_est[NUAVS-1][MAF_SIZE_POS];
+float vx_est[NUAVS-1][MAF_SIZE_VEL], vy_est[NUAVS-1][MAF_SIZE_VEL];
+	
 static abi_event rssi_ev;
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
 	uint8_t ac_id, int8_t source_strength, int8_t rssi);
@@ -106,7 +108,12 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			// Run the steps of the EKF
 			ekf_filter_predict(&ekf[i], &model[i]);
 			ekf_filter_update (&ekf[i], Y);
-
+				
+			ccvec[i][0] = movingaveragefilter(x_est[i],  MAF_SIZE_POS, ekf[i].X[0]);
+			ccvec[i][1] = movingaveragefilter(y_est[i],  MAF_SIZE_POS, ekf[i].X[1]);				
+			ccvec[i][2] = movingaveragefilter(vx_est[i], MAF_SIZE_VEL, ekf[i].X[4]);
+			ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
+			
 		}
 	}
 };
@@ -132,29 +139,36 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	}
 	
 	pprz_msg_send_RAFILTERDATA(trans, dev, AC_ID,
-		&IDarray[i],			    // ID or filtered aircraft number
-		&RSSIarray[i], 		    // Received ID and RSSI
-		&srcstrength[i],		    // Source strength
+		&IDarray[i],			     // ID or filtered aircraft number
+		&RSSIarray[i], 		    	 // Received ID and RSSI
+		&srcstrength[i],		     // Source strength
 		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
 		&ekf[i].X[6], &ekf[i].X[7],  // Orientation own , orientation other
-		&ekf[i].X[8], 			    // Height separation
-		&vx_des, &vy_des);		    // Commanded velocities
+		&ekf[i].X[8], 			     // Height separation
+		&vx_des, &vy_des);		     // Commanded velocities
 };
 
 void rafilter_init(void)
 {
-	randomgen_init();    // Initialize the random generator (for simulation purposes)
+	randomgen_init();    	// Initialize the random generator (for simulation purposes)
+	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
+	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
 	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
 	
 	alternate = 0;
-	nf 		= 0; 	   // Number of active filters
-	psi_des   = 0.0;	   // Initialize
-	v_des     = V_NOMINAL; // Initial desired velocity
-	firsttime = true;
-	magprev   = 3.0; 	   // Just a random high value
-	calpsi    = getrand_float(-M_PI, M_PI); // Initial desired direction
+	nf 		  = 0; 		   	// Number of active filters
+	psi_des   = 0.0;	   	// Initialize
+	v_des     = V_NOMINAL; 	// Initial desired velocity
+	magprev   = 3.0; 	   	// Just a random high value
+	
+	for (int i = 0; i < NUAVS; i++) {
+		fmat_make_zeroes( x_est[i],  NUAVS-1, MAF_SIZE_POS );
+		fmat_make_zeroes( y_est[i],  NUAVS-1, MAF_SIZE_POS );
+		fmat_make_zeroes( vx_est[i], NUAVS-1, MAF_SIZE_POS );
+		fmat_make_zeroes( vy_est[i], NUAVS-1, MAF_SIZE_POS );
+	}
 
 	// Subscribe to the ABI RSSI messages
 	AbiBindMsgRSSI(ABI_BROADCAST, &rssi_ev, bluetoothmsg_cb);
@@ -197,83 +211,51 @@ void rafilter_periodic(void)
 		Relative Avoidance Behavior
 	*********************************************/
 
-	if (guidance_h.mode != GUIDANCE_H_MODE_GUIDED) {
-		timerstart = get_sys_time_usec()/pow(10,6); 	// Elapsed time
-		v_des = 0.0;
-	}
-	else {
+	if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
 		float cc[nf][6];
 
 		// Pos in X and Y just for arena border detection!
 		float posx = stateGetPositionNed_f()->x; 
 		float posy = stateGetPositionNed_f()->y;
 
-		timer  = get_sys_time_usec()/pow(10,6);
-		t_elps = timer - timerstart;
+		bool flagglobal = false; 		// Null assumption
+		bool wallgettingcloser = false; // Null assumption
 
-		/*********************************************
-			Calibration maneuver
-		*********************************************/
-
-		if ( t_elps < 5.0 && firsttime ) {
-			if      ( t_elps < 1.0 ) { psi_des = calpsi            ; }
-			else if ( t_elps < 2.0 ) { psi_des = calpsi+(M_PI/2)   ; }
-			else if ( t_elps < 3.0 ) { psi_des = calpsi+(M_PI)     ; }
-			else if ( t_elps < 4.0 ) { psi_des = calpsi+(3*M_PI/2) ; }
-			else if ( t_elps < 5.0 ) { psi_des = calpsi		     ; }
-			v_des = VCAL;
+		// Wall detection algorithm
+		if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
+			wallgettingcloser = true;
 		}
+		magprev = sqrt(pow(posx,2) + pow(posy,2));
 
+		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wallgettingcloser) {
+			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
+			cart2polar(-posx,-posy, &v_des, &psi_des);
+			v_des = V_NOMINAL;
+		}
 		else {
-		
-			firsttime = false;				// Switch -- no longer the first time
-			bool flagglobal = false; 		// Null assumption
-			bool wallgettingcloser = false; 	// Null assumption
-
-			// Wall detection algorithm
-			if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
-				wallgettingcloser = true;
+			
+			polar2cart(v_des, psi_des, &vx_des, &vy_des);
+			uint8_t i;
+			for ( i = 0; i < nf; i++ ) {
+				float dist = sqrt(pow(ekf[i].X[0],2) + pow(ekf[i].X[1],2));
+				float eps = 1.0*ASIDE*tan(M_PI/4) - MAVSIZE - ASIDE;
+				
+				collisioncone_update(cc[i], ccvec[i][0], ccvec[i][1], ccvec[i][2], ccvec[i][3], dist+MAVSIZE+eps);			
+				
+				if ( collisioncone_checkdanger( cc[i], vx_des, vy_des ) )
+					flagglobal = true; 		// We could be colliding!
 			}
-			magprev = sqrt(pow(posx,2) + pow(posy,2));
-
-			if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wallgettingcloser) {
-				//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
-				cart2polar(0-posx,0-posy, &v_des, &psi_des);
+	
+			if (flagglobal) { 		// If the desired velocity doesn't work, then let's find the next best thing according to VO
 				v_des = V_NOMINAL;
+				collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nf);
 			}
-			else {
-				// #ifdef FOLLOW
-				// if (magprev < 1.5)
-				// {
-				// 	cart2polar(ekf[0].X[0], ekf[0].X[1], &v_des, &psi_des);
-				// 	v_des = V_NOMINAL;
-				// }
-				// else
-				// {
-				// #endif
-				polar2cart(v_des, psi_des, &vx_des, &vy_des);
-				uint8_t i;
-				for ( i = 0; i < nf; i++ ) {
-					float dist = sqrt(pow(ekf[i].X[0],2) + pow(ekf[i].X[1],2));
-					collisioncone_update(cc[i], ekf[i].X[0], ekf[i].X[1], ekf[i].X[4], ekf[i].X[5], dist+CCSIZE);
-					if ( collisioncone_checkdanger( cc[i], vx_des, vy_des ) )
-						flagglobal = true; // We could be colliding!
-				}
-		
-				if (flagglobal) { // If the desired velocity doesn't work, then let's find the next best thing according to VO
-					v_des = V_NOMINAL;
-					collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nf);
-				}
-				// #ifdef FOLLOW
-				// }
-				// #endif
-			}
-
+			
 		}
 
 		polar2cart(v_des, psi_des, &vx_des, &vy_des);
 		autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);
-	
+
 	}
 
 };

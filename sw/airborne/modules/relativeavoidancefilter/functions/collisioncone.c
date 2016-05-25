@@ -49,15 +49,13 @@ void collisioncone_fuse( float *cc0, float *cc1)
 
 	// 2*PI is added everywhere to avoid the issue where a boundary is in between -ang and +ang
 	if ((atan2(cc1[3], cc1[2]) + 2*M_PI > atan2(cc0[3], cc0[2]) + 2*M_PI) 
-		&& (atan2(cc1[3], cc1[2]) + 2*M_PI < atan2(cc0[5], cc0[4]) + 2*M_PI))
-	{
+		&& (atan2(cc1[3], cc1[2]) + 2*M_PI < atan2(cc0[5], cc0[4]) + 2*M_PI)) {
 		cc1[2] = cc0[2];
 		cc1[3] = cc0[3];
 	}
 
 	if ((atan2(cc1[5], cc1[4]) + 2*M_PI > atan2(cc0[3], cc0[2]) + 2*M_PI)
-		&& (atan2(cc1[5], cc1[4]) + 2*M_PI < atan2(cc0[5], cc0[4]) + 2*M_PI))
-	{
+		&& (atan2(cc1[5], cc1[4]) + 2*M_PI < atan2(cc0[5], cc0[4]) + 2*M_PI)) {
 		cc1[4] = cc0[4];
 		cc1[5] = cc0[5];
 	}
@@ -82,7 +80,7 @@ void collisioncone_findnewcmd( float cc[2][6],
 {
 	int i;
 	int count = 1;
-	int ng = 1;
+	// int ng = 1;
 	bool flag = true;
 	float psi_add;
 	deg2rad(psisearch, &psi_add);
@@ -113,7 +111,9 @@ void collisioncone_findnewcmd( float cc[2][6],
 			count = 1;
 		}
 	}
-
+	
+	// Failed to find a solution, so just stop this time
+	*v_des = 0.0;
 };
 
 // float collisioncone_expansionangle( float range, float R, float e )
