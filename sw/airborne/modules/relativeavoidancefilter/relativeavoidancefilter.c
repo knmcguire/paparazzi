@@ -28,8 +28,8 @@
 #define PSISEARCH 15.0 		// Search grid for psi_des
 #define VCAL 1.0			// Velocity during calibration round
 #define NUAVS 5				// Maximum expected number of drones
-#define MAF_SIZE_POS 3  	// Moving Average Filter size;
-#define MAF_SIZE_VEL 3  	// Moving Average Filter size;
+#define MAF_SIZE_POS 1  	// Moving Average Filter size;
+#define MAF_SIZE_VEL 1  	// Moving Average Filter size;
 
 ekf_filter ekf[NUAVS-1]; 	// EKF structure
 btmodel model[NUAVS-1];  	// Bluetooth model structure 
@@ -115,6 +115,10 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
 			
 		}
+		else { // initial estimate is towards the initial direction of flight
+			ekf[i].X[0] = -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero
+			ekf[i].X[1] = -stateGetPositionNed_f()->y;
+		}
 	}
 };
 
@@ -154,8 +158,6 @@ void rafilter_init(void)
 {
 	randomgen_init();    	// Initialize the random generator (for simulation purposes)
 	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
-	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
-	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
 	
 	alternate = 0;
 	nf 		  = 0; 		   	// Number of active filters
@@ -163,11 +165,11 @@ void rafilter_init(void)
 	v_des     = V_NOMINAL; 	// Initial desired velocity
 	magprev   = 3.0; 	   	// Just a random high value
 	
-	for (int i = 0; i < NUAVS; i++) {
-		fmat_make_zeroes( x_est[i],  NUAVS-1, MAF_SIZE_POS );
-		fmat_make_zeroes( y_est[i],  NUAVS-1, MAF_SIZE_POS );
-		fmat_make_zeroes( vx_est[i], NUAVS-1, MAF_SIZE_POS );
-		fmat_make_zeroes( vy_est[i], NUAVS-1, MAF_SIZE_POS );
+	for (int i = 0; i < NUAVS-1; i++) {
+		fmat_make_zeroes( x_est[i],  1, MAF_SIZE_POS );
+		fmat_make_zeroes( y_est[i],  1, MAF_SIZE_POS );
+		fmat_make_zeroes( vx_est[i], 1, MAF_SIZE_POS );
+		fmat_make_zeroes( vy_est[i], 1, MAF_SIZE_POS );
 	}
 
 	// Subscribe to the ABI RSSI messages
@@ -238,12 +240,13 @@ void rafilter_periodic(void)
 			uint8_t i;
 			for ( i = 0; i < nf; i++ ) {
 				float dist = sqrt(pow(ekf[i].X[0],2) + pow(ekf[i].X[1],2));
-				float eps = 1.0*ASIDE*tan((M_PI/2+mavsize)/2) - MAVSIZE - ASIDE;
+				float eps = 1.0*ASIDE*tan(1.7/2) - MAVSIZE - ASIDE;
 				
 				collisioncone_update(cc[i], ccvec[i][0], ccvec[i][1], ccvec[i][2], ccvec[i][3], dist+MAVSIZE+eps);			
 				
-				if ( collisioncone_checkdanger( cc[i], vx_des, vy_des ) )
+				if ( collisioncone_checkdanger( cc[i], vx_des, vy_des )) {
 					flagglobal = true; 		// We could be colliding!
+				}
 			}
 	
 			if (flagglobal) { 		// If the desired velocity doesn't work, then let's find the next best thing according to VO

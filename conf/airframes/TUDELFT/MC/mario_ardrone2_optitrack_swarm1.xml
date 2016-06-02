@@ -41,16 +41,16 @@
      </section>
 
   <modules main_freq="512">
-  <load name="bat_voltage_ardrone2.xml"/>
+  	<load name="bat_voltage_ardrone2.xml"/>
 	<load name="extra_dl.xml">
       <configure name="EXTRA_DL_PORT" value="UDP1"/>
       <define name="UDP1_PORT_IN" value="5000"/>
       <define name="UDP1_PORT_OUT" value="5001"/>
       <define name="UDP1_HOST" value="127.0.0.1"/>
 	</load>
-	  <load name="traffic_info.xml"/>
-    <load name="rssi.xml"/>
-    <load name="relativeavoidancefilter.xml"/>
+	<load name="traffic_info.xml"/>
+    	<load name="rssi.xml"/>
+    	<load name="relativeavoidancefilter.xml"/>
   </modules>
 
   <commands>
@@ -122,7 +122,7 @@
   </section>
 
   <section name="INS" prefix="INS_">
-    <!-- Use GPS altitude measurments and set the R gain -->
+	    <!-- Use GPS altitude measurments and set the R gain -->
     <define name="USE_GPS_ALT" value="1"/>
     <define name="VFF_R_GPS" value="0.001"/>
     <define name="USE_GPS_ALT_SPEED" value="1"/>
