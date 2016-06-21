@@ -170,8 +170,8 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
 	static float vel_body_y_buf[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 
 
-	vel_body.x =  movingaveragefilter(&vel_body_x_buf, 12, x);
-	vel_body.y = movingaveragefilter(&vel_body_y_buf, 12, y);
+	vel_body.x = movingaveragefilter(vel_body_x_buf, 12, x);
+	vel_body.y = movingaveragefilter(vel_body_y_buf, 12, y);
 
     // vel_body.x = x;
 	// vel_body.y = y;
@@ -286,7 +286,7 @@ void rafilter_periodic(void)
 		float posx = stateGetPositionNed_f()->x; 
 		float posy = stateGetPositionNed_f()->y;
 
-		bool flagglobal = false; 		// Null assumption
+		bool flagglobal = false; 	// Null assumption
 		bool wallgettingcloser = false; // Null assumption
 
 		// Wall detection algorithm
@@ -325,8 +325,8 @@ void rafilter_periodic(void)
 			
 		}
 
-		polar2cart(v_des, psi_des, &vx_des, &vy_des);  // new desired speed
-		autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);  //send to guided mode
+		polar2cart(v_des, psi_des, &vx_des, &vy_des);  		// new desired speed
+		autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);  	//send to guided mode
 
 	}
 
