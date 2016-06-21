@@ -26,10 +26,13 @@
 #include "relativeavoidancefilter.h"
 
 #define PSISEARCH 15.0 		// Search grid for psi_des
-#define VCAL 1.0			// Velocity during calibration round
 #define NUAVS 5				// Maximum expected number of drones
 #define MAF_SIZE_POS 1  	// Moving Average Filter size;
 #define MAF_SIZE_VEL 1  	// Moving Average Filter size;
+
+#ifndef INS_INT_VEL_ID
+#define INS_INT_VEL_ID ABI_BROADCAST
+#endif
 
 ekf_filter ekf[NUAVS-1]; 	// EKF structure
 btmodel model[NUAVS-1];  	// Bluetooth model structure 
@@ -46,10 +49,22 @@ float magprev;				// Previous magnitude from 0,0 (for simulated wall detection)
 float ccvec[NUAVS-1][4];
 float x_est[NUAVS-1][MAF_SIZE_POS], y_est[NUAVS-1][MAF_SIZE_POS];
 float vx_est[NUAVS-1][MAF_SIZE_VEL], vy_est[NUAVS-1][MAF_SIZE_VEL];
-	
+
+float ownVx_old;
+float ownVy_old;
+float trackedVx_old;
+float trackedVy_old;
+
+struct FloatVect3 vel_body;   // body frame velocity from sensors
+
+//  AbiBindMsgVELOCITY_ESTIMATE(INS_INT_VEL_ID, &vel_est_ev, vel_est_cb);
 static abi_event rssi_ev;
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
 	uint8_t ac_id, int8_t source_strength, int8_t rssi);
+
+static abi_event vel_est_ev;
+static void vel_est_cb(uint8_t sender_id, uint32_t stamp, float x, float y, float z, float noise);
+
 
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
 	uint8_t ac_id, int8_t source_strength, int8_t rssi)
@@ -57,14 +72,14 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	int i= -1; // Initialize index
 	printf("message received with rssi %d for drone %d number %d \n", rssi, ac_id, i);
 	// If it's a new ID we start a new EKF for it
-	if ((!array_find_int(NUAVS-1, IDarray, ac_id, &i)) && (nf < NUAVS-1)) {
+	if ((!array_find_int(NUAVS-1, IDarray, ac_id, &i)) && (nf < NUAVS-1) && ( (ac_id== 200) || (ac_id == 201) || (ac_id == 202) ) ) {
 		IDarray[nf] = ac_id;
 		srcstrength[nf] = source_strength;
 		ekf_filter_new(&ekf[nf]); // Initialize an ekf filter for each target tracker
 
 		// Set up the Q and R matrices and all the rest.
 		fmat_scal_mult(9,9, ekf[nf].Q, pow(0.5,2), ekf[nf].Q);
-		fmat_scal_mult(8,8, ekf[nf].R, pow(SPEEDNOISE,2), ekf[nf].R);
+		fmat_scal_mult(8,8, ekf[nf].R, pow(0.2,2), ekf[nf].R);
 		ekf[nf].Q[0]   = 0.01;
 		ekf[nf].Q[9+1] = 0.01;
 		ekf[nf].R[0]   = pow(RSSINOISE,2.0);
@@ -92,17 +107,29 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			
 			deg2rad   (((float)ac->course)/10.0, &angle); // decidegrees
 			polar2cart(((float)ac->gspeed)/100.0, angle, &trackedVx, &trackedVy); // get x and y velocities (cm/s)
-
+			
+			// Bind received values in case of errors
+			float ownVx = vel_body.x;
+			float ownVy = vel_body.y;
+			
+			// Bind velocitiesto a known maximum to avoid occasional errors
+			keepbounded(&ownVx,-2.0,2.0);
+			keepbounded(&ownVy,-2.0,2.0);
+			keepbounded(&trackedVx,-2.0,2.0);
+			keepbounded(&trackedVy,-2.0,2.0);
+			
 			// See UtmCoor for north pos in z
 			// Construct measurement vector for EKF using the latest data obtained for each case
 			float Y[8];
 			Y[0] = (float)rssi;// + rand_normal(0.0, 5.0); // Bluetooth RSSI measurement
-			Y[1] = stateGetSpeedNed_f()->x + rand_normal(0.0, 0.2); // next three are updated in the periodic function
-			Y[2] = stateGetSpeedNed_f()->y + rand_normal(0.0, 0.2);
-			Y[3] = 0.0 + rand_normal(0.0, 0.2);
-			Y[4] = trackedVx + rand_normal(0.0, 0.2);
-			Y[5] = trackedVy + rand_normal(0.0, 0.2);
-			Y[6] = 0.0 + rand_normal(0.0, 0.2); //ac->north;
+			//Y[1] = stateGetSpeedNed_f()->x + rand_normal(0.0, 0.2); // next three are updated in the periodic function
+			//Y[2] = stateGetSpeedNed_f()->y + rand_normal(0.0, 0.2);
+			Y[1] = ownVx;
+			Y[2] = ownVy;
+			Y[3] = 0.0; //stateGetNedToBodyEulers_f()->psi; // get own body orientation
+			Y[4] = trackedVx;
+			Y[5] = trackedVy;	
+			Y[6] = 0.0;
 			Y[7] = (-(float)ac->utm.alt/1000.0) - (stateGetPositionNed_f()->z) + rand_normal(0.0, 0.2); //utm.alt is in mm above 0
 			
 			// Run the steps of the EKF
@@ -113,14 +140,24 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			ccvec[i][1] = movingaveragefilter(y_est[i],  MAF_SIZE_POS, ekf[i].X[1]);				
 			ccvec[i][2] = movingaveragefilter(vx_est[i], MAF_SIZE_VEL, ekf[i].X[4]);
 			ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
-			
+						
 		}
-		else { // initial estimate is towards the initial direction of flight
+		else { // Initial estimate is towards the initial direction of flight
 			ekf[i].X[0] = -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero
 			ekf[i].X[1] = -stateGetPositionNed_f()->y;
 		}
 	}
 };
+
+
+static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
+                       uint32_t stamp,
+                       float x, float y, float z,
+                       float noise __attribute__((unused))) {
+    vel_body.x = x;
+	vel_body.y = y;
+}
+
 
 bool alternate;
 static void send_rafilterdata(struct transport_tx *trans, struct link_device *dev)
@@ -173,7 +210,8 @@ void rafilter_init(void)
 	}
 
 	// Subscribe to the ABI RSSI messages
-	AbiBindMsgRSSI(ABI_BROADCAST, &rssi_ev, bluetoothmsg_cb);
+	AbiBindMsgRSSI(ABI_BROADCAST,  &rssi_ev,    bluetoothmsg_cb);
+	AbiBindMsgVELOCITY_ESTIMATE(ABI_BROADCAST, &vel_est_ev, vel_est_cb);
 
 	// Send out the filter data
 	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_RAFILTERDATA, send_rafilterdata);
@@ -189,19 +227,28 @@ void rafilter_periodic(void)
 	/*********************************************
 		Sending speed directly between drones
 	*********************************************/
-	float velx = stateGetSpeedNed_f()->x;
-	float vely = stateGetSpeedNed_f()->y;
-	float temp, crs;
-
+	//float velx = stateGetSpeedNed_f()->x;
+	//float vely = stateGetSpeedNed_f()->y;
+	float velx = vel_body.x;
+	float vely = vel_body.y;
+		
+	float spd, crs_vel_body, crs_bodyaxis;
+	crs_bodyaxis = stateGetNedToBodyEulers_f()->psi;
+	
 	// Convert Course to the proper format
-	cart2polar(velx, vely, &temp, &crs); 	// Get the total speed and course
-	wrapTo2Pi(&crs); 					// Wrap to 2 Pi since the sent result is unsigned
-	int32_t course = (int32_t)(crs*(1e7)); 	// Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
+	cart2polar(velx, vely, &spd, &crs_vel_body); 	// Get the total speed and course
+	wrapTo2Pi(&crs_vel_body); 					    // Wrap to 2 Pi since the sent result is unsigned
+	wrapTo2Pi(&crs_bodyaxis); 					    // Wrap to 2 Pi since the sent result is unsigned
+	float crs_vel_earth = - crs_vel_body + crs_bodyaxis;
+	wrapTo2Pi(&crs_vel_earth); 					    // Wrap to 2 Pi since the sent result is unsigned
+
+	int32_t course = (int32_t)(crs_vel_body*(1e7)); 	// Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
+	// int32_t course = (int32_t)(crs*(1e7)); 	// Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
 
 	uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(course) / 1e7) / 2)) & 0x7FF) <<
 	                        21; // bits 31-21 x position in cm
-	multiplex_speed |= (((uint32_t)(gps.gspeed)) & 0x7FF) << 10;         // bits 20-10 y position in cm
-	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);           // bits 9-0 z position in cm
+	multiplex_speed |= (((uint32_t)(spd*100)) & 0x7FF) << 10;         // bits 20-10 y position in cm
+	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);        // bits 9-0 z position in cm
 
 	int16_t alt = (int16_t)(gps.hmsl / 10);
 

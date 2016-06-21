@@ -29,26 +29,29 @@
     <subsystem name="gps" type="datalink"/>
     <subsystem name="stabilization" type="indi"/>
     <subsystem name="ahrs" type="int_cmpl_quat"/>
-    <subsystem name="ins" type="extended"/>
+    <subsystem name="ins" type="extended">
+      <define name="INS_INT_VEL_ID" value="ABI_DISABLE"/>
+    </subsystem>
   </firmware>
 
      <section name="RELATIVEAVOIDANCEFILTER" prefix="">
-      <define name="MAVSIZE" value="0.6"/>    <!-- Size of collision cone (= 1.0 + 2*radius)-->
-      <define name="ASIDE" value="2.0"/>      <!-- Size of arena -->
-      <define name="RSSINOISE" value="5.0"/>  <!-- (Expected) Noise on RSSI -->
+      <define name="MAVSIZE" value="0.6"/> <!-- Size of collision cone (= 1.0 + 2*radius)-->
+      <define name="ASIDE" value="2.0"/> <!-- Size of arena -->
+      <define name="RSSINOISE" value="5.0"/> <!-- (Expected) Noise on RSSI -->
       <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements -->
-      <define name="V_NOMINAL" value="0.5"/>  <!-- Desired nominal velocity -->
+      <define name="V_NOMINAL" value="0.5"/> <!-- Desired nominal velocity -->
      </section>
 
   <modules main_freq="512">
   <load name="bat_voltage_ardrone2.xml"/>
-	<load name="extra_dl.xml">
+  <load name="extra_dl.xml">
       <configure name="EXTRA_DL_PORT" value="UDP1"/>
       <define name="UDP1_PORT_IN" value="5000"/>
       <define name="UDP1_PORT_OUT" value="5001"/>
       <define name="UDP1_HOST" value="127.0.0.1"/>
-	</load>
-	  <load name="traffic_info.xml"/>
+  </load>
+    <load name="traffic_info.xml"/>
+    <load name="cv_opticflow.xml"/>
     <load name="rssi.xml"/>
     <load name="relativeavoidancefilter.xml"/>
   </modules>

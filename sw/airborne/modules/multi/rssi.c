@@ -88,6 +88,8 @@ void set_rssi(uint8_t _ac_id, int8_t _tx_strength, int8_t _rssi)
 
     rssi_acs[rssi_acs_id[_ac_id]].rssi = _rssi;
     rssi_acs[rssi_acs_id[_ac_id]].tx_strength = _tx_strength;
+    
+    AbiSendMsgRSSI(RSSI_MODULE_ID, _ac_id, _tx_strength, _rssi);
   }
 }
 

@@ -18,6 +18,7 @@
 
     <define name="FAILSAFE_DESCENT_SPEED" value="0.5"/>
     <define name="USE_SONAR" value="0"/>
+
     <configure name="USE_MAGNETOMETER" value="0"/>
 	<!-- Subsystem section -->
     <subsystem name="telemetry" type="transparent_udp"/>
@@ -29,7 +30,9 @@
     <subsystem name="gps" type="datalink"/>
     <subsystem name="stabilization" type="indi"/>
     <subsystem name="ahrs" type="int_cmpl_quat"/>
-    <subsystem name="ins" type="extended"/>
+    <subsystem name="ins" type="extended">
+      <define name="INS_INT_VEL_ID" value="ABI_DISABLE"/>
+    </subsystem>
   </firmware>
 
      <section name="RELATIVEAVOIDANCEFILTER" prefix="">
@@ -49,6 +52,7 @@
       <define name="UDP1_HOST" value="127.0.0.1"/>
 	</load>
 	  <load name="traffic_info.xml"/>
+    <load name="cv_opticflow.xml"/>
     <load name="rssi.xml"/>
     <load name="relativeavoidancefilter.xml"/>
   </modules>
