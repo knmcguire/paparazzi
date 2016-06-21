@@ -146,6 +146,7 @@
 
   <section name="INS" prefix="INS_">
     <define name="USE_GPS_ALT" value="1"/>
+    <define name="USE_GPS_ALT_SPEED" value="1"/>
   </section>
 
   <section name="GPS" prefix="GPS_">
@@ -168,7 +169,7 @@
     <define name="H_X" value="0.39049610"/>
     <define name="H_Y" value="0.00278894"/>
     <define name="H_Z" value="0.92060036"/>
-    <define name="USE_GPS_HEADING" value="0"/>
+    <define name="USE_GPS_HEADING" value="1"/>
   </section>
 
 
@@ -219,6 +220,18 @@
       <define name="USE_PERSISTENT_SETTINGS" value="TRUE"/>
     </target>
 
+    <target name="nps" board="pc">
+      <module name="fdm" type="jsbsim"/>
+      <module name="radio_control" type="ppm"/>
+    </target>
+
+  <section name="SIMULATOR" prefix="NPS_">
+    <define name="ACTUATOR_NAMES"  value="front_motor, right_motor, back_motor, left_motor" type="string[]"/>
+    <define name="JSBSIM_MODEL" value="simple_quad" type="string"/>
+ <define name="JSBSIM_INIT" value="reset00" type="string"/>
+    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
+  </section>
+
     <module name="motor_mixing"/>
     <module name="actuators" type="pwm">
       <!-- This airframe is using the servo PWM outputs directly to drive mosfets, which in turn directly drive brushed motors.
@@ -243,8 +256,6 @@
     <module name="gps" type="datalink"/>
     <module name="stabilization" type="int_quat"/>
     <module name="ahrs" type="int_cmpl_quat"/>
-    <module name="ins">
-       <define name="INS_INT_GPS_ID" value="ABI_DISABLE"/>
-    </module>
+    <module name="ins"/>
   </firmware>
 </airframe>
