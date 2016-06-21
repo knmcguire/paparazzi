@@ -72,7 +72,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	int i= -1; // Initialize index
 	printf("message received with rssi %d for drone %d number %d \n", rssi, ac_id, i);
 	// If it's a new ID we start a new EKF for it
-	if ((!array_find_int(NUAVS-1, IDarray, ac_id, &i)) && (nf < NUAVS-1) && ( (ac_id== 200) || (ac_id == 201) || (ac_id == 202) ) ) {
+	// TODO: aircraft ID are now hard coded here, make it more general (set in airframe file?)
+	if ((!array_find_int(NUAVS-1, IDarray, ac_id, &i)) && (nf < NUAVS-1) && ( (ac_id== 200) || (ac_id == 201) || (ac_id == 202) ) ) { //check if a new aircraft ID is present, continue
 		IDarray[nf] = ac_id;
 		srcstrength[nf] = source_strength;
 		ekf_filter_new(&ekf[nf]); // Initialize an ekf filter for each target tracker
@@ -93,9 +94,9 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 
 	// If we do recognize the ID, then we can update the measurement message data
 	else if ((i != -1) || (nf == (NUAVS-1)) ) {
-		RSSIarray[i] = rssi;
+		RSSIarray[i] = rssi; //logging
 
-		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED)
+		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
 		{
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
@@ -109,7 +110,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			polar2cart(((float)ac->gspeed)/100.0, angle, &trackedVx, &trackedVy); // get x and y velocities (cm/s)
 			
 			// Bind received values in case of errors
-			float ownVx = vel_body.x;
+			float ownVx = vel_body.x; //From optical flow
 			float ownVy = vel_body.y;
 			
 			// Bind velocitiesto a known maximum to avoid occasional errors
@@ -127,22 +128,29 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			Y[1] = ownVx;
 			Y[2] = ownVy;
 			Y[3] = 0.0; //stateGetNedToBodyEulers_f()->psi; // get own body orientation
-			Y[4] = trackedVx;
+			Y[4] = trackedVx;  //Velocity tracked from other drone
 			Y[5] = trackedVy;	
-			Y[6] = 0.0;
+			Y[6] = 0.0;        //other drone heading towards north (hardcoded to be 0)
 			Y[7] = (-(float)ac->utm.alt/1000.0) - (stateGetPositionNed_f()->z) + rand_normal(0.0, 0.2); //utm.alt is in mm above 0
 			
 			// Run the steps of the EKF
 			ekf_filter_predict(&ekf[i], &model[i]);
 			ekf_filter_update (&ekf[i], Y);
 				
+			/*
+			 * Xvector: dotx_other and doty_other are expressed in own bodyframe
+			 * X = [x y dotx_own doty_own dotx_other doty_other psi_own psi_other dh]
+			 * Yvector: dotx_other and dotyother are not rotated yet
+			 * Y = [RSSI dotx_own doty_own psi_own dotx_other doty_other psi_other dh]
+			 */
+			// Moving average filter to state (MAF_SIZE of 1, average with direct last measurment)
 			ccvec[i][0] = movingaveragefilter(x_est[i],  MAF_SIZE_POS, ekf[i].X[0]);
 			ccvec[i][1] = movingaveragefilter(y_est[i],  MAF_SIZE_POS, ekf[i].X[1]);				
 			ccvec[i][2] = movingaveragefilter(vx_est[i], MAF_SIZE_VEL, ekf[i].X[4]);
 			ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
 						
 		}
-		else { // Initial estimate is towards the initial direction of flight
+		else { // Initial estimate is towards the initial direction of flight (filter of other drone!)
 			ekf[i].X[0] = -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero
 			ekf[i].X[1] = -stateGetPositionNed_f()->y;
 		}
@@ -246,14 +254,14 @@ void rafilter_periodic(void)
 	// int32_t course = (int32_t)(crs*(1e7)); 	// Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
 
 	uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(course) / 1e7) / 2)) & 0x7FF) <<
-	                        21; // bits 31-21 x position in cm
-	multiplex_speed |= (((uint32_t)(spd*100)) & 0x7FF) << 10;         // bits 20-10 y position in cm
-	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);        // bits 9-0 z position in cm
+	                        21; 									  // bits 31-21 course (where the magnitude is pointed at)
+	multiplex_speed |= (((uint32_t)(spd*100)) & 0x7FF) << 10;         // bits 20-10 speed in cm/s
+	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);        // bits 9-0 z velocity in cm/s
 
-	int16_t alt = (int16_t)(gps.hmsl / 10);
+	int16_t alt = (int16_t)(gps.hmsl / 10); 							// height in dm
 
 	DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat,
-                          &gps.lla_pos.lon, &alt);
+                          &gps.lla_pos.lon, &alt);                     // Messages throught USB bluetooth dongle to other drones
 
 
 	/*********************************************
@@ -276,6 +284,7 @@ void rafilter_periodic(void)
 		}
 		magprev = sqrt(pow(posx,2) + pow(posy,2));
 
+		// Change direction to avoid wall
 		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wallgettingcloser) {
 			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
 			cart2polar(-posx,-posy, &v_des, &psi_des);
@@ -283,28 +292,30 @@ void rafilter_periodic(void)
 		}
 		else {
 			
-			polar2cart(v_des, psi_des, &vx_des, &vy_des);
+			polar2cart(v_des, psi_des, &vx_des, &vy_des); // vx_des & vy_des = desired velocity
 			uint8_t i;
-			for ( i = 0; i < nf; i++ ) {
+			for ( i = 0; i < nf; i++ ) { // nf is amount of filters running
 				float dist = sqrt(pow(ekf[i].X[0],2) + pow(ekf[i].X[1],2));
 				float eps = 1.0*ASIDE*tan(1.7/2) - MAVSIZE - ASIDE;
 				
-				collisioncone_update(cc[i], ccvec[i][0], ccvec[i][1], ccvec[i][2], ccvec[i][3], dist+MAVSIZE+eps);			
+				// cc = collisioncone
+				collisioncone_update(cc[i], ccvec[i][0], ccvec[i][1], ccvec[i][2], ccvec[i][3], dist+MAVSIZE+eps);	// x y xdot_0 ydot_0 (characteristics collision cones)
 				
 				if ( collisioncone_checkdanger( cc[i], vx_des, vy_des )) {
 					flagglobal = true; 		// We could be colliding!
+					// TODO: Change flagglobal name
 				}
 			}
 	
 			if (flagglobal) { 		// If the desired velocity doesn't work, then let's find the next best thing according to VO
 				v_des = V_NOMINAL;
-				collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nf);
+				collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nf); // Go 15 degrees clockwise until save direction in found
 			}
 			
 		}
 
-		polar2cart(v_des, psi_des, &vx_des, &vy_des);
-		autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);
+		polar2cart(v_des, psi_des, &vx_des, &vy_des);  // new desired speed
+		autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);  //send to guided mode
 
 	}
 
