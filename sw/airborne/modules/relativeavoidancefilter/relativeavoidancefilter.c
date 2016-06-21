@@ -34,6 +34,8 @@
 #define INS_INT_VEL_ID ABI_BROADCAST
 #endif
 
+
+
 ekf_filter ekf[NUAVS-1]; 	// EKF structure
 btmodel model[NUAVS-1];  	// Bluetooth model structure 
 int IDarray[NUAVS-1]; 		// Array of IDs of other MAVs
@@ -162,8 +164,17 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
                        uint32_t stamp,
                        float x, float y, float z,
                        float noise __attribute__((unused))) {
-    vel_body.x = x;
-	vel_body.y = y;
+
+	//TODO make more generic
+	static float vel_body_x_buf[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
+	static float vel_body_y_buf[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
+
+
+	vel_body.x =  movingaveragefilter(&vel_body_x_buf, 12, x);
+	vel_body.y = movingaveragefilter(&vel_body_y_buf, 12, y);
+
+    // vel_body.x = x;
+	// vel_body.y = y;
 }
 
 
