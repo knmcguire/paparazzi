@@ -170,6 +170,8 @@
     <define name="H_Y" value="0.00278894"/>
     <define name="H_Z" value="0.92060036"/>
     <define name="USE_GPS_HEADING" value="1"/>
+    <define name="HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
+    <define name="GRAVITY_HEURISTIC_FACTOR" value="0"/>
   </section>
 
 
@@ -179,7 +181,7 @@
    <define name="DGAIN" value="40"/>
    <define name="IGAIN" value="0"/>
    <define name="REF_MAX_SPEED" value="0.5"/>
-   <define name="USE_REF" value="FALSE"/>
+   <!--define name="USE_REF" value="FALSE"/-->
  </section>
 
   <section name="NAVIGATION" prefix="NAV_">
@@ -202,7 +204,7 @@
    <module name="stereocam">
      <configure name="STEREO_UART" value="UART1"/>
      <configure name="STEREO_BAUD" value="B115200"/>
-     <define name="SEND_STEREO" value="TRUE"/>
+     <define name="SEND_STEREO" value="FALSE"/>
    </module>
    <module name="stereocam_state2camera">
      <configure name="STEREO_UART" value="UART1"/>
@@ -218,6 +220,7 @@
       <configure name="USE_MAGNETOMETER" value="0"/>
       <configure name="AHRS_PROPAGATE_FREQUENCY" value="500"/>
       <define name="USE_PERSISTENT_SETTINGS" value="TRUE"/>
+      <configure name="USE_BARO_BOARD" value="FALSE"/>
     </target>
 
     <target name="nps" board="pc">
@@ -253,7 +256,7 @@
       <define name="LISA_S_UPSIDE_DOWN"/> <!-- Upside down is a relative term. :) -->
     </module>
 	
-    <module name="gps" type="datalink"/>
+    <module name="gps" type="optitrack"/>
     <module name="stabilization" type="int_quat"/>
     <module name="ahrs" type="int_cmpl_quat"/>
     <module name="ins"/>
