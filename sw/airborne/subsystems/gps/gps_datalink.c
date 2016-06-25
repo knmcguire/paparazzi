@@ -172,7 +172,7 @@ static void parse_gps_datalink(uint8_t numsv, int32_t ecef_x, int32_t ecef_y, in
 
 void gps_datalink_parse_REMOTE_GPS(void)
 {
-  if (DL_REMOTE_GPS_SMALL_ac_id(dl_buffer) != AC_ID) { return; } // not for this aircraft
+  if (DL_REMOTE_GPS_ac_id(dl_buffer) != AC_ID) { return; } // not for this aircraft
 
   parse_gps_datalink(DL_REMOTE_GPS_numsv(dl_buffer),
                      DL_REMOTE_GPS_ecef_x(dl_buffer),
