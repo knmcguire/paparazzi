@@ -94,54 +94,65 @@
  </section>
 
 
-  <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
 
-    <!-- setpoints -->
-    <define name="SP_MAX_PHI" value="45." unit="deg"/>
-    <define name="SP_MAX_THETA" value="45." unit="deg"/>
-    <define name="SP_MAX_PSI" value="45." unit="deg"/>
-    <define name="SP_MAX_R" value="90." unit="deg/s"/>
-    <define name="SP_MAX_P" value="90." unit="deg/s"/>
-    <define name="DEADBAND_R" value="250"/>
-    <define name="DEADBAND_A" value="250"/>
 
-    <!-- reference -->
-    <define name="REF_OMEGA_P" value="800" unit="deg/s"/>
-    <define name="REF_ZETA_P" value="0.85"/>
-    <define name="REF_MAX_P" value="400." unit="deg/s"/>
+  <section name="RC_SETPOINT" prefix="STABILIZATION_ATTITUDE_">
+    <!-- setpoint limits for attitude stabilization rc flight -->
+    <define name="SP_MAX_PHI" value="45" unit="deg"/>
+    <define name="SP_MAX_THETA" value="45" unit="deg"/>
+    <define name="SP_MAX_R" value="300" unit="deg/s"/>
+    <define name="DEADBAND_A" value="0"/>
+    <define name="DEADBAND_E" value="0"/>
+    <define name="DEADBAND_R" value="50"/>
+  </section>
+
+  <section name="ATTITUDE_REFERENCE" prefix="STABILIZATION_ATTITUDE_">
+    <!-- attitude reference generation model -->
+    <define name="REF_OMEGA_P" value="450" unit="deg/s"/>
+    <define name="REF_ZETA_P" value="0.9"/>
+    <define name="REF_MAX_P" value="600." unit="deg/s"/>
     <define name="REF_MAX_PDOT" value="RadOfDeg(8000.)"/>
 
-    <define name="REF_OMEGA_Q" value="800" unit="deg/s"/>
-    <define name="REF_ZETA_Q" value="0.85"/>
-    <define name="REF_MAX_Q" value="400." unit="deg/s"/>
+    <define name="REF_OMEGA_Q" value="450" unit="deg/s"/>
+    <define name="REF_ZETA_Q" value="0.9"/>
+    <define name="REF_MAX_Q" value="600." unit="deg/s"/>
     <define name="REF_MAX_QDOT" value="RadOfDeg(8000.)"/>
 
-    <define name="REF_OMEGA_R" value="500" unit="deg/s"/>
-    <define name="REF_ZETA_R" value="0.85"/>
-    <define name="REF_MAX_R" value="90." unit="deg/s"/>
-    <define name="REF_MAX_RDOT" value="RadOfDeg(900.)"/>
+    <define name="REF_OMEGA_R" value="450" unit="deg/s"/>
+    <define name="REF_ZETA_R" value="0.9"/>
+    <define name="REF_MAX_R" value="600." unit="deg/s"/>
+    <define name="REF_MAX_RDOT" value="RadOfDeg(8000.)"/>
+  </section>
 
-    <!-- feedback -->
-    <define name="PHI_PGAIN" value="400"/>
-    <define name="PHI_DGAIN" value="200"/>
-    <define name="PHI_IGAIN" value="100"/>
+  <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
+    <!-- control effectiveness -->
+    <define name="G1_P" value="0.041319"/> 
+    <define name="G1_Q" value="0.026604"/>
+    <define name="G1_R" value="0.00413346"/>
+    <define name="G2_R" value="0.09605374"/>
 
-    <define name="THETA_PGAIN" value="400"/>
-    <define name="THETA_DGAIN" value="200"/>
-    <define name="THETA_IGAIN" value="100"/>
+    <!-- reference acceleration for attitude control -->
+    <define name="REF_ERR_P" value="170.0"/>
+    <define name="REF_ERR_Q" value="170.0"/>
+    <define name="REF_ERR_R" value="100.0"/>
+    <define name="REF_RATE_P" value="17.0"/>
+    <define name="REF_RATE_Q" value="17.0"/>
+    <define name="REF_RATE_R" value="17.0"/>
 
-    <define name="PSI_PGAIN" value="500"/>
-    <define name="PSI_DGAIN" value="300"/>
-    <define name="PSI_IGAIN" value="10"/>
+    <!-- second order filter parameters -->
+    <define name="FILT_OMEGA" value="50.0"/>
+    <define name="FILT_ZETA" value="0.55"/>
+    <define name="FILT_OMEGA_R" value="50.0"/>
+    <define name="FILT_ZETA_R" value="0.55"/>
 
-    <!-- feedforward -->
-    <define name="PHI_DDGAIN" value="0"/>
-    <define name="THETA_DDGAIN" value="0"/>
-    <define name="PSI_DDGAIN" value=" 300"/>
+    <!-- first order actuator dynamics -->
+    <define name="ACT_DYN_P" value="0.03"/>
+    <define name="ACT_DYN_Q" value="0.03"/>
+    <define name="ACT_DYN_R" value="0.03"/>
 
-    <define name="PHI_AGAIN" value="0"/>
-    <define name="THETA_AGAIN" value="0"/>
-    <define name="PSI_AGAIN" value="0"/>
+    <!-- Adaptive Learning Rate -->
+    <define name="USE_ADAPTIVE" value="FALSE"/>
+    <define name="ADAPTIVE_MU" value="0.0001"/>
   </section>
 
   <section name="INS" prefix="INS_">
@@ -160,7 +171,7 @@
    <define name="HOVER_KP" value="276"/>
    <define name="HOVER_KD" value="455"/>
    <define name="HOVER_KI" value="100"/>
-   <define name="NOMINAL_HOVER_THROTTLE" value="0.65"/>
+   <define name="NOMINAL_HOVER_THROTTLE" value="0.5"/>
    <define name="ADAPT_THROTTLE_ENABLED" value="FALSE"/>
   </section>
 
@@ -204,7 +215,7 @@
    <module name="stereocam">
      <configure name="STEREO_UART" value="UART1"/>
      <configure name="STEREO_BAUD" value="B115200"/>
-     <define name="SEND_STEREO" value="TRUE"/>
+     <define name="SEND_STEREO" value="FALSE"/>
    </module>
    <module name="stereocam_state2camera">
      <configure name="STEREO_UART" value="UART1"/>
@@ -217,7 +228,7 @@
     <target name="ap" board="lisa_s_1.0">
       <module name="radio_control" type="datalink">
       </module>
-      <configure name="USE_MAGNETOMETER" value="0"/>
+      <!--configure name="USE_MAGNETOMETER" value="0"/-->
       <configure name="AHRS_PROPAGATE_FREQUENCY" value="500"/>
       <define name="USE_PERSISTENT_SETTINGS" value="TRUE"/>
       <configure name="USE_BARO_BOARD" value="FALSE"/>
@@ -228,12 +239,7 @@
       <module name="radio_control" type="ppm"/>
     </target>
 
-  <section name="SIMULATOR" prefix="NPS_">
-    <define name="ACTUATOR_NAMES"  value="front_motor, right_motor, back_motor, left_motor" type="string[]"/>
-    <define name="JSBSIM_MODEL" value="simple_quad" type="string"/>
- <define name="JSBSIM_INIT" value="reset00" type="string"/>
-    <define name="SENSORS_PARAMS" value="nps_sensors_params_default.h" type="string"/>
-  </section>
+
 
     <module name="motor_mixing"/>
     <module name="actuators" type="pwm">
@@ -257,7 +263,7 @@
     </module>
 	
     <module name="gps" type="optitrack"/>
-    <module name="stabilization" type="int_quat"/>
+    <module name="stabilization" type="indi"/>
     <module name="ahrs" type="int_cmpl_quat"/>
     <module name="ins"/>
   </firmware>

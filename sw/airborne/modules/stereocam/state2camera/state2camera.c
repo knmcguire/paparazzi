@@ -58,6 +58,10 @@ int pleaseResetOdroid = 0;
 #define STEREOCAM_EDGEFLOW_SNAPSHOT 0
 #endif
 
+#ifndef STEREOCAM_EDGEFLOW_STEREO_SHIFT
+#define STEREOCAM_EDGEFLOW_STEREO_SHIFT -5
+#endif
+
 #ifndef STATE2CAMERA_SEND_DATA_TYPE
 #define STATE2CAMERA_SEND_DATA_TYPE 1
 #endif
@@ -70,6 +74,8 @@ void init_state2camera(void)
 	edgeflow.search_distance = STEREOCAM_EDGEFLOW_SEARCH_DISTANCE;
 	edgeflow.window_size = STEREOCAM_EDGEFLOW_WINDOW_SIZE;
 	edgeflow.snapshot = STEREOCAM_EDGEFLOW_SNAPSHOT;
+	edgeflow.stereo_shift = STEREOCAM_EDGEFLOW_STEREO_SHIFT;
+
 }
 
 void write_serial_rot()
@@ -93,13 +99,14 @@ void write_serial_rot()
   uint8_t ar[lengthArrayInformation];
   int16_t *pointer = (int16_t *) ar;
   pointer[0] =   (int16_t)(stateGetNedToBodyEulers_f()->theta*100);
-  pointer[1] =    (int16_t)(stateGetNedToBodyEulers_f()->phi*100);
+  pointer[1] =    (int16_t)(stateGetNedToBodyEulers_f()->psi*100);
   pointer[2] =    (int16_t)(edgeflow.derotation);
   pointer[3] =    (int16_t)(edgeflow.adaptive_time_horizon);
   pointer[4] =    (int16_t)(edgeflow.window_size);
   pointer[5] =    (int16_t)(edgeflow.search_distance);
   pointer[6] =    (int16_t)(edgeflow.snapshot);
-  pointer[7] =    (int16_t)(autopilot_mode);
+  pointer[7] =    (int16_t)(edgeflow.stereo_shift);
+  pointer[8] =    (int16_t)(autopilot_mode);
 
   stereoprot_sendArray(&((UART_LINK).device), ar,lengthArrayInformation, 1);
 

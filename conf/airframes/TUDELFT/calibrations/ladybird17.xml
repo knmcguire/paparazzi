@@ -1,0 +1,28 @@
+<!DOCTYPE airframe SYSTEM "../../airframe.dtd">
+
+<airframe>
+  <section name="IMU" prefix="IMU_">
+    <!-- Magneto calibration -->
+    <!-- MAGNETO CALIBRATION ANTWERPEN 
+<define name="MAG_X_NEUTRAL" value="-147"/>
+<define name="MAG_Y_NEUTRAL" value="152"/>
+<define name="MAG_Z_NEUTRAL" value="-5"/>
+<define name="MAG_X_SENS" value="3.56142779007" integer="16"/>
+<define name="MAG_Y_SENS" value="3.82223743533" integer="16"/>
+<define name="MAG_Z_SENS" value="4.15618897164" integer="16"/> -->
+
+    <!-- MAGNETO CALIBRATION DELFT-->
+<define name="MAG_X_NEUTRAL" value="289"/>
+<define name="MAG_Y_NEUTRAL" value="-616"/>
+<define name="MAG_Z_NEUTRAL" value="-45"/>
+<define name="MAG_X_SENS" value="3.30133624428" integer="16"/>
+<define name="MAG_Y_SENS" value="3.60947436279" integer="16"/>
+<define name="MAG_Z_SENS" value="3.81139460941" integer="16"/>
+
+
+    <!-- MAGNETO CURRENT CALIBRATION -->
+<define name= "MAG_X_CURRENT_COEF" value="-0.00757917642347"/>
+<define name= "MAG_Y_CURRENT_COEF" value="0.00571906368193"/>
+<define name= "MAG_Z_CURRENT_COEF" value="0.0174642331617"/>
+  </section>
+</airframe>

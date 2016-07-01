@@ -26,6 +26,7 @@
         <dl_setting var="edgeflow.derotation" min="0" step="1" max="1" module="stereocam/state2camera/state2camera" values="OFF|ON" shortname="derotation" param="STEREOCAM_EDGEFLOW_DEROTATION"/>
         <dl_setting var="edgeflow.adaptive_time_horizon" min="0" step="1" max="1" module="stereocam/state2camera/state2camera" values="OFF|ON" shortname="adaptive_horizon" param="STEREOCAM_EDGEFLOW_ADAPT_HORIZON"/>
         <dl_setting var="edgeflow.snapshot" min="0" step="1" max="1" module="stereocam/state2camera/state2camera" values="OFF|ON" shortname="snapshot" param="STEREOCAM_EDGEFLOW_SNAPSHOT"/>
+        <dl_setting var="edgeflow.stereo_shift" min="-10" step="1" max="10" module="stereocam/state2camera/state2camera" shortname="stereo_shift" param="STEREOCAM_EDGEFLOW_STEREO_SHIFT"/>
       </dl_settings>
     </dl_settings>
   </settings>

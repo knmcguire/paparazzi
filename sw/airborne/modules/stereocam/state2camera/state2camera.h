@@ -34,6 +34,7 @@ uint8_t search_distance;
 uint8_t derotation;
 uint8_t adaptive_time_horizon;
 uint8_t snapshot;
+int16_t stereo_shift;
 };
 extern struct stereocam_edgeflow_t edgeflow;
 
