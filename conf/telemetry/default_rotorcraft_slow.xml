@@ -27,9 +27,10 @@
       <message name="AIR_DATA"               period="2.3"/>
       <message name="SURVEY"                 period="4.5"/>
       <message name="OPTIC_FLOW_EST"         period="0.5"/>
-      <message name="STEREOCAM_OPTIC_FLOW"         period="2"/>
+      <!--message name="STEREOCAM_OPTIC_FLOW"         period="2"/-->
       <message name="VECTORNAV_INFO"         period="0.5"/>
       <message name="FBW_STATUS"             period="2"/>
+      <!--message name="ROTORCRAFT_TUNE_HOVER"    period=".6"/-->
     </mode>
 
     <mode name="ppm">

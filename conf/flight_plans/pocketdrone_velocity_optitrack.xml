@@ -3,6 +3,9 @@
 <flight_plan alt="1.5" ground_alt="0" lat0="51.990634" lon0="4.376789" max_dist_from_home="20" name="Rotorcraft Optitrack (Delft)" security_height="0.3">
   <header>
 #include "autopilot.h"
+#include "subsystems/ahrs.h"
+#include "subsystems/electrical.h"
+#include "subsystems/datalink/datalink.h"
 </header>
   <waypoints>
     <waypoint name="HOME" x="0.0" y="0.0"/>
@@ -14,24 +17,31 @@
     <waypoint name="j2" x="1" y="1"/>
     <waypoint name="j3" x="-1" y="1"/>
     <waypoint name="j4" x="1" y="-1"/>
-
+    <waypoint lat="51.9906213" lon="4.3768628" name="_CZ1"/>
+    <waypoint lat="51.9905874" lon="4.3767766" name="_CZ2"/>
+    <waypoint lat="51.9906409" lon="4.3767226" name="_CZ3"/>
+    <waypoint lat="51.990667" lon="4.376806" name="_CZ4"/>
     <waypoint lat="51.990630" lon="4.376823" name="p1"/>
     <waypoint lat="51.990614" lon="4.376779" name="p2"/>
     <waypoint lat="51.990636" lon="4.376759" name="p3"/>
     <waypoint lat="51.990651" lon="4.376805" name="p4"/>
-    <waypoint lat="51.9906213" lon="4.3768628" name="FA1"/>
-    <waypoint lat="51.9905874" lon="4.3767766" name="FA2"/>
-    <waypoint lat="51.9906409" lon="4.3767226" name="FA3"/>
-    <waypoint lat="51.9906737" lon="4.3768074" name="FA4"/>
+
   </waypoints>
   <sectors>
-    <sector color="red" name="Flight_Area">
-      <corner name="FA4"/>
-      <corner name="FA3"/>
-      <corner name="FA2"/>
-      <corner name="FA1"/>
+    <sector color="red" name="CyberZoo">
+      <corner name="_CZ1"/>
+      <corner name="_CZ2"/>
+      <corner name="_CZ3"/>
+      <corner name="_CZ4"/>
     </sector>
   </sectors>
+  <exceptions>
+    <!--exception cond="rc_status==RC_REALLY_LOST" deroute= "land"/-->
+    <exception cond="!InsideCyberZoo(GetPosX(), GetPosY())" deroute="Standby"/>
+    <exception cond="datalink_time > 2" deroute="land here"/>
+    <exception cond="electrical.bat_low && !(nav_block == IndexOfBlock('land')) && !(nav_block == IndexOfBlock('flare')) && !(nav_block == IndexOfBlock('landed'))" deroute="land"/>
+    <exception cond="electrical.bat_critical && !(nav_block == IndexOfBlock('land')) && !(nav_block == IndexOfBlock('flare')) && !(nav_block == IndexOfBlock('landed'))" deroute="land here"/>
+  </exceptions>
   <blocks>
     <block name="Wait GPS">
       <call fun="NavKillThrottle()"/>
@@ -53,7 +63,7 @@
     <block name="Standby" strip_button="Standby" strip_icon="home.png">
       <stay wp="STDBY"/>
     </block>
-    <block name="START" strip_button="Go" strip_icon="lookfore.png">
+    <!--block name="START" strip_button="Go" strip_icon="lookfore.png">
       <call fun="NavSetWaypointHere(WP_GOAL)"/>
     </block>
     <block name="StayGoal">
@@ -79,6 +89,9 @@
       <go from="p4" hmode="route" wp="p1"/>
       <deroute block="stay_p1"/>
     </block>
+    <block name="changeAP">
+	<call fun = "autopilot_set_mode(10)"/>
+    </block-->
     <block name = "heading_towards_j3">
       <go wp="HOME"/>
       <call fun="nav_set_heading_towards_waypoint(WP_j3)"/>

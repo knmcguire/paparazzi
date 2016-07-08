@@ -132,7 +132,10 @@ void stereocam_to_state(void)
      int16_t vel_z_pixelwise_int = (int16_t)stereocam_data.data[18] << 8;
      vel_z_pixelwise_int |= (int16_t)stereocam_data.data[19];
 
-
+     int16_t vel_x_stereo_avoid_pixelwise_int = (int16_t)stereocam_data.data[20] << 8;
+     vel_x_stereo_avoid_pixelwise_int |= (int16_t)stereocam_data.data[21];
+      int16_t vel_z_stereo_avoid_pixelwise_int = (int16_t)stereocam_data.data[22] << 8;
+      vel_z_stereo_avoid_pixelwise_int |= (int16_t)stereocam_data.data[23];
 
   int16_t RES = 100;
 
@@ -159,18 +162,22 @@ void stereocam_to_state(void)
   int16_t vel_body_x_global_int;
   int16_t vel_body_y_global_int;
   int16_t vel_body_z_global_int;
+  int16_t vel_x_stereo_avoid_body_pixelwise_int;
+  int16_t vel_y_stereo_avoid_body_pixelwise_int;
 
 #if STEREOCAM2STATE_CAM_FORWARD ==1
     float vel_x = (float)vel.x / RES;
     float vel_y = (float)vel.y / RES;
 
-    float vel_body_x = - vel_y;
-    float vel_body_y = vel_x;
-     vel_body_x_int =  vel.y;
-     vel_body_y_int = - vel.x;
-     vel_body_x_global_int = vel_global.z;
-     vel_body_y_global_int = - vel_global.x;
+    float vel_body_x =  - vel_y;
+    float vel_body_y =  vel_x;
+     vel_body_x_int = - vel.y;
+     vel_body_y_int =  vel.x;
+     vel_body_x_global_int = - vel_global.z;
+     vel_body_y_global_int =  vel_global.x;
      vel_body_z_global_int =  - vel_global.y;
+     vel_x_stereo_avoid_body_pixelwise_int = - vel_z_stereo_avoid_pixelwise_int;
+     vel_y_stereo_avoid_body_pixelwise_int =  vel_x_stereo_avoid_pixelwise_int;
 
 #else
     float vel_x = (float)vel_x_global_int / RES;
@@ -185,16 +192,19 @@ void stereocam_to_state(void)
     int32_rmat_vmult(&velocity_rot_gps_int , stateGetNedToBodyRMat_i(), (struct Int32Vect3 *)&opti_vel_int);
 
 
-    int16_t vel_x_opti_int = (int16_t)(velocity_rot_gps.y * 100);
-    int16_t vel_y_opti_int = (int16_t)(velocity_rot_gps.x * 100);
+    int16_t vel_x_opti_int = - (int16_t)(velocity_rot_gps.y * 100);
+    int16_t vel_y_opti_int = -(int16_t)(velocity_rot_gps.x * 100);
     int16_t vel_z_opti_int = -(int16_t)(velocity_rot_gps.z * 100);
 
+
+   vel_body_x = vel_body_x + (float)vel_x_stereo_avoid_body_pixelwise_int / RES;
+   vel_body_y = vel_body_y + (float)vel_y_stereo_avoid_body_pixelwise_int / RES;
 
   //Send velocity estimate to state
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
   uint32_t now_ts = get_sys_time_usec();
 
- /* if (!(abs(vel_body_x) > 0.5 || abs(vel_body_x) > 0.5))
+  if (!(abs(vel_body_x) > 0.5 || abs(vel_body_x) > 0.5))
   {
     AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
                                 vel_body_x,
@@ -202,7 +212,7 @@ void stereocam_to_state(void)
                                 0.0f,
                                 0.3f
                                );
-  }*/
+  }
 
   // Reusing the OPTIC_FLOW_EST telemetry messages, with some values replaced by 0
 
@@ -210,16 +220,24 @@ void stereocam_to_state(void)
   int16_t dummy_int16 = 0;
   float dummy_float = 0;
  static int16_t counter = 0;
+
+
+
   //DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y, &dummy_int16, &dummy_int16,
 	//	  &vel_x, &vel_y,&dummy_float, &dummy_float, &dummy_float);
 
  /*DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y, &dummy_int16, &dummy_int16,
     		   &velocity_rot_gps.x, &velocity_rot_gps.y, &dummy_float, &dummy_float, &dummy_float);*/
- DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int, &vel_body_x_global_int, &vel_body_y_global_int, &vel_body_z_global_int, &vel_x_opti_int,  &vel_y_opti_int, &vel_z_opti_int);
 
 // DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int, &vel_body_x_global_int, &vel_body_y_global_int, &vel_body_z_global_int, &vel_x_opti_int, &vel_y_opti_int, &vel_z_opti_int);
  if (counter==5)
   {
+	 DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int, &vel_body_x_global_int, &vel_body_y_global_int,
+			 &vel_body_z_global_int, &vel_x_opti_int,  &vel_y_opti_int, &vel_z_opti_int, &vel_x_stereo_avoid_body_pixelwise_int, &vel_y_stereo_avoid_body_pixelwise_int);
+	 //DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int, &vel_body_x_global_int, &vel_body_y_global_int,
+		//	 &vel_body_z_global_int, &vel_x_opti_int,  &vel_y_opti_int, &vel_z_opti_int, &vel_x_stereo_avoid_body_pixelwise_int, &vel_y_stereo_avoid_body_pixelwise_int);
+
+	// DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int, &vel_body_x_global_int, &vel_body_y_global_int, &vel_body_z_global_int, &vel_x_opti_int,  &vel_y_opti_int, &vel_z_opti_int);
 
 	 //DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int, (int16_t *)&velocity_rot_gps_int.x, (int16_t *)&velocity_rot_gps_int.y);
 

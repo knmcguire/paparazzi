@@ -2026,6 +2026,8 @@
     <field name="vel_GT_x"       type="int16" unit="cm/s"/>
     <field name="vel_GT_y"       type="int16" unit="cm/s"/>
    <field name="vel_GT_z"       type="int16" unit="cm/s"/>
+    <field name="vel_avoid_x"	type="int16" unit="cm/s"/>
+    <field name="vel_avoid_y"	type="int16" unit="cm/s"/>
   </message>
 
   <message name="ROTORCRAFT_STATUS" id="231">
