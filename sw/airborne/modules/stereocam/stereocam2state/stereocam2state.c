@@ -21,7 +21,8 @@
 #include "math/pprz_algebra_float.h"
 #include "math/pprz_orientation_conversion.h"
 
-#include "firmwares/rotorcraft/guidance_h.h"
+#include "firmwares/rotorcraft/guidance/guidance_h.h"
+#include "firmwares/rotorcraft/guidance/guidance_v.h"
 
 #ifndef STEREOCAM2STATE_SENDER_ID
 #define STEREOCAM2STATE_SENDER_ID ABI_BROADCAST
@@ -140,6 +141,9 @@ void stereocam_to_state(void)
     vel_z_stereo_avoid_pixelwise_int |= (int16_t)stereocam_data.data[23];*/
   uint8_t edgeflow_avoid_mode = stereocam_data.data[20];
 
+  int16_t vel_x_stereo_avoid_pixelwise_int = 0;
+  int16_t vel_z_stereo_avoid_pixelwise_int = 0;
+
   int16_t RES = 100;
 
   struct Int16Vect3 vel, vel_global;
@@ -201,39 +205,122 @@ void stereocam_to_state(void)
 
 
   float avoid_turn = 30.0f * 3.14f / 180.0f;
+  float avoid_turn_rate = 10.0f * 3.14f / 180.0f;
   float forward_speed = 0.5f;
+  static bool drone_is_turning = false;
+  float current_heading = stateGetNedToBodyEulers_f()->psi;
+  static float prev_heading = 0;
+  //printf("current_heading %f\n",current_heading);
+  uint8_t turn_delay = 50;
+  static bool flip_switch = true;
+  static uint8_t turn_counter = 0;
+
+  bool drone_has_to_turn = false;
+
 
   if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
+
+	  if(flip_switch==true)
+	  {
+		  guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
+		  turn_counter = 0;
+		  flip_switch = false;
+		  drone_is_turning = false;
+		  prev_heading = 0;
+		  guidance_h_set_guided_body_vel(0.0f, 0.0f);
+		   guidance_h_set_guided_heading_rate(0.0f);
+
+	  }
+
+
+
+
     switch (edgeflow_avoid_mode) {
       case 4:
         // fly forward with constant speed
-        guidance_h_set_guided_body_vel(0.5f, 0.0f);
+        guidance_h_set_guided_body_vel(0.3f, 0.0f);
+       // drone_has_to_turn = false;
         break;
       case 11:
-        //fly forward with constant speed and move slightly to left
-        guidance_h_set_guided_heading(avoid_turn);
-        guidance_h_set_guided_body_vel(0.3, 0.0);
+      case 21:
+          guidance_h_set_guided_body_vel(0.0f, 0.0f);
+          guidance_h_set_guided_heading(-1*avoid_turn_rate);
+    	  break;
+      case 12:
+      case 22:
+          guidance_h_set_guided_body_vel(0.0f, 0.0f);
+          guidance_h_set_guided_heading(avoid_turn_rate);
+    	  break;
+/*      case 11:
+          guidance_h_set_guided_body_vel(-0.1f, 0.0f);
+        // avoid_turn = -1*avoid_turn;
+        avoid_turn = -1*avoid_turn_rate;
+        drone_has_to_turn = true;
         break;
       case 12:
         //fly forward with constant speed and move slightly to right
-        guidance_h_set_guided_heading(-1 * avoid_turn);
-        guidance_h_set_guided_body_vel(0.3f, 0.0f);
+         //avoid_turn = avoid_turn;
+         //avoid_turn = avoid_turn_rate;;
+          guidance_h_set_guided_body_vel(-0.1f, 0.0f);
+
+        drone_has_to_turn = true;
         break;
       case 21:
         //Stop!! and move to the left until mode 4
-        guidance_h_set_guided_body_vel(-0.2f, 0.0f); //a bit of backwards movement to counteract drift
-        guidance_h_set_guided_heading(avoid_turn);
-        break;
+        guidance_h_set_guided_body_vel(-0.1f, 0.0f); //a bit of backwards movement to counteract drift
+       // avoid_turn = -1*avoid_turn;
+       avoid_turn = -1*avoid_turn_rate;
+       drone_has_to_turn = true;
+       break;
       case 22:
         //stop!! and move to the right until mode 4
-        guidance_h_set_guided_body_vel(-0.2f, 0.0f); //a bit of backwards movement to counteract drift
-        guidance_h_set_guided_heading(-1 * avoid_turn);
-        break;
+        guidance_h_set_guided_body_vel(-0.1f, 0.0f); //a bit of backwards movement to counteract drift
+        drone_has_to_turn = true;
+        break;*/
       default:
         //stop!
+       //  drone_has_to_turn = false;
         guidance_h_set_guided_body_vel(0.0, 0.0);
         guidance_h_set_guided_heading(0.0);
     }
+
+
+
+
+/*
+
+	   if(drone_is_turning == false&& drone_has_to_turn == true) {
+		   guidance_h_set_guided_heading_rate(avoid_turn_rate);
+		   drone_is_turning = true;
+		   prev_heading = current_heading;
+		   //printf("start turning\n");
+	   }
+  // printf("turn counter: %d\n", turn_counter);
+	   if(drone_is_turning==true && fabs( prev_heading - current_heading ) > fabs(avoid_turn))
+	   {
+		//   printf("stop turning %f\n",fabs( prev_heading - current_heading ));
+
+		   //printf("check %d\n", turn_counter);
+		   guidance_h_set_guided_heading_rate(0.0f);
+
+	   }
+
+	   if( drone_is_turning == true && turn_counter < turn_delay)
+		   turn_counter ++;
+	   else {
+		   guidance_h_set_guided_heading_rate(0.0f);
+
+		   turn_counter = 0;
+		   drone_is_turning = false;
+	   }
+*/
+
+
+
+  }
+  else
+  {
+	  flip_switch = true;
   }
 
 
@@ -244,7 +331,7 @@ void stereocam_to_state(void)
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
   uint32_t now_ts = get_sys_time_usec();
 
-  if (!(abs(vel_body_x) > 1.0 || abs(vel_body_x) > 1.0)) {
+  if (!(abs(vel_body_x) > 0.5 || abs(vel_body_x) > 0.5)) {
     AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
                                 vel_body_x,
                                 vel_body_y,
@@ -273,7 +360,7 @@ void stereocam_to_state(void)
     DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int,
                                        &vel_body_x_global_int, &vel_body_y_global_int,
                                        &vel_body_z_global_int, &vel_x_opti_int,  &vel_y_opti_int, &vel_z_opti_int, &vel_x_stereo_avoid_body_pixelwise_int,
-                                       &vel_y_stereo_avoid_body_pixelwise_int);
+                                       &vel_y_stereo_avoid_body_pixelwise_int,&edgeflow_avoid_mode);
     //DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int, &vel_body_x_global_int, &vel_body_y_global_int,
     //   &vel_body_z_global_int, &vel_x_opti_int,  &vel_y_opti_int, &vel_z_opti_int, &vel_x_stereo_avoid_body_pixelwise_int, &vel_y_stereo_avoid_body_pixelwise_int);
 
