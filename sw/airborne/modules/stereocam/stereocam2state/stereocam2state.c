@@ -205,7 +205,7 @@ void stereocam_to_state(void)
 
 
   float avoid_turn = 30.0f * 3.14f / 180.0f;
-  float avoid_turn_rate = 10.0f * 3.14f / 180.0f;
+  float avoid_turn_rate = 20.0f * 3.14f / 180.0f;
   float forward_speed = 0.5f;
   static bool drone_is_turning = false;
   float current_heading = stateGetNedToBodyEulers_f()->psi;
@@ -232,26 +232,68 @@ void stereocam_to_state(void)
 
 	  }
 
+	  if(edgeflow_avoid_mode == 4)
+	        guidance_h_set_guided_body_vel(0.3f, 0.0f);
+	  else
+	  {
+          guidance_h_set_guided_body_vel(-0.1f, 0.0f);
+          if (drone_is_turning == false)
+          {
+          guidance_h_set_guided_heading(current_heading - avoid_turn );
+          drone_is_turning = true;
+          turn_counter =0;
+          }else{
+        	  turn_counter ++;
+          }
+	  }
+
+	  if (turn_counter==30)
+	  {
+		  drone_is_turning = false;
+	  }
+
+  //    guidance_h_set_guided_heading_rate(-1*avoid_turn_rate);
 
 
-
-    switch (edgeflow_avoid_mode) {
+   /* switch (edgeflow_avoid_mode) {
       case 4:
         // fly forward with constant speed
         guidance_h_set_guided_body_vel(0.3f, 0.0f);
+  //      printf("go forward\n");
        // drone_has_to_turn = false;
         break;
       case 11:
+      case 12:
       case 21:
-          guidance_h_set_guided_body_vel(0.0f, 0.0f);
-          guidance_h_set_guided_heading(-1*avoid_turn_rate);
+      case 22:
+          guidance_h_set_guided_body_vel(-0.2f, 0.0f);
+          break;
+
+      case 11:
+          guidance_h_set_guided_body_vel(0.0f, -0.1f);
+          guidance_h_set_guided_heading_rate(-1*avoid_turn_rate);
+     //     printf("go left\n");
+
+          break;
+      case 21:
+          guidance_h_set_guided_body_vel(0.0f, -0.1f);
+          guidance_h_set_guided_heading_rate(-1*avoid_turn_rate);
+      //    printf("go left\n");
+
     	  break;
       case 12:
+          guidance_h_set_guided_body_vel(0.0f, -0.1f);
+          guidance_h_set_guided_heading_rate(-1*avoid_turn_rate);
+       //   printf("go right\n");
+
+          break;
       case 22:
-          guidance_h_set_guided_body_vel(0.0f, 0.0f);
-          guidance_h_set_guided_heading(avoid_turn_rate);
+          guidance_h_set_guided_body_vel(0.0f, -0.1f);
+          guidance_h_set_guided_heading_rate(-1*avoid_turn_rate);
+        //  printf("go right\n");
+
     	  break;
-/*      case 11:
+      case 11:
           guidance_h_set_guided_body_vel(-0.1f, 0.0f);
         // avoid_turn = -1*avoid_turn;
         avoid_turn = -1*avoid_turn_rate;
@@ -276,14 +318,14 @@ void stereocam_to_state(void)
         //stop!! and move to the right until mode 4
         guidance_h_set_guided_body_vel(-0.1f, 0.0f); //a bit of backwards movement to counteract drift
         drone_has_to_turn = true;
-        break;*/
+        break;
       default:
         //stop!
        //  drone_has_to_turn = false;
         guidance_h_set_guided_body_vel(0.0, 0.0);
         guidance_h_set_guided_heading(0.0);
     }
-
+*/
 
 
 
