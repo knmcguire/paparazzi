@@ -24,6 +24,9 @@
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
 #include "firmwares/rotorcraft/guidance/guidance_v.h"
 
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_indi.h"
+
+
 #ifndef STEREOCAM2STATE_SENDER_ID
 #define STEREOCAM2STATE_SENDER_ID ABI_BROADCAST
 #endif
@@ -46,8 +49,8 @@ struct Int32Vect3 velocity_rot_gps_int;
 
 #include "subsystems/datalink/telemetry.h"
 
-struct MedianFilter3Int filter_1;
-struct MedianFilter3Int filter_2;
+struct MedianFilterInt filter_1;
+struct MedianFilterInt filter_2;
 
 void stereocam_to_state(void);
 /*
@@ -75,8 +78,8 @@ static void gps_cb(uint8_t sender_id __attribute__((unused)),
 
 void stereo_to_state_init(void)
 {
-  InitMedianFilterVect3Int(filter_1);
-  InitMedianFilterVect3Int(filter_2);
+  init_median_filter(&filter_1);
+  init_median_filter(&filter_2);
 
   AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
 
@@ -154,8 +157,10 @@ void stereocam_to_state(void)
   vel_global.y = vel_y_global_int;
   vel_global.z = vel_z_global_int;
 
-  UpdateMedianFilterVect3Int(filter_1, vel);
-  UpdateMedianFilterVect3Int(filter_2, vel_global);
+  ///vel.x = update_median_filter2(&filter_1,vel.x,10);
+  //vel.y = update_median_filter2(&filter_2,  vel.y,5);
+
+
 
   //float vel_x_global_f = (float)vel_x_global_int / RES;
   //float vel_y_global_f = (float)vel_y_global_int / RES;
@@ -204,183 +209,161 @@ void stereocam_to_state(void)
   int16_t vel_z_opti_int = -(int16_t)(velocity_rot_gps.z * 100);
 
 
+
+  // Avoidance logic
   float avoid_turn = 30.0f * 3.14f / 180.0f;
+  float avoid_turn_strong = 100.0f * 3.14f / 180.0f;
   float avoid_turn_rate = 20.0f * 3.14f / 180.0f;
+
+
   float forward_speed = 0.5f;
   static bool drone_is_turning = false;
   float current_heading = stateGetNedToBodyEulers_f()->psi;
+  float current_pitch = stateGetNedToBodyEulers_f()->theta;
+
+  float yaw_rate   = stateGetBodyRates_f()->r;
+  vel_body_x = vel_body_x - yaw_rate;
+
   static float prev_heading = 0;
-  //printf("current_heading %f\n",current_heading);
-  uint8_t turn_delay = 50;
+  uint8_t wait_delay = 69;
+
   static bool flip_switch = true;
   static uint8_t turn_counter = 0;
+  static uint8_t wait_counter = 0;
 
-  bool drone_has_to_turn = false;
+  static bool obstacle_detected =  false;
 
 
+  static uint8_t behavior_mode = 0;
+
+
+// check if in guidance mode
   if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
 
-	  if(flip_switch==true)
-	  {
-		  guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
-		  turn_counter = 0;
-		  flip_switch = false;
-		  drone_is_turning = false;
-		  prev_heading = 0;
-		  guidance_h_set_guided_body_vel(0.0f, 0.0f);
-		   guidance_h_set_guided_heading_rate(0.0f);
+	  // if flipswitch is true
+    if (flip_switch == true) {
+      guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
+      turn_counter = 0;
+      flip_switch = false;
+      drone_is_turning = false;
+      obstacle_detected =  false;
+      prev_heading = 0;
+      guidance_h_set_guided_body_vel(0.0f, 0.0f);
+      guidance_h_set_guided_heading_rate(0.0f);
+      behavior_mode = 0;
 
-	  }
-
-	  if(edgeflow_avoid_mode == 4)
-	        guidance_h_set_guided_body_vel(0.3f, 0.0f);
-	  else
-	  {
-          guidance_h_set_guided_body_vel(-0.1f, 0.0f);
-          if (drone_is_turning == false)
-          {
-          guidance_h_set_guided_heading(current_heading - avoid_turn );
-          drone_is_turning = true;
-          turn_counter =0;
-          }else{
-        	  turn_counter ++;
-          }
-	  }
-
-	  if (turn_counter==30)
-	  {
-		  drone_is_turning = false;
-	  }
-
-  //    guidance_h_set_guided_heading_rate(-1*avoid_turn_rate);
-
-
-   /* switch (edgeflow_avoid_mode) {
-      case 4:
-        // fly forward with constant speed
-        guidance_h_set_guided_body_vel(0.3f, 0.0f);
-  //      printf("go forward\n");
-       // drone_has_to_turn = false;
-        break;
-      case 11:
-      case 12:
-      case 21:
-      case 22:
-          guidance_h_set_guided_body_vel(-0.2f, 0.0f);
-          break;
-
-      case 11:
-          guidance_h_set_guided_body_vel(0.0f, -0.1f);
-          guidance_h_set_guided_heading_rate(-1*avoid_turn_rate);
-     //     printf("go left\n");
-
-          break;
-      case 21:
-          guidance_h_set_guided_body_vel(0.0f, -0.1f);
-          guidance_h_set_guided_heading_rate(-1*avoid_turn_rate);
-      //    printf("go left\n");
-
-    	  break;
-      case 12:
-          guidance_h_set_guided_body_vel(0.0f, -0.1f);
-          guidance_h_set_guided_heading_rate(-1*avoid_turn_rate);
-       //   printf("go right\n");
-
-          break;
-      case 22:
-          guidance_h_set_guided_body_vel(0.0f, -0.1f);
-          guidance_h_set_guided_heading_rate(-1*avoid_turn_rate);
-        //  printf("go right\n");
-
-    	  break;
-      case 11:
-          guidance_h_set_guided_body_vel(-0.1f, 0.0f);
-        // avoid_turn = -1*avoid_turn;
-        avoid_turn = -1*avoid_turn_rate;
-        drone_has_to_turn = true;
-        break;
-      case 12:
-        //fly forward with constant speed and move slightly to right
-         //avoid_turn = avoid_turn;
-         //avoid_turn = avoid_turn_rate;;
-          guidance_h_set_guided_body_vel(-0.1f, 0.0f);
-
-        drone_has_to_turn = true;
-        break;
-      case 21:
-        //Stop!! and move to the left until mode 4
-        guidance_h_set_guided_body_vel(-0.1f, 0.0f); //a bit of backwards movement to counteract drift
-       // avoid_turn = -1*avoid_turn;
-       avoid_turn = -1*avoid_turn_rate;
-       drone_has_to_turn = true;
-       break;
-      case 22:
-        //stop!! and move to the right until mode 4
-        guidance_h_set_guided_body_vel(-0.1f, 0.0f); //a bit of backwards movement to counteract drift
-        drone_has_to_turn = true;
-        break;
-      default:
-        //stop!
-       //  drone_has_to_turn = false;
-        guidance_h_set_guided_body_vel(0.0, 0.0);
-        guidance_h_set_guided_heading(0.0);
     }
-*/
 
+// detect if obstacle is detected
+    if (edgeflow_avoid_mode == 11 || edgeflow_avoid_mode == 12 || edgeflow_avoid_mode == 22 || edgeflow_avoid_mode == 21) {
+      obstacle_detected = true;
+    }
 
+    if (edgeflow_avoid_mode == 4 || edgeflow_avoid_mode == 10) {
+      obstacle_detected = false;
+    }
 
-/*
+// switchs modes after counter
+    if (behavior_mode == 0 && obstacle_detected == false && wait_counter == wait_delay) {
+      behavior_mode = 1;
+      wait_counter = 0;
+    }
 
-	   if(drone_is_turning == false&& drone_has_to_turn == true) {
-		   guidance_h_set_guided_heading_rate(avoid_turn_rate);
-		   drone_is_turning = true;
-		   prev_heading = current_heading;
-		   //printf("start turning\n");
-	   }
-  // printf("turn counter: %d\n", turn_counter);
-	   if(drone_is_turning==true && fabs( prev_heading - current_heading ) > fabs(avoid_turn))
-	   {
-		//   printf("stop turning %f\n",fabs( prev_heading - current_heading ));
+    if (behavior_mode == 0 && obstacle_detected == true && wait_counter == wait_delay) {
+      behavior_mode = 2;
+      wait_counter = 0;
+    }
 
-		   //printf("check %d\n", turn_counter);
-		   guidance_h_set_guided_heading_rate(0.0f);
+    if (behavior_mode == 1 && obstacle_detected == true) {
+      behavior_mode = 0;
+      wait_counter = 0;
 
-	   }
+    }
 
-	   if( drone_is_turning == true && turn_counter < turn_delay)
-		   turn_counter ++;
-	   else {
-		   guidance_h_set_guided_heading_rate(0.0f);
+    if (behavior_mode == 2 && wait_counter == wait_delay) {
+      behavior_mode = 0;
+      wait_counter = 0;
+    }
 
-		   turn_counter = 0;
-		   drone_is_turning = false;
-	   }
-*/
+    behavior_mode = 0;
 
+    // Change measurements
+    if (behavior_mode == 2) {
+      vel_body_x = 0;
 
+    }
 
-  }
-  else
-  {
-	  flip_switch = true;
-  }
+    if (behavior_mode == 1) {
+      if (edgeflow_avoid_mode == 4)
+      {}
+      if (edgeflow_avoid_mode == 10) {
+        vel_body_x = -0.3;
+      }
+    }
 
+    // increment counter if in wait mode or turn mode
+    if (behavior_mode == 0, behavior_mode == 2) {
+      wait_counter ++;
+    }
 
-  //  vel_body_x = vel_body_x + (float)vel_x_stereo_avoid_body_pixelwise_int / RES;
-  // vel_body_y = vel_body_y + (float)vel_y_stereo_avoid_body_pixelwise_int / RES;
+    // Bound measurments if above a certain value.
+    if (fabs(vel_body_x) > 1.0) {
+      vel_body_x = vel_body_x * 1.0 / fabs(vel_body_x);
+    }
 
-  //Send velocity estimate to state
-  //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
-  uint32_t now_ts = get_sys_time_usec();
+    if (fabs(vel_body_y) > 1.0) {
+      vel_body_y = vel_body_y * 1.0 / fabs(vel_body_y);
+    }
 
-  if (!(abs(vel_body_x) > 0.5 || abs(vel_body_x) > 0.5)) {
+    // send velocity to state
+    uint32_t now_ts = get_sys_time_usec();
     AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
                                 vel_body_x,
                                 vel_body_y,
                                 0.0f,
-                                0.3f
+                                0.2f
                                );
+
+    switch (behavior_mode) {
+      case 0:
+        if (wait_counter < 5) {
+          guidance_h_set_guided_body_vel(0.2, 0.0);
+        } else {
+          guidance_h_set_guided_body_vel(0.0, 0.0);
+        }
+
+        guidance_h_set_guided_heading_rate(0.0);
+
+        //guidance_h_set_guided_heading(0);
+        break;
+      case 1:
+        guidance_h_set_guided_body_vel(0.3f, 0.0f);
+        guidance_h_set_guided_heading_rate(0.0);
+
+        break;
+      case 2:
+        guidance_h_set_guided_body_vel(0.0, -0.2);
+
+        guidance_h_set_guided_heading_rate(-avoid_turn_rate);
+
+
+
+        // guidance_h_set_guided_body_vel(0.5, 0.5);
+        break;
+      default:
+        guidance_h_set_guided_body_vel(0.0, 0.0);
+        guidance_h_set_guided_heading(0);
+
+    }
+
+
+
+
+
+  } else {
+    flip_switch = true;
   }
+
 
   // Reusing the OPTIC_FLOW_EST telemetry messages, with some values replaced by 0
 
@@ -391,27 +374,12 @@ void stereocam_to_state(void)
 
 
 
-  //DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y, &dummy_int16, &dummy_int16,
-  //    &vel_x, &vel_y,&dummy_float, &dummy_float, &dummy_float);
 
-  /*DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y, &dummy_int16, &dummy_int16,
-            &velocity_rot_gps.x, &velocity_rot_gps.y, &dummy_float, &dummy_float, &dummy_float);*/
-
-// DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int, &vel_body_x_global_int, &vel_body_y_global_int, &vel_body_z_global_int, &vel_x_opti_int, &vel_y_opti_int, &vel_z_opti_int);
   if (counter == 5) {
     DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int,
                                        &vel_body_x_global_int, &vel_body_y_global_int,
-                                       &vel_body_z_global_int, &vel_x_opti_int,  &vel_y_opti_int, &vel_z_opti_int, &vel_x_stereo_avoid_body_pixelwise_int,
-                                       &vel_y_stereo_avoid_body_pixelwise_int,&edgeflow_avoid_mode);
-    //DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int, &vel_body_x_global_int, &vel_body_y_global_int,
-    //   &vel_body_z_global_int, &vel_x_opti_int,  &vel_y_opti_int, &vel_z_opti_int, &vel_x_stereo_avoid_body_pixelwise_int, &vel_y_stereo_avoid_body_pixelwise_int);
-
-    // DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int, &vel_body_x_global_int, &vel_body_y_global_int, &vel_body_z_global_int, &vel_x_opti_int,  &vel_y_opti_int, &vel_z_opti_int);
-
-    //DOWNLINK_SEND_STEREOCAM_OPTIC_FLOW(DefaultChannel, DefaultDevice, &vel_body_x_int, &vel_body_y_int, (int16_t *)&velocity_rot_gps_int.x, (int16_t *)&velocity_rot_gps_int.y);
-
-    /* DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y, &dummy_int16, &dummy_int16,
-          &vel_x, &vel_y, &velocity_rot_gps.x, &velocity_rot_gps.y, &dummy_float, &dummy_float, &dummy_float);*/
+                                       &vel_body_z_global_int, &vel_x_opti_int,  &vel_y_opti_int, &behavior_mode, &vel_x_stereo_avoid_body_pixelwise_int,
+                                       &vel_y_stereo_avoid_body_pixelwise_int, &edgeflow_avoid_mode);
     counter = 0;
   } else {
     counter++;
