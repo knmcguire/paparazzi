@@ -51,6 +51,7 @@
 #define AHRS_PROPAGATE_FREQUENCY PERIODIC_FREQUENCY
 #endif
 
+/*
 #ifndef HFF_PRESCALER
 #if AHRS_PROPAGATE_FREQUENCY == 512
 #define HFF_PRESCALER 16
@@ -60,7 +61,8 @@
 #error "HFF_PRESCALER not set, needs to be a divisor of AHRS_PROPAGATE_FREQUENCY"
 #endif
 #endif
-
+*/
+#define HFF_PRESCALER 16
 /** horizontal filter propagation frequency */
 #define HFF_FREQ ((AHRS_PROPAGATE_FREQUENCY)/HFF_PRESCALER)
 #define DT_HFILTER (1./HFF_FREQ)
