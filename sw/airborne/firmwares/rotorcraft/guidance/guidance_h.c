@@ -573,6 +573,10 @@ static void guidance_h_traj_run(bool in_flight)
 
 static void guidance_h_hover_enter(void)
 {
+  /* reset speed setting */
+  guidance_h.sp.speed.x = 0;
+  guidance_h.sp.speed.y = 0;
+
   /* disable horizontal velocity setpoints,
    * might still be activated in guidance_h_read_rc if GUIDANCE_H_USE_SPEED_REF
    */
@@ -588,9 +592,6 @@ static void guidance_h_hover_enter(void)
   /* set guidance to current heading and position */
   guidance_h.rc_sp.psi = stateGetNedToBodyEulers_i()->psi;
   guidance_h.sp.heading = guidance_h.rc_sp.psi;
-
-  /* reset speed setting */
-  guidance_h_set_guided_vel(0., 0.);
 }
 
 static void guidance_h_nav_enter(void)
@@ -680,9 +681,9 @@ bool guidance_h_set_guided_heading(float heading)
 bool guidance_h_set_guided_body_vel(float vx, float vy)
 {
   float psi = stateGetNedToBodyEulers_f()->psi;
-  vx =  cosf(-psi) * vx + sinf(-psi) * vy;
-  vy = -sinf(-psi) * vx + cosf(-psi) * vy;
-  return guidance_h_set_guided_vel(vx, vy);
+  float newvx =  cosf(-psi) * vx + sinf(-psi) * vy;
+  float newvy = -sinf(-psi) * vx + cosf(-psi) * vy;
+  return guidance_h_set_guided_vel(newvx, newvy);
 }
 
 bool guidance_h_set_guided_vel(float vx, float vy)
@@ -704,4 +705,9 @@ bool guidance_h_set_guided_heading_rate(float rate)
     return true;
   }
   return false;
+}
+
+const struct Int32Vect2 *guidance_h_get_pos_err(void)
+{
+  return &guidance_h_pos_err;
 }

@@ -19,5 +19,8 @@
 extern void stereo_to_state_init(void);
 extern void stereo_to_state_periodic(void);
 
+void kalman_filter(float *measurements, float *covariance, float *state
+                   , float *process_noise, float *measurement_noise, float fps);
+
 #endif
 
