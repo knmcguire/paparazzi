@@ -222,8 +222,8 @@ void stereocam_to_state(void)
 
   // Avoidance logic
   float avoid_turn = 30.0f * 3.14f / 180.0f;
-  float avoid_turn_strong = 50.0f * 3.14f / 180.0f;
-  float avoid_turn_rate = 20.0f * 3.14f / 180.0f;
+  float avoid_turn_strong = 110.0f * 3.14f / 180.0f;
+  float avoid_turn_rate = 50.0f * 3.14f / 180.0f;
 
 
   float forward_speed = 0.5f;
@@ -403,7 +403,7 @@ void stereocam_to_state(void)
       case 1:
           guidance_h_set_guided_heading_rate(0.0);
 
-        guidance_h_set_guided_body_vel(0.2f, 0.0f);
+        guidance_h_set_guided_body_vel(0.3f, 0.0f);
 
         break;
       case 2:
@@ -411,7 +411,7 @@ void stereocam_to_state(void)
 
         guidance_h_set_guided_heading_rate(-avoid_turn_rate);
 
-        guidance_h_set_guided_body_vel(0.0, 0.0);
+        guidance_h_set_guided_body_vel(0.05, 0.0);
 
 
         // guidance_h_set_guided_body_vel(0.5, 0.5);
