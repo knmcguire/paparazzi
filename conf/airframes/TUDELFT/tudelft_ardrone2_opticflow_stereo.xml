@@ -128,7 +128,7 @@
   <section name="INS" prefix="INS_">
     <define name="USE_GPS_ALT" value="1"/>
     <define name="VFF_R_GPS" value="0.01"/>
-    <!--define name ="INT_GPS_ID" value="ABI_DISABLE"/-->
+    <define name ="INT_GPS_ID" value="ABI_DISABLE"/>
     <!--define name="SONAR_MAX_RANGE" value="2.2"/>
     <define name="SONAR_UPDATE_ON_AGL" value="TRUE"/-->
   </section>

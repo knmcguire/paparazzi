@@ -144,7 +144,7 @@ void stereocam_to_state(void)
   int16_t vel_z_pixelwise_int = (int16_t)stereocam_data.data[18] << 8;
   vel_z_pixelwise_int |= (int16_t)stereocam_data.data[19];
 
-  uint8_t edgeflow_avoid_mode = stereocam_data.data[20];
+  uint8_t edgeflow_avoid_mode = 11;//stereocam_data.data[20];
   /* int16_t vel_x_stereo_avoid_pixelwise_int = (int16_t)stereocam_data.data[20] << 8;
    vel_x_stereo_avoid_pixelwise_int |= (int16_t)stereocam_data.data[21];
     int16_t vel_z_stereo_avoid_pixelwise_int = (int16_t)stereocam_data.data[22] << 8;
@@ -222,7 +222,7 @@ void stereocam_to_state(void)
 
   // Avoidance logic
   float avoid_turn = 30.0f * 3.14f / 180.0f;
-  float avoid_turn_strong = 110.0f * 3.14f / 180.0f;
+  float avoid_turn_strong = 50.0f * 3.14f / 180.0f;
   float avoid_turn_rate = 50.0f * 3.14f / 180.0f;
 
 
@@ -294,15 +294,15 @@ void stereocam_to_state(void)
 
     }
 
-    if (behavior_mode == 2 && avoid_turn_strong<fabs(current_heading - prev_heading)) {
+    if (behavior_mode == 2 && fabs(current_heading + avoid_turn_strong - prev_heading) < RadOfDeg(5.)) {
       behavior_mode = 0;
       wait_counter = 0;
     }
 
     // Change measurements
     if (behavior_mode == 2) {
-      //vel_body_x = 0;//0.1;
-      //vel_body_y = 0;//-0.1;
+     // vel_body_x = 0;//0.1;
+     // vel_body_y = 0;//-0.1;
 
     }
 
@@ -359,7 +359,7 @@ void stereocam_to_state(void)
         measurements_y[0] = vel_body_y;
         measurements_y[1] = ACCEL_FLOAT_OF_BFP(acc_meas_body.y);
         // Bound measurments if above a certain value.
-        if (!(fabs(vel_body_x) > 1.0 || fabs(vel_body_y) > 1.0)) {
+        if (!(fabs(vel_body_x) > 5.0 || fabs(vel_body_y) > 5.0)) {
 
         kalman_filter(measurements_x, covariance_x,
                       previous_state_x, process_noise, measurement_noise, fps);
@@ -378,13 +378,15 @@ void stereocam_to_state(void)
       /////////////////////////////////////////////
 
     // send velocity to state
-//    uint32_t now_ts = get_sys_time_usec();
-//    AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
-//                                vel_body_x_filter,
-//                                vel_body_y_filter,
-//                                0.0f,
-//                                0.2f
-//                               );
+    uint32_t now_ts = get_sys_time_usec();
+    AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
+                                vel_body_x_filter,
+                                vel_body_y_filter,
+                                0.0f,
+                                0.2f
+                               );
+
+    behavior_mode = 1;
 
     switch (behavior_mode) {
       case 0:
@@ -409,16 +411,17 @@ void stereocam_to_state(void)
       case 2:
        // guidance_h_set_guided_body_vel(0.0, -0.2);
 
-        guidance_h_set_guided_heading_rate(-avoid_turn_rate);
+      //  guidance_h_set_guided_heading_rate(-avoid_turn_rate);
+        guidance_h_set_guided_heading(prev_heading + avoid_turn_strong);
 
-        guidance_h_set_guided_body_vel(0.05, 0.0);
+        guidance_h_set_guided_body_vel(0.00, 0.0);
 
 
         // guidance_h_set_guided_body_vel(0.5, 0.5);
         break;
       default:
         guidance_h_set_guided_body_vel(0.0, 0.0);
-        guidance_h_set_guided_heading(0);
+        guidance_h_set_guided_heading_rate(0);
 
     }
 
