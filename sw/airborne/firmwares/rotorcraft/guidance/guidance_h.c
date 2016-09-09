@@ -42,6 +42,8 @@
 /* for guidance_v_thrust_coeff */
 #include "firmwares/rotorcraft/guidance/guidance_v.h"
 
+#include "firmwares/rotorcraft/autopilot.h"
+
 #include "state.h"
 
 #ifndef GUIDANCE_H_AGAIN
@@ -320,7 +322,9 @@ void guidance_h_read_rc(bool  in_flight)
       stabilization_attitude_read_rc(in_flight, FALSE, TRUE);
       break;
     case GUIDANCE_H_MODE_ATTITUDE:
+    	if(autopilot_mode == AP_MODE_ATTITUDE_DIRECT)
       stabilization_attitude_read_rc(in_flight, FALSE, FALSE);
+
       break;
     case GUIDANCE_H_MODE_HOVER:
       stabilization_attitude_read_rc_setpoint_eulers(&guidance_h.rc_sp, in_flight, FALSE, FALSE);
