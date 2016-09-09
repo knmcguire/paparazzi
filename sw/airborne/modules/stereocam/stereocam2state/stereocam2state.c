@@ -190,27 +190,27 @@ void stereocam_to_state(void)
   float measurement_noise_edgeflow = 0;
 
   float vel_x, vel_z;
-/*  if (agl > 250)// && agl < 350)
-  {*/
+  if (agl > 300 && agl < 500)
+  {
    vel_x = (float)vel_global.x / RES;
  vel_z = (float)vel_global.z / RES;
 
- measurement_noise_edgeflow = 0.2;
-/*  }
-  if (agl <=250)
+ measurement_noise_edgeflow = 0.5;
+  }
+  if (agl <= 300)
   {
 	vel_x = (float)vel.x / RES;
 	  vel_z = (float)vel.z / RES;
 	  measurement_noise_edgeflow = 0.5;
-  }*/
-//  if(agl>=350)
-//  {
-//	  measurement_noise_edgeflow = 0.1;
-//
-//	 vel_x = (float)(flow_x * agl * 20 * 104/ (RES * RES * 128))/RES;
-//	 vel_z = (float)(flow_x * div_x * 20/ (RES ))/RES;
-//
-//  }
+  }
+  if(agl>=500)
+  {
+	  measurement_noise_edgeflow = 0.5;
+
+	 vel_x = (float)(flow_x * agl * 20 * 104/ (RES * RES * 128))/RES;
+	 vel_z = (float)(flow_x * div_x * 20/ (RES ))/RES;
+
+  }
 
   float vel_body_x =  - vel_z;
   float vel_body_y =  vel_x;
@@ -247,7 +247,7 @@ void stereocam_to_state(void)
 
   // Avoidance logic
   float avoid_turn = 30.0f * 3.14f / 180.0f;
-  float avoid_turn_strong = 60.0f * 3.14f / 180.0f;
+  float avoid_turn_strong = 100.0f * 3.14f / 180.0f;
   float avoid_turn_rate = 50.0f * 3.14f / 180.0f;
 
 
@@ -295,7 +295,7 @@ void stereocam_to_state(void)
           static float covariance_y[4] = {1.0f, 1.0f, 1.0f, 1.0f};
           float measurements_y[2];
 
-          float process_noise[2] = {0.0001f, 0.0001f};
+          float process_noise[2] = {0.001f, 0.001f};
          float measurement_noise[2] = {measurement_noise_edgeflow, 1.0f};
          // float measurement_noise[2] = {1000000.0f, 0.1f};
 
@@ -309,13 +309,13 @@ void stereocam_to_state(void)
             measurements_y[0] = vel_body_y;
             measurements_y[1] = ACCEL_FLOAT_OF_BFP(acc_meas_body.y);
             // Bound measurments if above a certain value.
-           // if (!(fabs(vel_body_x) > 1.0 || fabs(vel_body_y) >1.0)) {
+           if (!(fabs(vel_body_x) > 1.0 || fabs(vel_body_y) >1.0)) {
 
           	  kalman_filter(measurements_x, covariance_x,
                           previous_state_x, process_noise, measurement_noise, fps);
           	  kalman_filter(measurements_y, covariance_y,
                           previous_state_y, process_noise, measurement_noise, fps);
-          //  }
+          }
 
            vel_body_x_filter = previous_state_x[0];
            vel_body_y_filter =  previous_state_y[0];
@@ -355,8 +355,8 @@ void stereocam_to_state(void)
       trim_during_turn = 0;
     }else
     {
-    	trim_after_turn = -2.0f* 3.14f / 180.0f;//-2.0f*3.14f/180.0f;
-    	trim_during_turn = 0.0f* 3.14f / 180.0f;
+    	trim_after_turn = -3.0f* 3.14f / 180.0f;// theta//-2.0f*3.14f/180.0f;
+    	trim_during_turn = -3.0f* 3.14f / 180.0f; // phi
     }
 
 
@@ -382,7 +382,6 @@ void stereocam_to_state(void)
       behavior_mode = 0;
       wait_counter = 0;
       hover_counter = 0;
-      prev_heading = current_heading;
 
       command_is_given = false;
     }
@@ -400,24 +399,27 @@ void stereocam_to_state(void)
     //      wait_counter = false;
     //    }
 
-    float angle_difference =prev_heading + avoid_turn_strong - current_heading;
+    float wanted_angle =prev_heading + avoid_turn_strong;
 
 
-    if (fabs(prev_heading + avoid_turn)>180)
-        angle_difference = prev_heading + avoid_turn_strong - RadOfDeg(360) - current_heading;
+    if(wanted_angle > RadOfDeg(180))
+    	wanted_angle = prev_heading + avoid_turn_strong - RadOfDeg(360);
 
 
 
-    if (behavior_mode == 2 && fabs(angle_difference) < RadOfDeg(5.)) {
+    if (behavior_mode == 2 && fabs(wanted_angle-current_heading) < RadOfDeg(5.)) {
     	behavior_mode = 3;
         wait_counter = 0;
         hover_counter = 0;
+        prev_heading = current_heading;
+
         command_is_given = false;
     }
 
     if(behavior_mode ==0 && hover_counter == hover_delay)
     {
     	behavior_mode = 2;
+        prev_heading = current_heading;
         wait_counter = 0;
         hover_counter = 0;
         command_is_given = false;
@@ -453,25 +455,46 @@ void stereocam_to_state(void)
     }*/
 
 
+	struct Int32Eulers cmd;
 
 
     switch (behavior_mode) {
     case 0:
 
-    	if(command_is_given == false){
-    		guidance_h_mode_changed(GUIDANCE_H_MODE_GUIDED);
-    		guidance_h_set_guided_heading_rate(0.0);
-    		guidance_h_set_guided_body_vel(-0.05f, 0.0);
-    		command_is_given = true;
 
-    	}
+
+		if (edgeflow_avoid_mode == 10)
+		{
+    		guidance_h_mode_changed(GUIDANCE_H_MODE_ATTITUDE);
+    		struct Int32Eulers cmd;
+
+    		cmd.phi = ANGLE_BFP_OF_REAL(-1.0f); //trim?
+    		cmd.theta = ANGLE_BFP_OF_REAL(-2.0f);
+    		cmd.psi = ANGLE_BFP_OF_REAL(current_heading);
+
+    		stabilization_attitude_set_rpy_setpoint_i(&cmd);
+
+    		stabilization_attitude_run(autopilot_in_flight);
+
+		}else
+		{
+	    	if(command_is_given == false){
+	    		guidance_h_mode_changed(GUIDANCE_H_MODE_GUIDED);
+	    		//guidance_h_set_guided_heading_rate(0.0);
+
+	    		guidance_h_set_guided_body_vel(-0.05f, -0.15f);
+	    		command_is_given = true;
+
+	    	}
+    }
+
     	break;
     case 1:
 
     	if(command_is_given == false){
     		guidance_h_mode_changed(GUIDANCE_H_MODE_GUIDED);
     		guidance_h_set_guided_body_vel(0.3f, 0.0f);
-    		guidance_h_set_guided_heading_rate(0.0);
+    		//guidance_h_set_guided_heading_rate(0.0);
 
     		command_is_given = true;
 
@@ -482,16 +505,15 @@ void stereocam_to_state(void)
     	if(command_is_given == false){
     		guidance_h_mode_changed(GUIDANCE_H_MODE_ATTITUDE);
 
-    		struct Int32Eulers cmd;
     		cmd.phi = ANGLE_BFP_OF_REAL(trim_during_turn); //trim?
     		cmd.theta = ANGLE_BFP_OF_REAL(0);
     		cmd.psi = ANGLE_BFP_OF_REAL(prev_heading +avoid_turn_strong);
 
-    		if(prev_heading + avoid_turn_strong > 180)
-    		{
-        		cmd.psi = ANGLE_BFP_OF_REAL(prev_heading + avoid_turn_strong - RadOfDeg(360.));
-
-    		}
+//    		if(prev_heading + avoid_turn_strong > RadOfDeg(180))
+//    		{
+//        		cmd.psi = ANGLE_BFP_OF_REAL(prev_heading + avoid_turn_strong - RadOfDeg(360.));
+    		//
+    		//    		}
 
     		stabilization_attitude_set_rpy_setpoint_i(&cmd);
 
@@ -502,20 +524,19 @@ void stereocam_to_state(void)
     	// guidance_h_set_guided_body_vel(0.5, 0.5);
     	break;
     case 3:
+    	cmd.phi = ANGLE_BFP_OF_REAL(trim_during_turn);//-2.0f* 3.14f / 180.0f); //trim?
+    	cmd.theta = ANGLE_BFP_OF_REAL(trim_after_turn);
+    	cmd.psi = ANGLE_BFP_OF_REAL(current_heading);
 
+    	stabilization_attitude_set_rpy_setpoint_i(&cmd);
 
-    	if(command_is_given == false){
+    	stabilization_attitude_run(autopilot_in_flight);
+    	command_is_given = true;
 
-    		struct Int32Eulers cmd;
-    		cmd.phi = ANGLE_BFP_OF_REAL(0);//-2.0f* 3.14f / 180.0f); //trim?
-    		cmd.theta = ANGLE_BFP_OF_REAL(trim_after_turn);
-    		cmd.psi = ANGLE_BFP_OF_REAL(current_heading);
-
-    		stabilization_attitude_set_rpy_setpoint_i(&cmd);
-
-    		stabilization_attitude_run(autopilot_in_flight);
-    		command_is_given = true;
-    	 }
+    	//    	if(command_is_given == false){
+    	//
+    	//
+    	//    	 }
     	break;
 
     default:

@@ -86,8 +86,8 @@
 
   <section name="IMU" prefix="IMU_">
     <!-- Accelero -->
-    <define name="ACCEL_X_NEUTRAL" value="2032"/> <!--2048-->
-    <define name="ACCEL_Y_NEUTRAL" value="2080"/>
+    <define name="ACCEL_X_NEUTRAL" value="2036"/> <!--2048-->
+    <define name="ACCEL_Y_NEUTRAL" value="2076"/>
     <define name="ACCEL_Z_NEUTRAL" value="2048"/>
 
     <!-- Magneto calibration -->
@@ -229,7 +229,7 @@
     <define name="USE_SPEED_REF" value="TRUE"/>
     <define name="PGAIN" value="0"/><!--363-->
     <define name="DGAIN" value="130"/><!--237-->
-    <define name="IGAIN" value="5"/>
+    <define name="IGAIN" value="20"/>
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">
