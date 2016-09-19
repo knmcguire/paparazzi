@@ -41,6 +41,11 @@
 // This parameter determines the number of iterations requires to start descending
 #define MEMORY 25
 
+
+#ifndef MARKER_SENDER_ID
+#define MARKER_SENDER_ID 1
+#endif
+
 // Run the module
 bool RUN_MODULE_COLOR_BOTTOM;
 
@@ -201,6 +206,15 @@ struct image_t *color_tracking_bottom_func(struct image_t* img)
 
     // Follow the marker with velocity references
     guidance_h_set_guided_vel(vx_bottom_ref, vy_bottom_ref);
+
+    uint32_t now_ts = get_sys_time_usec();
+
+    AbiSendMsgLOCATION_MARKER(MARKER_SENDER_ID, now_ts,
+    							cam.px,
+                                cam.py,
+                                marker_location.x,
+                                marker_location.y
+                               );
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////
     // HOVERING

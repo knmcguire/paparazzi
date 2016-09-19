@@ -174,14 +174,14 @@ void kalman_filter_linear_2D_float(float *model, float *measurements, float *cov
   float_mat_mul(temp_vec, Htrans, Xpredict, 2, 2, 1);
 
   //... (Z - Htrans * Xpredict)
-  float_mat_diff(temp_vec2, Z, temp_vec, 2, 1);
+  float_mat_diff(temp_vec2, Z, temp_vec, 1,2);
 
   // ... K *(Z - Htrans * Xpredict)
   float_mat_mul(temp_vec, K, temp_vec2, 2, 2, 1);
 
 
   //Xnext = Xpredict + K *(Z - Htrans * Xpredict)
-  float_mat_sum(Xnext, Xpredict, temp_vec, 2, 1);
+  float_mat_sum(Xnext, Xpredict, temp_vec, 1,2);
 
   // 5. Update covariance matrix
 
@@ -226,15 +226,15 @@ void kalman_filter_linear_3D_float(float *model, float *measurements, float *cov
 
   int x, y, ind;
 
-  float _G[2][2];
+  float _G[3][3];
   MAKE_MATRIX_PTR(G, _G, 3);
   for (x = 0; x < 3; x++) { for (y = 0; y < 3; y++) { ind = x + y;  G[x][y] = model[ind]; }}
 
   // transpose of G
-  float _Gtrans[2][2];
-  MAKE_MATRIX_PTR(Gtrans, _Gtrans, 2);
-  float_mat_copy(Gtrans, G, 2, 2);
-  float_mat_transpose(Gtrans, 2);
+  float _Gtrans[3][3];
+  MAKE_MATRIX_PTR(Gtrans, _Gtrans, 3);
+  float_mat_copy(Gtrans, G, 3, 3);
+  float_mat_transpose(Gtrans, 3);
 
   // Observation model (linear)
   // note: right now both velocity and acceleration are observed
@@ -271,7 +271,7 @@ void kalman_filter_linear_3D_float(float *model, float *measurements, float *cov
 
   //measurement nosie model
   float _R[3][3];
-  MAKE_MATRIX_PTR(R, _R, 2);
+  MAKE_MATRIX_PTR(R, _R, 3);
   for (x = 0; x < 3; x++) { for (y = 0; y < 3; y++) { if (x == y) { R[x][y] = measurement_noise[x]; } else { R[x][y] = 0.0f; } }}
 
 
@@ -334,7 +334,7 @@ void kalman_filter_linear_3D_float(float *model, float *measurements, float *cov
   //... H * Predict * Htrans
   float_mat_mul(temp_mat2, H, temp_mat, 3, 3, 3);
   //..( H * Ppredict * Htrans + R)
-  float_mat_sum(temp_mat3, temp_mat2, R, 3, 2);
+  float_mat_sum(temp_mat3, temp_mat2, R, 3, 3);
   //...inv( H * Ppredict * Htrans + R)
   //TODO: Make a matrix inverse function for more than 2x2 matrix!
 
@@ -355,14 +355,14 @@ void kalman_filter_linear_3D_float(float *model, float *measurements, float *cov
   float_mat_mul(temp_vec, Htrans, Xpredict, 3, 3, 1);
 
   //... (Z - Htrans * Xpredict)
-  float_mat_diff(temp_vec2, Z, temp_vec, 3, 1);
+  float_mat_diff(temp_vec2, Z, temp_vec, 1,3);
 
   // ... K *(Z - Htrans * Xpredict)
   float_mat_mul(temp_vec, K, temp_vec2, 3, 3, 1);
 
 
   //Xnext = Xpredict + K *(Z - Htrans * Xpredict)
-  float_mat_sum(Xnext, Xpredict, temp_vec, 3, 1);
+  float_mat_sum(Xnext, Xpredict, temp_vec,1,3);
 
   // 5. Update covariance matrix
 

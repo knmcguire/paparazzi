@@ -55,12 +55,16 @@ struct opticflow_t opticflow;                      ///< Opticflow calculations
 static struct opticflow_result_t opticflow_result; ///< The opticflow result
 static struct opticflow_state_t opticflow_state;   ///< State of the drone to communicate with the opticflow
 static abi_event opticflow_agl_ev;                 ///< The altitude ABI event
+static abi_event opticflow_marker_ev;                 ///< The marker_position ABI event
+
 static bool opticflow_got_result;                ///< When we have an optical flow calculation
 static pthread_mutex_t opticflow_mutex;            ///< Mutex lock fo thread safety
 
 /* Static functions */
 struct image_t *opticflow_module_calc(struct image_t *img);     ///< The main optical flow calculation thread
 static void opticflow_agl_cb(uint8_t sender_id, float distance);    ///< Callback function of the ground altitude
+static void tracker_pos_cb(uint8_t sender_id __attribute__((unused)),
+                       int32_t pos_x_px, int32_t pos_y_px, float pos_x_geo, float pos_y_geo);
 
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
@@ -92,6 +96,8 @@ void opticflow_module_init(void)
 {
   // Subscribe to the altitude above ground level ABI messages
   AbiBindMsgAGL(OPTICFLOW_AGL_ID, &opticflow_agl_ev, opticflow_agl_cb);
+
+  AbiBindMsgLOCATION_MARKER(OPTICFLOW_AGL_ID, &opticflow_marker_ev, tracker_pos_cb);
 
   // Set the opticflow state to 0
   FLOAT_RATES_ZERO(opticflow_state.rates);
@@ -154,6 +160,9 @@ struct image_t *opticflow_module_calc(struct image_t *img)
   struct opticflow_state_t temp_state;
   temp_state.angles = pose.eulers;
   temp_state.agl = opticflow_state.agl;
+  temp_state.marker_position_x = opticflow_state.marker_position_x;
+  temp_state.marker_position_y = opticflow_state.marker_position_y;
+
   temp_state.rates = pose.rates;
 
   // Do the optical flow calculation
@@ -165,12 +174,6 @@ struct image_t *opticflow_module_calc(struct image_t *img)
   memcpy(&opticflow_state, &temp_state, sizeof(struct opticflow_state_t));
   memcpy(&opticflow_result, &temp_result, sizeof(struct opticflow_result_t));
   opticflow_got_result = true;
-
-  /* Rotate velocities from camera frame coordinates to body coordinates for control
-  * IMPORTANT!!! This frame to body orientation should be the case for the Parrot
-  * ARdrone and Bebop, however this can be different for other quadcopters
-  * ALWAYS double check!
-  */
 
 
   // release the mutex as we are done with editing the opticflow result
@@ -189,4 +192,11 @@ static void opticflow_agl_cb(uint8_t sender_id __attribute__((unused)), float di
   if (distance > 0) {
     opticflow_state.agl = distance;
   }
+}
+
+static void tracker_pos_cb(uint8_t sender_id __attribute__((unused)),
+                       int32_t pos_x_px, int32_t pos_y_px, float pos_x_geo, float pos_y_geo)
+{
+   opticflow_state.marker_position_x = pos_x_geo;
+   opticflow_state.marker_position_y = pos_y_geo;
 }

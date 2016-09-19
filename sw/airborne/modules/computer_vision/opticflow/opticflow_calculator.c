@@ -639,7 +639,7 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
   // KALMAN filter on velocity
 //  float measurement_noise[2] = {result->noise_measurement, 1.0f};
 
-  float measurement_noise[2] = {result->noise_measurement, 1.0f};
+  float measurement_noise[3] = {0.1f,result->noise_measurement, 1.0f};
   static bool reinitialize_kalman = true;
 
   static uint8_t wait_filter_counter =
@@ -663,9 +663,14 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
       float acceleration_measurement[2];
       acceleration_measurement[0] = ACCEL_FLOAT_OF_BFP(acc_meas_body.x);
       acceleration_measurement[1] = ACCEL_FLOAT_OF_BFP(acc_meas_body.y);
+      float marker_measurement[2];
+      marker_measurement[0] = state->marker_position_x;
+      marker_measurement[1] = state->marker_position_y;
 
-      kalman_filter_opticflow_velocity(&result->vel_body_x, &result->vel_body_y, acceleration_measurement, result->fps,
-                                       measurement_noise, reinitialize_kalman);
+//      kalman_filter_opticflow_velocity(&result->vel_body_x, &result->vel_body_y, acceleration_measurement, result->fps,
+//                                       measurement_noise, reinitialize_kalman);
+      kalman_filter_opticflow_velocity_3D(&result->vel_body_x, &result->vel_body_y, acceleration_measurement, marker_measurement, result->fps,
+                                            measurement_noise, reinitialize_kalman);
       if (reinitialize_kalman) {
         reinitialize_kalman = false;
       }
@@ -678,6 +683,66 @@ void opticflow_calc_frame(struct opticflow_t *opticflow, struct opticflow_state_
   }
 
 }
+
+/**
+ * Filter the velocity with a simple linear kalman filter, together with the accelerometers
+ * @param[in] *velocity_x  Velocity in x direction of body fixed coordinates
+ * @param[in] *velocity_y  Belocity in y direction of body fixed coordinates
+ * @param[in] *acceleration_measurement  Measurements of the accelerometers
+ * @param[in] fps  Frames per second
+ * @param[in] *measurement_noise  Expected variance of the noise of the measurements
+ * @param[in] reinitialize_kalman  Boolean to reinitialize the kalman filter
+ */
+void kalman_filter_opticflow_velocity_3D(float *velocity_x, float *velocity_y, float* marker_position, float *acceleration_measurement, float fps,
+                                      float *measurement_noise, bool reinitialize_kalman)
+{
+  // Initialize variables
+  static float covariance_x[9], covariance_y[9], state_estimate_x[3], state_estimate_y[3];
+  float measurements_x[3], measurements_y[3];
+
+  if (reinitialize_kalman) {
+	int x,y,ind;
+	for(x=0;x<3;x++)
+	{
+	    state_estimate_x[x] = 0.0f;
+	    state_estimate_y[x] = 0.0f;
+
+		for(y=0;y<3;y++)
+		{
+			ind = x+y;
+		    covariance_x[ind] = 1.0f;
+		}
+	}
+  }
+
+
+  /*Model for velocity estimation
+   * state = [ velocity; acceleration]
+   * Velocity_prediction = last_velocity_estimate + acceleration * dt
+   * Acceleration_prediction = last_acceleration
+   * model = Jacobian([vel_prediction; accel_prediction],state)
+   *       = [1 dt ; 0 1];
+   * */
+  float model[9] =  {1.0f, 1.0f / fps, 0.5f / (fps *fps), 0.0f , 1.0f , 1.0f/fps ,0.0f , 0.0f , 1.0f};
+  float process_noise[3] = {0.01f, 0.01f, 0.01f};
+
+  // Measurements from velocity_x of optical flow and acceleration directly from scaled accelerometers
+  measurements_x[0] = marker_position[0];
+  measurements_x[1] = *velocity_x;
+  measurements_x[2] = acceleration_measurement[0];
+
+  measurements_y[0] = marker_position[1];
+  measurements_y[1] = *velocity_y;
+  measurements_y[2] = acceleration_measurement[1];
+
+  // 2D linear kalman filter
+  kalman_filter_linear_3D_float(model, measurements_x, covariance_x, state_estimate_x, process_noise, measurement_noise);
+  kalman_filter_linear_3D_float(model, measurements_y, covariance_y, state_estimate_y, process_noise, measurement_noise);
+
+  *velocity_x = state_estimate_x[1];
+  *velocity_y = state_estimate_y[1];
+}
+
 
 
 /**

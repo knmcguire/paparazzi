@@ -61,6 +61,9 @@ struct opticflow_state_t {
   struct FloatRates rates;   ///< Body rates
   struct FloatEulers angles;
   struct FloatRates rates_unfiltered;   ///< Body rates
+  float marker_position_x;
+  float marker_position_y;
+
 
   float agl;                 ///< height above ground [m]
 };

@@ -88,6 +88,13 @@
       <field name="rpm" type="uint16_t" unit="rpm"/>
     </message>
 
+    <message name="LOCATION_MARKER" id="16">
+      <field name="pos_x_pixels" type="int32_t" unit="px"/>
+      <field name="pos_y_pixels" type="int32_t" unit="px"/>
+      <field name="pos_x_geo" type="float" unit="m"/>
+      <field name="pos_y_geo" type="float" unit="m"/>
+    </message>
+
   </msg_class>
 
 </protocol>
