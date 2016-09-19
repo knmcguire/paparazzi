@@ -10,6 +10,7 @@
 
 void kalman_filter_linear_2D_float(float *model, float *measurements, float *covariance, float *state
                                    , float *process_noise, float *measurement_noise);
-
+void kalman_filter_linear_3D_float(float *model, float *measurements, float *covariance, float *state
+                                   , float *process_noise, float *measurement_noise);
 
 #endif /* KALMAN_FILTER_VISION_H_ */
