@@ -50,8 +50,12 @@ extern bool Land(float end_altitude);
 extern bool close_gripper(void);
 extern bool open_gripper(void);
 
-bool bucket_heading_change(void);
-bool bucket_approach(void);
-bool bucket_center(void);
+extern bool bucket_heading_change(float altitude);
+extern bool bucket_approach(float altitude);
+
+extern bool marker_center_land(float x_offset, float z_speed, float end_altitude);
+
+extern bool fly_through_window(void);
+extern int8_t win_state;
 
 #endif

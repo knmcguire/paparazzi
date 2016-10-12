@@ -1,5 +1,5 @@
 /*
- * Copyright (C) IMAV 2016
+ * Copyright (C) C. De Wagter
  *
  * This file is part of paparazzi
  *
@@ -17,31 +17,34 @@
  * along with paparazzi; see the file COPYING.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
-
 /**
- * @file "modules/computer_vision/marker/detector.h"
+ * @file "modules/computer_vision/opencv_detect_gate.h"
+ * @author R. Meertens
  */
 
-#ifndef MARKER_DETECTOR_H
-#define MARKER_DETECTOR_H
-
-#include "math/pprz_geodetic_float.h"
-#include "lib/vision/image.h"
-
-struct Marker {
-    volatile bool detected;
-    volatile bool processed;
-    struct point_t pixel;
-    struct NedCoor_f geo_location;
-    struct FloatVect3 geo_relative;
-    float found_time;
-};
-
-extern struct Marker marker1;
-extern struct Marker marker2;
-
-void detector_init(void);
-
-extern void detector_locate(bool item, bool bucket, bool helipad);
+#ifndef OPENCV_DETECT_GATE_H
+#define OPENCV_DETECT_GATE_H
+#include "state.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern float stddev_colors;
+extern int mean_u;
+extern int mean_v;
+extern int loc_y;
+extern int super_roll;
+extern int too_close;
+extern int16_t distance_pixels;
+extern int16_t center_pixels;
+extern int16_t left_height;
+extern int16_t right_height;
+void set_blue_window(void);
+void set_red_window(void);
+int opencv_gate_detect(char *img, int width, int height);
+void opencv_init_rects(void);
+#ifdef __cplusplus
+}
+#endif
 
 #endif
+

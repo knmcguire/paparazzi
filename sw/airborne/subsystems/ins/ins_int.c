@@ -71,13 +71,16 @@ static void sonar_cb(uint8_t sender_id, float distance);
 #include "firmwares/rotorcraft/stabilization.h"
 #endif
 
+#ifndef INS_BARO_AGL_OFFSET
+#define INS_BARO_AGL_OFFSET 0.
+#endif
 #ifndef INS_SONAR_MIN_RANGE
 #define INS_SONAR_MIN_RANGE 0.001
 #endif
 #ifndef INS_SONAR_MAX_RANGE
 #define INS_SONAR_MAX_RANGE 4.0
 #endif
-#define VFF_R_SONAR_0 0.1
+#define VFF_R_SONAR_0 0.5
 #ifndef VFF_R_SONAR_OF_M
 #define VFF_R_SONAR_OF_M 0.2
 #endif
@@ -315,30 +318,44 @@ void ins_int_propagate(struct Int32Vect3 *accel, float dt)
 
 static void baro_cb(uint8_t __attribute__((unused)) sender_id, float pressure)
 {
-  if (!ins_int.baro_initialized && pressure > 1e-7) {
-    // wait for a first positive value
-    ins_int.qfe = pressure;
-    ins_int.baro_initialized = true;
-  }
+  static uint8_t num_calls = 0;
+  static const float num_pressure_points = 20.;
+  static float running_mean_pressure = 0.;
 
-  if (ins_int.baro_initialized) {
-    if (ins_int.vf_reset) {
-      ins_int.vf_reset = false;
-      ins_int.qfe = pressure;
+  if (pressure > 1e-7){
+    if (running_mean_pressure < 1e-7){
+      running_mean_pressure = pressure;
+    } else {
+      running_mean_pressure = (running_mean_pressure * (num_pressure_points - 1) + pressure) / num_pressure_points;
+    }
+
+    if (!ins_int.baro_initialized && num_calls >= 2*num_pressure_points) {
+      // wait for a first positive value
+      ins_int.qfe = running_mean_pressure;
+      ins_int.baro_initialized = true;
       vff_realign(0.);
       ins_update_from_vff();
-    } else {
-      ins_int.baro_z = -pprz_isa_height_of_pressure(pressure, ins_int.qfe);
-#if USE_VFF_EXTENDED
-      vff_update_baro(ins_int.baro_z);
-#else
-      vff_update(ins_int.baro_z);
-#endif
-    }
-    ins_ned_to_state();
+    } else { num_calls++; }
 
-    /* reset the counter to indicate we just had a measurement update */
-    ins_int.propagation_cnt = 0;
+    if (ins_int.baro_initialized) {
+      if (ins_int.vf_reset) {
+        ins_int.vf_reset = false;
+        ins_int.qfe = running_mean_pressure;
+        vff_realign(0.);
+        ins_update_from_vff();
+      } else {
+        ins_int.baro_z = -pprz_isa_height_of_pressure(pressure, ins_int.qfe) - INS_BARO_AGL_OFFSET;
+  #if USE_VFF_EXTENDED
+        vff_update_baro(ins_int.baro_z);
+  #else
+        vff_update(ins_int.baro_z);
+  #endif
+      }
+      ins_ned_to_state();
+
+      /* reset the counter to indicate we just had a measurement update */
+      ins_int.propagation_cnt = 0;
+    }
   }
 }
 
@@ -438,7 +455,7 @@ static void sonar_cb(uint8_t __attribute__((unused)) sender_id, float distance)
 #endif
       && ins_int.update_on_agl
       && ins_int.baro_initialized) {
-    vff_update_z_conf(-(distance), VFF_R_SONAR_0 + VFF_R_SONAR_OF_M * fabsf(distance));
+    vff_update_z_conf(-distance, VFF_R_SONAR_0 + VFF_R_SONAR_OF_M * fabsf(distance));
     last_offset = vff.offset;
   } else {
     /* update offset with last value to avoid divergence */
@@ -514,11 +531,9 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
 {
 
   struct FloatVect3 vel_body = {x, y, z};
-  static uint32_t last_stamp = 0;
-  static float dt = 0.;
-  static float sum_vx = 0., sum_vy = 0.;
-  static float counter = 0;
-
+  static uint32_t last_stamp = 0, last_pos_stamp = 0;
+  static float sum_x = 0., sum_y = 0.;
+  struct FloatVect3 prev_vel = {0};
 
   /* rotate velocity estimate to nav/ltp frame */
   struct FloatQuat q_b2n = *stateGetNedToBodyQuat_f();
@@ -528,13 +543,14 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
 
   // du to time tep resolution on bebop need to average velocity over longer time window for int position resolution
   if (last_stamp > 0) {
-    dt += (float)(stamp - last_stamp) * 1e-6;
-    sum_vx += vel_ned.x;
-    sum_vy += vel_ned.y;
-    counter++;
+    // integrate area under speed curve assuming constant gradient between speed measurements (ie trapezoid)
+    sum_x += (prev_vel.x + vel_ned.x) * (stamp - last_stamp) / 2.;
+    sum_y += (prev_vel.y + vel_ned.y) * (stamp - last_stamp) / 2.;
   }
 
   last_stamp = stamp;
+  prev_vel.x = vel_ned.x;
+  prev_vel.y = vel_ned.y;
 
 #if USE_HFF
   (void)dt; //dt is unused variable in this define
@@ -547,13 +563,13 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
 #else
   ins_int.ltp_speed.x = SPEED_BFP_OF_REAL(vel_ned.x);
   ins_int.ltp_speed.y = SPEED_BFP_OF_REAL(vel_ned.y);
-  if (dt > 0.03) {
-    ins_int.ltp_pos.x = ins_int.ltp_pos.x + POS_BFP_OF_REAL(dt * sum_vx / counter);
-    ins_int.ltp_pos.y = ins_int.ltp_pos.y + POS_BFP_OF_REAL(dt * sum_vy / counter);
-    dt = 0;
-    sum_vx = 0;
-    sum_vy = 0;
-    counter = 0;
+
+  // we need to look a few seconds back to have enough resolution for velocity integration
+  if (stamp - last_pos_stamp >= 0.05) {
+    ins_int.ltp_pos.x += POS_BFP_OF_REAL(sum_x * 1e-6);
+    ins_int.ltp_pos.y += POS_BFP_OF_REAL(sum_y * 1e-6);
+    sum_x = 0.; sum_y = 0.;
+    last_pos_stamp = stamp;
   }
 #endif
 
