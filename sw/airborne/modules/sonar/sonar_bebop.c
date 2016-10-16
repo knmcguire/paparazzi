@@ -43,7 +43,7 @@
 #define SONAR_BEBOP_OBSTACLE_ACCEPTANCE 5   // number of outliers before it is accepted as an obstacle
 #define DT 0.01                 // sample period of sensor (100 Hz)
 
-static bool obstacle_mode = false;
+static uint8_t obstacle_mode = false;
 
 struct SonarBebop sonar_bebop;
 static uint8_t sonar_bebop_spi_d[16] = {0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

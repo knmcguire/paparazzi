@@ -153,6 +153,13 @@ bool Land(float end_altitude) {
     return false;
 }
 
+bool front_cam_set_x_offset(int offset) {
+  mt9f002.offset_x = offset;
+  mt9f002_set_resolution(&mt9f002);
+
+  return false;
+}
+
 static int BUCKET_HEADING_MARGIN = 60;  // px
 static float BUCKET_HEADING_RATE = 0.5; // rad/s
 
@@ -323,7 +330,7 @@ bool fly_through_window(void) {
         //guidance_h_set_guided_heading(ANGLE_BUILDING_ENTRY);
         //guidance_h_set_guided_heading();
         guidance_h_set_guided_pos(stateGetPositionNed_f()->x, stateGetPositionNed_f()->y);
-        guidance_v_set_guided_z(-1.4);
+        guidance_v_set_guided_z(-1.7);
         mytime = get_sys_time_float();
         init_pos_filter = 1;
         snake_gate_detection_snake_gate_detection_periodic_status = MODULES_START;
@@ -355,7 +362,7 @@ bool fly_through_window(void) {
         win_state++;
         break;
       case 3:
-        if (get_sys_time_float() - mytime > 5.) {
+        if (get_sys_time_float() - mytime > 6.) {
           win_state = 0;
           return false;
         }
