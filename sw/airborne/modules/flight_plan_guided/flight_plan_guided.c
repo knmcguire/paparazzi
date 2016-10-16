@@ -52,48 +52,63 @@
 
 bool marker_lost;
 
-void flight_plan_guided_init(void) {
+#include "subsystems/abi.h"
+#ifndef RANGE_SENSORS_ABI_ID
+#define RANGE_SENSORS_ABI_ID ABI_BROADCAST
+#endif
+static abi_event range_sensors_ev;
+static void range_sensors_cb(uint8_t sender_id __attribute__((unused)),
+                             int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left);
+
+void flight_plan_guided_init(void)
+{
   marker_lost = true;
+  AbiBindMsgRANGE_SENSORS(RANGE_SENSORS_ABI_ID, &range_sensors_ev, &range_sensors_cb);
 } // Dummy
 
 
 /* Kill throttle */
-uint8_t KillEngines(void) {
-    autopilot_set_motors_on(FALSE);
+uint8_t KillEngines(void)
+{
+  autopilot_set_motors_on(FALSE);
 
-    return false;
+  return false;
 }
 
 
 /* Start throttle */
-uint8_t StartEngines(void) {
-    autopilot_set_motors_on(TRUE);
+uint8_t StartEngines(void)
+{
+  autopilot_set_motors_on(TRUE);
 
-    return false;
+  return false;
 }
 
 
 /* Reset the altitude reference to the current GPS alt if GPS is used */
 uint8_t ResetAlt(void) {ins_reset_altitude_ref(); return false;}
 
-bool TakeOff(float climb_rate) {
-    if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+bool TakeOff(float climb_rate)
+{
+  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
 
-    guidance_v_set_guided_vz(-climb_rate);
-    guidance_h_set_guided_body_vel(0, 0);
+  guidance_v_set_guided_vz(-climb_rate);
+  guidance_h_set_guided_body_vel(0, 0);
 
-    return false;
+  return false;
 }
 
-bool WaitUntilAltitude(float altitude) {
-    if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+bool WaitUntilAltitude(float altitude)
+{
+  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
 
-    if (stateGetPositionEnu_f()->z < altitude) { return true; }
+  if (stateGetPositionEnu_f()->z < altitude) { return true; }
 
-    return false;
+  return false;
 }
 
-bool RotateToHeading(float heading) {
+bool RotateToHeading(float heading)
+{
   if (autopilot_mode != AP_MODE_GUIDED) { return true; }
 
   guidance_h_set_guided_heading(heading);
@@ -101,59 +116,64 @@ bool RotateToHeading(float heading) {
   return false;
 }
 
-uint8_t Hover(float altitude) {
-    if (autopilot_mode != AP_MODE_GUIDED) { return true; }
-    // Horizontal velocities are set to zero
-    guidance_h_set_guided_body_vel(0, 0);
-    guidance_v_set_guided_z(-altitude);
+uint8_t Hover(float altitude)
+{
+  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+  // Horizontal velocities are set to zero
+  guidance_h_set_guided_body_vel(0, 0);
+  guidance_v_set_guided_z(-altitude);
 
-    return false;
+  return false;
 }
 
 /* Move forward */
-uint8_t MoveForward(float vx) {
-    if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+uint8_t MoveForward(float vx)
+{
+  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
 
-    if (autopilot_mode == AP_MODE_GUIDED) {
-        guidance_h_set_guided_body_vel(vx, 0);
-    }
-    return false;
+  if (autopilot_mode == AP_MODE_GUIDED) {
+    guidance_h_set_guided_body_vel(vx, 0);
+  }
+  return false;
 }
 
 /* Move Right */
-uint8_t MoveRight(float vy) {
-    if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+uint8_t MoveRight(float vy)
+{
+  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
 
-    if (autopilot_mode == AP_MODE_GUIDED) {
-        guidance_h_set_guided_body_vel(0, vy);
-    }
-    return false;
+  if (autopilot_mode == AP_MODE_GUIDED) {
+    guidance_h_set_guided_body_vel(0, vy);
+  }
+  return false;
 }
 
 
 
-bool Land(float end_altitude) {
+bool Land(float end_altitude)
+{
   if (autopilot_mode != AP_MODE_GUIDED) { return true; }
 
   //gh_set_max_speed(float max_speed)
   //gh_set_max_speed(GUIDANCE_H_REF_MAX_SPEED);
 
-    // return true if not completed
+  // return true if not completed
 
-    //For bucket
-    guidance_v_set_guided_vz(0.4);
-    //For landing pad
+  //For bucket
+  guidance_v_set_guided_vz(0.4);
+  //For landing pad
 //    guidance_v_set_guided_vz(1.5);
-    guidance_h_set_guided_pos(marker1.geo_location.x, marker1.geo_location.y);
+  guidance_h_set_guided_pos(marker1.geo_location.x, marker1.geo_location.y);
 
-    if (stateGetPositionEnu_f()->z > end_altitude) {
-        return true;
-    }
+  if (stateGetPositionEnu_f()->z > end_altitude) {
+    return true;
+  }
 
-    return false;
+  return false;
 }
 
-bool front_cam_set_x_offset(int offset) {
+bool front_cam_set_x_offset(int offset)
+{
   mt9f002.offset_x = offset;
   mt9f002_set_resolution(&mt9f002);
 
@@ -163,7 +183,8 @@ bool front_cam_set_x_offset(int offset) {
 static int BUCKET_HEADING_MARGIN = 60;  // px
 static float BUCKET_HEADING_RATE = 0.5; // rad/s
 
-bool bucket_heading_change(float altitude) {
+bool bucket_heading_change(float altitude)
+{
   if (autopilot_mode != AP_MODE_GUIDED) { return true; }
 //  guidance_v_set_guided_z(-altitude);
 //  guidance_h_set_guided_body_vel(0., 0.);
@@ -204,7 +225,8 @@ static float BUCKET_DRIFT_CORRECTION_RATE = 0.05;
 static float BUCKET_APPROACH_SPEED_HIGH = 0.2;
 static float BUCKET_APPROACH_SPEED_LOW = 0.05;
 
-bool bucket_approach(float altitude) {
+bool bucket_approach(float altitude)
+{
   if (autopilot_mode != AP_MODE_GUIDED) { return true; }
 //  guidance_v_set_guided_z(-altitude);
 
@@ -256,11 +278,12 @@ bool bucket_approach(float altitude) {
 #define ERR_MAX 0.30
 #define ERR_GAIN (1.0 / (ERR_MAX - ERR_MIN))
 
-bool marker_center_land(float x_offset, float z_speed, float end_altitude) {
+bool marker_center_land(float x_offset, float z_speed, float end_altitude)
+{
   if (autopilot_mode != AP_MODE_GUIDED) { return true; }
 
   if (end_altitude != 0 && stateGetPositionEnu_f()->z < end_altitude) {
-      return false;
+    return false;
   }
 
   struct Marker *marker = &marker1;
@@ -303,13 +326,15 @@ bool marker_center_land(float x_offset, float z_speed, float end_altitude) {
   return true;
 }
 
-bool open_gripper(void) {
+bool open_gripper(void)
+{
   uint8_t msg[1]; msg[0] = 0;
   stereoprot_sendArray(&((UART_LINK).device), msg, 1, 1);
   return false;
 }
 
-bool close_gripper(void) {
+bool close_gripper(void)
+{
   uint8_t msg[1]; msg[0] = 1;
   stereoprot_sendArray(&((UART_LINK).device), msg, 1, 1);
   return false;
@@ -317,7 +342,8 @@ bool close_gripper(void) {
 
 int8_t win_state;
 
-bool fly_through_window(void) {
+bool fly_through_window(void)
+{
   static float mytime = 0;
 
   if (autopilot_mode != AP_MODE_GUIDED) { win_state = 0; return true; }
@@ -325,59 +351,140 @@ bool fly_through_window(void) {
   // TODO window lost recovery
   //if (!win_processed) { // this will limit updates to the speed of the stereocam ~12Hz
   //  win_processed = 1;
-    switch (win_state){
-      case 0:
-        //guidance_h_set_guided_heading(ANGLE_BUILDING_ENTRY);
-        //guidance_h_set_guided_heading();
-        guidance_h_set_guided_pos(stateGetPositionNed_f()->x, stateGetPositionNed_f()->y);
-        guidance_v_set_guided_z(-1.7);
-        mytime = get_sys_time_float();
-        init_pos_filter = 1;
-        snake_gate_detection_snake_gate_detection_periodic_status = MODULES_START;
+  switch (win_state) {
+    case 0:
+      //guidance_h_set_guided_heading(ANGLE_BUILDING_ENTRY);
+      //guidance_h_set_guided_heading();
+      guidance_h_set_guided_pos(stateGetPositionNed_f()->x, stateGetPositionNed_f()->y);
+      guidance_v_set_guided_z(-1.7);
+      mytime = get_sys_time_float();
+      init_pos_filter = 1;
+      snake_gate_detection_snake_gate_detection_periodic_status = MODULES_START;
 
-        win_state++;
-        break;
+      win_state++;
+      break;
       // centre drone in front of window at about 2m away
-      case 1:
-        if(stereo_agl != 0 && stereo_agl < 3) {  // if I get closer than 30cm, move away and retry
-          win_state = 4;
+    case 1:
+      if (stereo_agl != 0 && stereo_agl < 3) { // if I get closer than 30cm, move away and retry
+        win_state = 4;
+        break;
+      }
+      if (gate_detected && gate_processed == 0) {
+        if (ready_pass_through) {
+          win_state++;
           break;
         }
-        if(gate_detected && gate_processed == 0) {
-          if (ready_pass_through){
-            win_state++;
-            break;
-          }
 
-          // position drone 1.5m in front of window, add small low pass filter on position command
-          guidance_h_set_guided_pos_relative(0.9*(filtered_x_gate - 1.5), 0.9*filtered_y_gate);
-          gate_processed = 1;
-        }
-        break;
-      // fly forward with active control till >0.5m in front of window
-      case 2:
-        guidance_h_set_guided_pos_relative(filtered_x_gate + 0.5, filtered_y_gate);
-        snake_gate_detection_snake_gate_detection_periodic_status = MODULES_STOP;
-        mytime = get_sys_time_float();
-        win_state++;
-        break;
-      case 3:
-        if (get_sys_time_float() - mytime > 6.) {
-          win_state = 0;
-          return false;
-        }
-        break;
-      case 4: // missed approach, recycle and try again
-        guidance_h_set_guided_pos_relative(-1.5, 0.);
+        // position drone 1.5m in front of window, add small low pass filter on position command
+        guidance_h_set_guided_pos_relative(0.9 * (filtered_x_gate - 1.5), 0.9 * filtered_y_gate);
         gate_processed = 1;
-        win_state = 1;  // try again
-        break;
-      default:
-        mytime = get_sys_time_float();
+      }
+      break;
+      // fly forward with active control till >0.5m in front of window
+    case 2:
+      guidance_h_set_guided_pos_relative(filtered_x_gate + 0.5, filtered_y_gate);
+      snake_gate_detection_snake_gate_detection_periodic_status = MODULES_STOP;
+      mytime = get_sys_time_float();
+      win_state++;
+      break;
+    case 3:
+      if (get_sys_time_float() - mytime > 6.) {
         win_state = 0;
-        snake_gate_detection_snake_gate_detection_periodic_status = MODULES_STOP;
-        break;
-    }
+        return false;
+      }
+      break;
+    case 4: // missed approach, recycle and try again
+      guidance_h_set_guided_pos_relative(-1.5, 0.);
+      gate_processed = 1;
+      win_state = 1;  // try again
+      break;
+    default:
+      mytime = get_sys_time_float();
+      win_state = 0;
+      snake_gate_detection_snake_gate_detection_periodic_status = MODULES_STOP;
+      break;
+  }
 
   return true;
+}
+
+void range_sensor_force_field(float *vel_body_x, float *vel_body_y, struct range_finders_ range_finders,
+                              int16_t avoid_inner_border, int16_t avoid_outer_border, float min_vel_command, float max_vel_command)
+{
+
+  int16_t difference_inner_outer = avoid_outer_border - avoid_inner_border;
+
+
+  // Velocity commands
+  float avoid_x_command = *vel_body_x;
+  float avoid_y_command = *vel_body_y;
+
+  // Balance avoidance command for y direction (sideways)
+
+  if (range_finders.right < avoid_outer_border) {
+    if (range_finders.right > avoid_inner_border) {
+      avoid_y_command -= (max_vel_command - min_vel_command) *
+                         ((float)avoid_outer_border - (float)range_finders.right)
+                         / (float)difference_inner_outer;
+    } else {
+      avoid_y_command -= max_vel_command;
+    }
+  }
+  if (range_finders.left < avoid_outer_border) {
+    if (range_finders.left > avoid_inner_border) {
+      avoid_y_command += (max_vel_command - min_vel_command) *
+                         ((float)avoid_outer_border - (float)range_finders.left)
+                         / (float)difference_inner_outer;
+    } else {
+      avoid_y_command += max_vel_command;
+    }
+  }
+
+  // balance avoidance command for x direction (forward/backward)
+  if (range_finders.front < avoid_outer_border) {
+    //from stereo camera TODO: add this once the stereocamera is attached
+    if (range_finders.front > avoid_inner_border)
+      avoid_y_command += (max_vel_command - min_vel_command) *
+                         ((float)avoid_outer_border - (float)range_finders.front)
+                         / (float)difference_inner_outer;
+  } else {
+    avoid_y_command += max_vel_command;
+  }
+
+
+  if (range_finders.back < avoid_outer_border) {
+    if (range_finders.back > avoid_inner_border) {
+      avoid_x_command += (max_vel_command - min_vel_command) *
+                         ((float)avoid_outer_border - (float)range_finders.back)
+                         / (float)difference_inner_outer;
+    } else {
+      avoid_x_command += max_vel_command;
+    }
+  }
+
+  *vel_body_x = avoid_x_command;
+  *vel_body_y = avoid_y_command;
+}
+
+static void range_sensors_cb(uint8_t sender_id __attribute__((unused)),
+                             int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left)
+{
+
+  struct range_finders_ range_finders;
+// save range finders values
+  range_finders.front = range_front;
+  range_finders.right = range_right;
+  range_finders.left = range_left;
+  range_finders.back = range_back;
+
+
+//add extra velocity command to avoid walls based on range sensors
+  float vel_offset_body_x = 0.0f;
+  float vel_offset_body_y = 0.0f;
+
+  range_sensor_force_field(&vel_offset_body_x, &vel_offset_body_y, range_finders, 800, 1200, 0.0f, 0.3f);
+
+// calculate velocity offset for guidance
+  guidance_h_set_speed_offset(vel_offset_body_x, vel_offset_body_y);
+
 }
