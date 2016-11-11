@@ -96,8 +96,12 @@ void stereocam_to_state(void)
   vel_body_y = (float)vel_global.y / RES;
 #endif
 
-  //TODO: implement kalman filter from imav
   //TODO: give velocity body in z direction?
+
+  // KALMAN filter
+  float vel_body_x_filter = 0;
+  float vel_body_y_filter = 0;
+  kalman_edgeflow_stereocam(vel_body_x, vel_body_y, &vel_body_x_filter, &vel_body_y_filter);
 
   //Send velocity estimate to state
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
@@ -105,8 +109,8 @@ void stereocam_to_state(void)
 
   if (!(abs(vel_body_x) > 0.5 || abs(vel_body_x) > 0.5)) {
     AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
-                                vel_body_x,
-                                vel_body_y,
+                                vel_body_x_filter,
+                                vel_body_y_filter,
                                 0.0f,
                                 0.3f
                                );
@@ -120,9 +124,57 @@ void stereocam_to_state(void)
   //TODO add body rotated optitrackc measurements here
   DOWNLINK_SEND_EDGEFLOW_STEREOCAM(DefaultChannel, DefaultDevice, fps, &vel_x_global_int, &vel_y_global_int,
                                    &vel_z_global_int,
-                                   &vel_x_pixelwise_int, &vel_y_pixelwise_int, vel_body_x, vel_body_y, &dummy_float, &dummy_float,
+                                   &vel_x_pixelwise_int, &vel_y_pixelwise_int, &vel_body_x, &vel_body_y, &vel_body_x_filter, &vel_body_y_filter,
                                    &dummy_float, &dummy_float)
 
 #endif
+
+}
+
+void kalman_edgeflow_stereocam(float vel_body_x, float vel_body_y, float *vel_body_x_filter, float *vel_body_y_filter)
+{
+  //------------------------- KALMAN filter
+  // Parameters
+  float measurement_noise_edgeflow = 0.5;
+  static uint8_t wait_filter_counter = 0;
+  static float previous_state_x[2] = {0.0f, 0.0f};
+  static float covariance_x[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+  float measurements_x[2];
+
+  static float previous_state_y[2] = {0.0f, 0.0f};
+  static float covariance_y[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+  float measurements_y[2];
+
+  float process_noise[2] = {0.001f, 0.001f};
+  float measurement_noise[2] = {measurement_noise_edgeflow, 1.0f};
+
+  // get accelerometer values
+  struct Int32Vect3 acc_meas_body;
+  struct Int32RMat *body_to_imu_rmat = orientationGetRMat_i(&imu.body_to_imu);
+  int32_rmat_transp_vmult(&acc_meas_body, body_to_imu_rmat, &imu.accel);
+
+  // Wait for a certain amount of time (so that edgeflow has some time to run)
+  if (wait_filter_counter > 100) {
+
+    measurements_x[0] = vel_body_x;
+    measurements_x[1] = ACCEL_FLOAT_OF_BFP(acc_meas_body.x);
+    measurements_y[0] = vel_body_y;
+    measurements_y[1] = ACCEL_FLOAT_OF_BFP(acc_meas_body.y);
+
+    // Bound measurments if above a certain value.
+    if (!(fabs(vel_body_x) > 1.0 || fabs(vel_body_y) > 1.0)) {
+
+      kalman_filter(measurements_x, covariance_x,
+                    previous_state_x, process_noise, measurement_noise, fps);
+      kalman_filter(measurements_y, covariance_y,
+                    previous_state_y, process_noise, measurement_noise, fps);
+    }
+
+    *vel_body_x_filter = previous_state_x[0];
+    *vel_body_y_filter =  previous_state_y[0];
+
+  } else {
+    wait_filter_counter++;
+  }
 
 }

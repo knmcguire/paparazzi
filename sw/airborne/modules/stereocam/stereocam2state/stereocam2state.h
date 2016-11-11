@@ -18,6 +18,7 @@
 
 extern void stereo_to_state_init(void);
 extern void stereo_to_state_periodic(void);
+void kalman_edgeflow_stereocam(float vel_body_x , float vel_body_y, float *vel_body_x_filter, float *vel_body_y_filter);
 
 #endif
 
