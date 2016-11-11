@@ -42,7 +42,7 @@ void stereo_to_state_periodic(void)
 
 void stereocam_to_state(void)
 {
- int16_t RES = 100;
+  int16_t RES = 100;
 
   // Get info from stereocam data
   // 0 = stereoboard's #define SEND_EDGEFLOW
@@ -112,15 +112,16 @@ void stereocam_to_state(void)
                                );
   }
 
-  // Reusing the OPTIC_FLOW_EST telemetry messages, with some values replaced by 0
-
+  // EDGEFLOW_STEREOCAM telemetry messages, with some values replaced by 0
   uint16_t dummy_uint16 = 0;
   int16_t dummy_int16 = 0;
   float dummy_float = 0;
 
-  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y,
-                               &dummy_int16, &dummy_int16,
-                               &vel_x, &vel_y, &dummy_float, &dummy_float, &dummy_float);
+  //TODO add body rotated optitrackc measurements here
+  DOWNLINK_SEND_EDGEFLOW_STEREOCAM(DefaultChannel, DefaultDevice, fps, &vel_x_global_int, &vel_y_global_int,
+                                   &vel_z_global_int,
+                                   &vel_x_pixelwise_int, &vel_y_pixelwise_int, vel_body_x, vel_body_y, &dummy_float, &dummy_float,
+                                   &dummy_float, &dummy_float)
 
 #endif
 
