@@ -27,8 +27,8 @@
 
 #define PSISEARCH 15.0 		// Search grid for psi_des
 #define NUAVS 5				// Maximum expected number of drones
-#define MAF_SIZE_POS 1  	// Moving Average Filter size;
-#define MAF_SIZE_VEL 1  	// Moving Average Filter size;
+#define MAF_SIZE_POS 1  	// Moving Average Filter size; 1 = No filter
+#define MAF_SIZE_VEL 1  	// Moving Average Filter size; 1 = No filter
 
 #ifndef INS_INT_VEL_ID
 #define INS_INT_VEL_ID ABI_BROADCAST
