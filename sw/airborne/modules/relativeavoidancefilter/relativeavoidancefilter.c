@@ -23,7 +23,7 @@
  * Relative Localization Filter for collision avoidance between drones
  */
 
-#include "relativeavoidancefilter.h"
+#include "modules/relativeavoidancefilter/relativeavoidancefilter.h"
 
 #define PSISEARCH 15.0 		// Search grid for psi_des
 #define NUAVS 5				// Maximum expected number of drones
@@ -33,8 +33,6 @@
 #ifndef INS_INT_VEL_ID
 #define INS_INT_VEL_ID ABI_BROADCAST
 #endif
-
-
 
 ekf_filter ekf[NUAVS-1]; 	// EKF structure
 btmodel model[NUAVS-1];  	// Bluetooth model structure 
