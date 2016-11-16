@@ -2226,8 +2226,7 @@
     <field name="vx_des"        type="float"    unit="m/s"/>
     <field name="vy_des"        type="float"    unit="m/s"/>
   </message>
-
-  <!-- 248 is free -->
+  
   <!-- 249 is free -->
   <!-- 250 is free -->
 

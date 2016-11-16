@@ -23,7 +23,9 @@
  * Relative Localization Filter for collision avoidance between drones
  */
 
-#include "modules/relativeavoidancefilter/relativeavoidancefilter.h"
+#include "relativeavoidancefilter.h"
+#include "subsystems/datalink/telemetry.h"
+#include "modules/multi/traffic_info.h"
 
 #define PSISEARCH 15.0 		// Search grid for psi_des
 #define NUAVS 5				// Maximum expected number of drones
@@ -65,7 +67,6 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 static abi_event vel_est_ev;
 static void vel_est_cb(uint8_t sender_id, uint32_t stamp, float x, float y, float z, float noise);
 
-
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
 	uint8_t ac_id, int8_t source_strength, int8_t rssi)
 {
@@ -73,7 +74,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	printf("message received with rssi %d for drone %d number %d \n", rssi, ac_id, i);
 	// If it's a new ID we start a new EKF for it
 	// TODO: aircraft ID are now hard coded here, make it more general (set in airframe file?)
-	if ((!array_find_int(NUAVS-1, IDarray, ac_id, &i)) && (nf < NUAVS-1) && ( (ac_id== 200) || (ac_id == 201) || (ac_id == 202) ) ) { //check if a new aircraft ID is present, continue
+	if ((!array_find_int(NUAVS-1, IDarray, ac_id, &i)) && (nf < NUAVS-1) && ( (ac_id== 200) || (ac_id == 201) || (ac_id == 202) ) )
+	{ //check if a new aircraft ID is present, continue
 		IDarray[nf] = ac_id;
 		srcstrength[nf] = source_strength;
 		ekf_filter_new(&ekf[nf]); // Initialize an ekf filter for each target tracker
@@ -103,11 +105,9 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			now_ts[i] = get_sys_time_usec();
 			
 			// Get the aircraft info for that ID
-			struct ac_info_ * ac = get_ac_info(ac_id);
 			float angle, trackedVx, trackedVy;
-			
-			deg2rad   (((float)ac->course)/10.0, &angle); // decidegrees
-			polar2cart(((float)ac->gspeed)/100.0, angle, &trackedVx, &trackedVy); // get x and y velocities (cm/s)
+			deg2rad   (acInfoGetCourse(ac_id)/10.0, &angle); // decidegrees
+			polar2cart(acInfoGetGspeed(ac_id)/100.0, angle, &trackedVx, &trackedVy); // get x and y velocities (cm/s)
 			
 			// Bind received values in case of errors
 			float ownVx = vel_body.x; //From optical flow
@@ -120,6 +120,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			keepbounded(&trackedVy,-2.0,2.0);
 			
 			// See UtmCoor for north pos in z
+				// UtmCoor_f *posutm = 
+
 			// Construct measurement vector for EKF using the latest data obtained for each case
 			float Y[8];
 			Y[0] = (float)rssi;// + rand_normal(0.0, 5.0); // Bluetooth RSSI measurement
@@ -131,7 +133,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			Y[4] = trackedVx;  //Velocity tracked from other drone
 			Y[5] = trackedVy;	
 			Y[6] = 0.0;        //other drone heading towards north (hardcoded to be 0)
-			Y[7] = (-(float)ac->utm.alt/1000.0) - (stateGetPositionNed_f()->z) + rand_normal(0.0, 0.2); //utm.alt is in mm above 0
+			Y[7] = (-(float)acInfoGetPositionUtm_f(ac_id)->alt/1000.0) - (stateGetPositionNed_f()->z) + rand_normal(0.0, 0.2); //utm.alt is in mm above 0
 			
 			// Run the steps of the EKF
 			ekf_filter_predict(&ekf[i], &model[i]);
@@ -161,8 +163,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
                        uint32_t stamp,
                        float x, float y, float z,
-                       float noise __attribute__((unused))) {
-
+                       float noise __attribute__((unused)))
+{
 	//TODO make more generic
 	static float vel_body_x_buf[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 	static float vel_body_y_buf[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
@@ -208,7 +210,7 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&vx_des, &vy_des);		     // Commanded velocities
 };
 
-void rafilter_init(void)
+void relativeavoidancefilter_init(void)
 {
 	randomgen_init();    	// Initialize the random generator (for simulation purposes)
 	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
@@ -235,7 +237,7 @@ void rafilter_init(void)
 };
 
 
-void rafilter_periodic(void)
+void relativeavoidancefilter_periodic(void)
 {	
 	// FAKE MESSAGE for testing purposes from the 0.0 position if a BT source is not available!
 	// float d = sqrt(pow(stateGetPositionEnu_f()->x,2)+pow(stateGetPositionEnu_f()->y,2));

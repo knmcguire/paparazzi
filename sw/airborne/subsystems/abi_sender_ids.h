@@ -268,11 +268,15 @@
 #define RSSI_BLUEGIGA_ID 1
 #endif
 
+#ifndef RSSI_MODULE_ID
+#define RSSI_MODULE_ID 2
+#endif
+
 /*
  * IDs of RPM sensors (message 15)
  */
-#ifndef RPM_SENSOR_ID
-#define RPM_SENSOR_ID 1
-#endif
+// #ifndef RPM_SENSOR_ID
+// #define RPM_SENSOR_ID 3
+// #endif
 
 #endif /* ABI_SENDER_IDS_H */
