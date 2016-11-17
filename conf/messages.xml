@@ -2095,11 +2095,11 @@
 
   <message name="EDGEFLOW_STEREOCAM" id="248">
     <field name="fps"         		type="float"/>
-    <field name="vel_camera_x_global" 	type="int16_t"/>
-    <field name="vel_camera_y_global" 	type="int16_t"/>
-    <field name="vel_camera_z_global" 	type="int16_t"/>
-    <field name="vel_camera_x_pxw" 	type="int16_t"/>
-    <field name="vel_camera_z_pxw" 	type="int16_t"/>
+    <field name="vel_camera_x_global" 	type="int16"/>
+    <field name="vel_camera_y_global" 	type="int16"/>
+    <field name="vel_camera_z_global" 	type="int16"/>
+    <field name="vel_camera_x_pxw" 	type="int16"/>
+    <field name="vel_camera_z_pxw" 	type="int16"/>
     <field name="vel_body_x_unfiltered" type="float"/>
     <field name="vel_body_y_unfiltered"	type="float"/>
     <field name="vel_body_x_filtered" 	type="float"/>

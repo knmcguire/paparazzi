@@ -15,6 +15,7 @@
   <periodic fun="stereo_to_state_periodic()" autorun="TRUE"/>
   <makefile>
     <file name="stereocam2state.c"/>
+    <file name="kalman_filter_vision.c" dir="modules/computer_vision/lib/filters"/>
   </makefile>
 </module>
 

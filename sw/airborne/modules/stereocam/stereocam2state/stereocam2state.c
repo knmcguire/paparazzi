@@ -23,7 +23,13 @@
 #define STEREOCAM2STATE_RECEIVED_DATA_TYPE 0
 #endif
 
+#ifndef STEREOCAM2STATE_CAM_FORWARD
+#define STEREOCAM2STATE_CAM_FORWARD 1
+#endif
+
 #include "subsystems/datalink/telemetry.h"
+
+#include "modules/computer_vision/lib/filters/kalman_filter_vision.h"
 
 void stereocam_to_state(void);
 
@@ -101,7 +107,47 @@ void stereocam_to_state(void)
   // KALMAN filter
   float vel_body_x_filter = 0;
   float vel_body_y_filter = 0;
-  kalman_edgeflow_stereocam(vel_body_x, vel_body_y, &vel_body_x_filter, &vel_body_y_filter);
+
+  bool kalman_filter_on = true;
+  float kalman_filter_process_noise = 0.01f;
+  // KALMAN filter on velocity
+   float measurement_noise[2] = {0.5f, 1.0f};
+   static bool reinitialize_kalman = true;
+
+   static uint8_t wait_filter_counter = 0;
+
+   if (kalman_filter_on == true) {
+     if (wait_filter_counter > 50) {
+
+       // Get accelerometer values rotated to body axis
+       struct FloatVect3 accel_meas_body;
+       float psi = stateGetNedToBodyEulers_f()->psi;
+       accel_meas_body.x =  cosf(-psi) * stateGetAccelNed_f()->x - sinf(-psi) * stateGetAccelNed_f()->y;
+       accel_meas_body.y = sinf(-psi) * stateGetAccelNed_f()->x + cosf(-psi) * stateGetAccelNed_f()->y;
+
+
+       float acceleration_measurement[2];
+       acceleration_measurement[0] = accel_meas_body.x;
+       acceleration_measurement[1] = accel_meas_body.y;
+
+       vel_body_x_filter = vel_body_x;
+       vel_body_y_filter = vel_body_y;
+
+
+       kalman_edgeflow_stereocam(&vel_body_x_filter, &vel_body_y_filter, acceleration_measurement, 26.0f,
+                                        measurement_noise, kalman_filter_process_noise, reinitialize_kalman);
+
+       if (reinitialize_kalman) {
+         reinitialize_kalman = false;
+       }
+
+     } else {
+       wait_filter_counter++;
+     }
+   } else {
+     reinitialize_kalman = true;
+   }
+
 
   //Send velocity estimate to state
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
@@ -122,59 +168,163 @@ void stereocam_to_state(void)
   float dummy_float = 0;
 
   //TODO add body rotated optitrackc measurements here
-  DOWNLINK_SEND_EDGEFLOW_STEREOCAM(DefaultChannel, DefaultDevice, fps, &vel_x_global_int, &vel_y_global_int,
+  DOWNLINK_SEND_EDGEFLOW_STEREOCAM(DefaultChannel, DefaultDevice, &dummy_int16, &vel_x_global_int, &vel_y_global_int,
                                    &vel_z_global_int,
-                                   &vel_x_pixelwise_int, &vel_y_pixelwise_int, &vel_body_x, &vel_body_y, &vel_body_x_filter, &vel_body_y_filter,
-                                   &dummy_float, &dummy_float)
+                                   &vel_x_pixelwise_int, &vel_z_pixelwise_int, &vel_body_x, &vel_body_y, &vel_body_x_filter, &vel_body_y_filter,
+                                   &dummy_float, &dummy_float);
 
 #endif
 
 }
 
-void kalman_edgeflow_stereocam(float vel_body_x, float vel_body_y, float *vel_body_x_filter, float *vel_body_y_filter)
+/**
+ * Filter the velocity with a simple linear kalman filter, together with the accelerometers
+ * @param[in] *velocity_x  Velocity in x direction of body fixed coordinates
+ * @param[in] *velocity_y  Belocity in y direction of body fixed coordinates
+ * @param[in] *acceleration_measurement  Measurements of the accelerometers
+ * @param[in] fps  Frames per second
+ * @param[in] *measurement_noise  Expected variance of the noise of the measurements
+ * @param[in] *measurement_noise  Expected variance of the noise of the model prediction
+ * @param[in] reinitialize_kalman  Boolean to reinitialize the kalman filter
+ */
+void kalman_edgeflow_stereocam(float *velocity_x, float *velocity_y, float *acceleration_measurement, float fps,
+                                      float *measurement_noise, float kalman_process_noise, bool reinitialize_kalman)
+{
+  // Initialize variables
+  static float covariance_x[4], covariance_y[4], state_estimate_x[2], state_estimate_y[2];
+  float measurements_x[2], measurements_y[2];
+
+  if (reinitialize_kalman) {
+    state_estimate_x[0] = 0.0f;
+    state_estimate_x[1] = 0.0f;
+    covariance_x[0] = 1.0f;
+    covariance_x[1] = 1.0f;
+    covariance_x[2] = 1.0f;
+    covariance_x[3] = 1.0f;
+
+    state_estimate_y[0] = 0.0f;
+    state_estimate_y[1] = 0.0f;
+    covariance_y[0] = 1.0f;
+    covariance_y[1] = 1.0f;
+    covariance_y[2] = 1.0f;
+    covariance_y[3] = 1.0f;
+  }
+
+  /*Model for velocity estimation
+   * state = [ velocity; acceleration]
+   * Velocity_prediction = last_velocity_estimate + acceleration * dt
+   * Acceleration_prediction = last_acceleration
+   * model = Jacobian([vel_prediction; accel_prediction],state)
+   *       = [1 dt ; 0 1];
+   * */
+  float model[4] =  {1.0f, 1.0f / fps , 0.0f , 1.0f};
+  float process_noise[2] = {kalman_process_noise, kalman_process_noise};
+
+  // Measurements from velocity_x of optical flow and acceleration directly from scaled accelerometers
+  measurements_x[0] = *velocity_x;
+  measurements_x[1] = acceleration_measurement[0];
+
+  measurements_y[0] = *velocity_y;
+  measurements_y[1] = acceleration_measurement[1];
+
+  // 2D linear kalman filter
+  kalman_filter_linear_2D_float(model, measurements_x, covariance_x, state_estimate_x, process_noise, measurement_noise);
+  kalman_filter_linear_2D_float(model, measurements_y, covariance_y, state_estimate_y, process_noise, measurement_noise);
+
+  *velocity_x = state_estimate_x[0];
+  *velocity_y = state_estimate_y[0];
+}
+
+/*void kalman_edgeflow_stereocam(float fps, float vel_body_x, float vel_body_y, float *vel_body_x_filter,
+                               float *vel_body_y_filter)
 {
   //------------------------- KALMAN filter
   // Parameters
   float measurement_noise_edgeflow = 0.5;
   static uint8_t wait_filter_counter = 0;
-  static float previous_state_x[2] = {0.0f, 0.0f};
+
+  static float state_estimate_x[2] = {0.0f, 0.0f};
   static float covariance_x[4] = {1.0f, 1.0f, 1.0f, 1.0f};
   float measurements_x[2];
 
-  static float previous_state_y[2] = {0.0f, 0.0f};
+  static float state_estimate_y[2] = {0.0f, 0.0f};
   static float covariance_y[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-  float measurements_y[2];
 
-  float process_noise[2] = {0.001f, 0.001f};
-  float measurement_noise[2] = {measurement_noise_edgeflow, 1.0f};
+  static bool reinitialize_kalman = true;
+  bool kalman_filter_on = true;
 
-  // get accelerometer values
-  struct Int32Vect3 acc_meas_body;
-  struct Int32RMat *body_to_imu_rmat = orientationGetRMat_i(&imu.body_to_imu);
-  int32_rmat_transp_vmult(&acc_meas_body, body_to_imu_rmat, &imu.accel);
+  float kalman_process_noise = 0.000f;
+
+
+  // get accelerometer values from state and rotate to heading of drone
+
+  float psi = stateGetNedToBodyEulers_f()->psi;
+  float accelx =  cosf(-psi) * stateGetAccelNed_f()->x - sinf(-psi) * stateGetAccelNed_f()->y;
+  float accely = sinf(-psi) * stateGetAccelNed_f()->x + cosf(-psi) * stateGetAccelNed_f()->y;
+
 
   // Wait for a certain amount of time (so that edgeflow has some time to run)
-  if (wait_filter_counter > 100) {
+  if (kalman_filter_on == true) {
+    if (wait_filter_counter > 100) {
 
-    measurements_x[0] = vel_body_x;
-    measurements_x[1] = ACCEL_FLOAT_OF_BFP(acc_meas_body.x);
-    measurements_y[0] = vel_body_y;
-    measurements_y[1] = ACCEL_FLOAT_OF_BFP(acc_meas_body.y);
 
-    // Bound measurments if above a certain value.
-    if (!(fabs(vel_body_x) > 1.0 || fabs(vel_body_y) > 1.0)) {
 
-      kalman_filter(measurements_x, covariance_x,
-                    previous_state_x, process_noise, measurement_noise, fps);
-      kalman_filter(measurements_y, covariance_y,
-                    previous_state_y, process_noise, measurement_noise, fps);
+      // Bound measurments if above a certain value.
+      if (!(fabs(vel_body_x) > 1.0 || fabs(vel_body_y) > 1.0)) {
+
+//////////////////////
+        static float covariance_x[4], covariance_y[4], state_estimate_x[2], state_estimate_y[2];
+        float measurements_x[2], measurements_y[2];
+
+        float measurement_noise[2] = {measurement_noise_edgeflow, 1.0f};
+
+        float model[4] =  {1.0f, 1.0f / fps , 0.0f , 1.0f};
+        float process_noise[2] = {kalman_process_noise, kalman_process_noise};
+
+
+        if (reinitialize_kalman) {
+          state_estimate_x[0] = 0.0f;
+          state_estimate_x[1] = 0.0f;
+          covariance_x[0] = 1.0f;
+          covariance_x[1] = 1.0f;
+          covariance_x[2] = 1.0f;
+          covariance_x[3] = 1.0f;
+
+          state_estimate_y[0] = 0.0f;
+          state_estimate_y[1] = 0.0f;
+          covariance_y[0] = 1.0f;
+          covariance_y[1] = 1.0f;
+          covariance_y[2] = 1.0f;
+          covariance_y[3] = 1.0f;
+        }
+
+        // Measurements from velocity_x of optical flow and acceleration directly from scaled accelerometers
+        measurements_x[0] = vel_body_x;
+        measurements_x[1] = ACCEL_FLOAT_OF_BFP(accelx);
+        measurements_y[0] = vel_body_y;
+        measurements_y[1] = ACCEL_FLOAT_OF_BFP(accely);
+
+        kalman_filter_linear_2D_float(model,  measurements_x, covariance_x, state_estimate_x
+                                      , process_noise, measurement_noise);
+        kalman_filter_linear_2D_float(model,  measurements_y, covariance_y, state_estimate_y
+                                      , process_noise, measurement_noise);
+
+        *vel_body_x_filter = state_estimate_x[0];
+        *vel_body_y_filter = state_estimate_y[0];
+        ////////////////////////////////////////
+
+        if (reinitialize_kalman) {
+          reinitialize_kalman = false;
+        }
+
+      }
+
+    } else {
+      wait_filter_counter++;
     }
-
-    *vel_body_x_filter = previous_state_x[0];
-    *vel_body_y_filter =  previous_state_y[0];
-
   } else {
-    wait_filter_counter++;
+    reinitialize_kalman = true;
   }
 
-}
+
+}*/
