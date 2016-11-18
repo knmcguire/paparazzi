@@ -38,7 +38,7 @@
    </module-->
    <module name="stereocam_stereocam2state"/>
 
-
+   <module name="flight_plan_guided"/>
   </modules>
 
   <commands>

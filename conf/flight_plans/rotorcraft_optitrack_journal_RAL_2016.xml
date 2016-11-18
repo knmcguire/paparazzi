@@ -5,6 +5,7 @@
 	#include "autopilot.h"
     #include "guidance/guidance_h.h"
     #include "guidance/guidance_v.h"
+    #include "modules/flight_plan_guided/flight_plan_guided.h"
     #include "subsystems/datalink/datalink.h"
 	#include "subsystems/radio_control.h"
   </header>
@@ -41,7 +42,7 @@
   <blocks>
     <!-- Wait 5 seconds and then set altitude reference -->
     <block name="Geo init">
-      <call_once fun="ins_reset_altitude_ref()"/>
+      <call_once fun="ResetAlt()"/>
       <while cond="1"/>
 		</block>
     <block name="Start Engine">
@@ -50,7 +51,7 @@
     </block>
 		<block name="Hover">
 		    <call fun="guidance_v_set_guided_z(1)"/>
-		    <call fun="uidance_h_set_guided_heading(0.0f,0.0f)"/>
+		    <call fun="guidance_h_set_guided_body_vel(0.0f,0.0f)"/>
 		    <while cond="1"/>
 		</block>
 		<block name="Go Forward">
