@@ -166,15 +166,14 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
                        float noise __attribute__((unused)))
 {
 	//TODO make more generic
-	static float vel_body_x_buf[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
-	static float vel_body_y_buf[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
+	// static float vel_body_x_buf[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
+	// static float vel_body_y_buf[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 
+	// vel_body.x = movingaveragefilter(vel_body_x_buf, 12, x);
+	// vel_body.y = movingaveragefilter(vel_body_y_buf, 12, y);
 
-	vel_body.x = movingaveragefilter(vel_body_x_buf, 12, x);
-	vel_body.y = movingaveragefilter(vel_body_y_buf, 12, y);
-
-    // vel_body.x = x;
-	// vel_body.y = y;
+    vel_body.x = x;
+	vel_body.y = y;
 }
 
 
@@ -203,7 +202,8 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&RSSIarray[i], 		    	 // Received ID and RSSI
 		&srcstrength[i],		     // Source strength
 		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
-		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
+		//&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
+		&vel_body.x, &vel_body.y,
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
 		&ekf[i].X[6], &ekf[i].X[7],  // Orientation own , orientation other
 		&ekf[i].X[8], 			     // Height separation
