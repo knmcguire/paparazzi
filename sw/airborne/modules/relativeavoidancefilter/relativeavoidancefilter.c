@@ -201,12 +201,17 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&IDarray[i],			     // ID or filtered aircraft number
 		&RSSIarray[i], 		    	 // Received ID and RSSI
 		&srcstrength[i],		     // Source strength
-		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
+		//&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
 		//&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
-		&vel_body.x, &vel_body.y,
-		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
-		&ekf[i].X[6], &ekf[i].X[7],  // Orientation own , orientation other
-		&ekf[i].X[8], 			     // Height separation
+		&stateGetPositionNed_f()->x, &stateGetPositionNed_f()->y, // (test) posx and posy in cyberzoo
+		&stateGetSpeedNed_f()->x, &stateGetSpeedNed_f()->y, // (test) posx and posy in cyberzoo
+		&vel_body.x, &vel_body.y, // (test) opticflow speed
+		// &ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
+		&stateGetNedToBodyEulers_f()->psi, // (test) own orientation
+		//&ekf[i].X[6],  // Orientation own with respecet to north
+		&ekf[i].X[7],  // Orientation other with respect to north
+		&stateGetPositionNed_f()->z, // (test) height values
+		// &ekf[i].X[8],  // Height separation
 		&vx_des, &vy_des);		     // Commanded velocities
 };
 
@@ -261,7 +266,7 @@ void relativeavoidancefilter_periodic(void)
 	float crs_vel_earth = - crs_vel_body + crs_bodyaxis;
 	wrapTo2Pi(&crs_vel_earth); 					    // Wrap to 2 Pi since the sent result is unsigned
 
-	int32_t course = (int32_t)(crs_vel_body*(1e7)); 	// Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
+	int32_t course = (int32_t)(crs_vel_body*(1e7)); // Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
 	// int32_t course = (int32_t)(crs*(1e7)); 	// Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
 
 	uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(course) / 1e7) / 2)) & 0x7FF) <<
@@ -269,10 +274,10 @@ void relativeavoidancefilter_periodic(void)
 	multiplex_speed |= (((uint32_t)(spd*100)) & 0x7FF) << 10;         // bits 20-10 speed in cm/s
 	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);        // bits 9-0 z velocity in cm/s
 
-	int16_t alt = (int16_t)(gps.hmsl / 10); 							// height in dm
+	int16_t alt = (int16_t)(gps.hmsl / 10); 						  // height in dm
 
 	DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat,
-                          &gps.lla_pos.lon, &alt);                     // Messages throught USB bluetooth dongle to other drones
+                          &gps.lla_pos.lon, &alt);                    // Messages throught USB bluetooth dongle to other drones
 
 
 	/*********************************************

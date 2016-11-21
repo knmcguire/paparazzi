@@ -6,9 +6,9 @@
     <target name="ap" board="ardrone2">
       <configure name="USE_BARO_BOARD" value="FALSE"/>
       <!-- HOST is the Name or IP of your AC -->
-      <configure name="HOST" value="192.168.0.200"/>
+      <configure name="HOST" value="192.168.40.200"/>
       <!-- MODEM_HOST is where the data should go to, for short normally your laptop IP address -->
-      <configure name="MODEM_HOST" value="192.168.0.45"/>
+      <configure name="MODEM_HOST" value="192.168.40.146"/>
       <configure name="MODEM_BROADCAST" value="FALSE"/>
     </target>
 
@@ -20,7 +20,7 @@
     <define name="USE_SONAR" value="0"/>
     <configure name="USE_MAGNETOMETER" value="0"/>
 
-	<!-- Subsystem section -->
+  <!-- Subsystem section -->
     <module name="telemetry" type="transparent_udp"/>
     <module name="radio_control" type="datalink"/>
     <module name="motor_mixing"/>
