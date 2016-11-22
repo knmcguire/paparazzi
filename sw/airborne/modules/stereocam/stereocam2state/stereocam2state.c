@@ -31,11 +31,27 @@
 
 #include "modules/computer_vision/lib/filters/kalman_filter_vision.h"
 
+static abi_event gps_ev;
+struct NedCoor_f opti_vel;
+struct FloatVect3 velocity_rot_gps;
+
+
+
+static void gps_cb(uint8_t sender_id __attribute__((unused)),
+                   uint32_t stamp __attribute__((unused)),
+                   struct GpsState *gps_s)
+{
+  opti_vel.x = (float)(gps_s->ecef_vel.x) / 100;
+  opti_vel.y = (float)(gps_s->ecef_vel.y) / 100;
+  opti_vel.z = (float)(gps_s->ecef_vel.z) / 100;
+}
+
+
 void stereocam_to_state(void);
 
 void stereo_to_state_init(void)
 {
-
+  AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
 }
 
 void stereo_to_state_periodic(void)
@@ -102,6 +118,11 @@ void stereocam_to_state(void)
   vel_body_y = (float)vel_global.y / RES;
 #endif
 
+//optitrack data
+  struct FloatVect3 velocity_rot_gps;
+  struct Int32Vect3 velocity_rot_gps_int;
+  float_rmat_vmult(&velocity_rot_gps , stateGetNedToBodyRMat_f(), (struct FloatVect3 *)&opti_vel);
+
   //TODO: give velocity body in z direction?
 
   // KALMAN filter
@@ -111,56 +132,57 @@ void stereocam_to_state(void)
   bool kalman_filter_on = true;
   float kalman_filter_process_noise = 0.01f;
   // KALMAN filter on velocity
-   float measurement_noise[2] = {0.5f, 1.0f};
-   static bool reinitialize_kalman = true;
+  float measurement_noise[2] = {0.5f, 1.0f};
+  static bool reinitialize_kalman = true;
 
-   static uint8_t wait_filter_counter = 0;
+  static uint8_t wait_filter_counter = 0;
 
-   if (kalman_filter_on == true) {
-     if (wait_filter_counter > 50) {
+  if (kalman_filter_on == true) {
+    if (wait_filter_counter > 50) {
 
-       // Get accelerometer values rotated to body axis
-       struct FloatVect3 accel_meas_body;
-       float psi = stateGetNedToBodyEulers_f()->psi;
-       accel_meas_body.x =  cosf(-psi) * stateGetAccelNed_f()->x - sinf(-psi) * stateGetAccelNed_f()->y;
-       accel_meas_body.y = sinf(-psi) * stateGetAccelNed_f()->x + cosf(-psi) * stateGetAccelNed_f()->y;
-
-
-       float acceleration_measurement[2];
-       acceleration_measurement[0] = accel_meas_body.x;
-       acceleration_measurement[1] = accel_meas_body.y;
-
-       vel_body_x_filter = vel_body_x;
-       vel_body_y_filter = vel_body_y;
+      // Get accelerometer values rotated to body axis
+      struct FloatVect3 accel_meas_body;
+      float psi = stateGetNedToBodyEulers_f()->psi;
+      accel_meas_body.x =  cosf(-psi) * stateGetAccelNed_f()->x - sinf(-psi) * stateGetAccelNed_f()->y;
+      accel_meas_body.y = sinf(-psi) * stateGetAccelNed_f()->x + cosf(-psi) * stateGetAccelNed_f()->y;
 
 
-       kalman_edgeflow_stereocam(&vel_body_x_filter, &vel_body_y_filter, acceleration_measurement, 26.0f,
-                                        measurement_noise, kalman_filter_process_noise, reinitialize_kalman);
+      float acceleration_measurement[2];
+      acceleration_measurement[0] = accel_meas_body.x;
+      acceleration_measurement[1] = accel_meas_body.y;
 
-       if (reinitialize_kalman) {
-         reinitialize_kalman = false;
-       }
+      vel_body_x_filter = vel_body_x;
+      vel_body_y_filter = vel_body_y;
 
-     } else {
-       wait_filter_counter++;
-     }
-   } else {
-     reinitialize_kalman = true;
-   }
+      if (!(fabs(vel_body_x) > 1.0 || fabs(vel_body_x) > 1.0)) {
+
+        kalman_edgeflow_stereocam(&vel_body_x_filter, &vel_body_y_filter, acceleration_measurement, 26.0f,
+                                  measurement_noise, kalman_filter_process_noise, reinitialize_kalman);
+
+        if (reinitialize_kalman) {
+          reinitialize_kalman = false;
+        }
+      }
+
+    } else {
+      wait_filter_counter++;
+    }
+  } else {
+    reinitialize_kalman = true;
+  }
 
 
   //Send velocity estimate to state
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
   uint32_t now_ts = get_sys_time_usec();
 
-  if (!(fabs(vel_body_x) > 1.0 || fabs(vel_body_x) > 1.0)) {
-    AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
-                                vel_body_x_filter,
-                                vel_body_y_filter,
-                                0.0f,
-                                0.3f
-                               );
-  }
+  AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
+                              vel_body_x_filter,
+                              vel_body_y_filter,
+                              0.0f,
+                              0.3f
+                             );
+
 
   // EDGEFLOW_STEREOCAM telemetry messages, with some values replaced by 0
   uint16_t dummy_uint16 = 0;
@@ -171,7 +193,7 @@ void stereocam_to_state(void)
   DOWNLINK_SEND_EDGEFLOW_STEREOCAM(DefaultChannel, DefaultDevice, &dummy_int16, &vel_x_global_int, &vel_y_global_int,
                                    &vel_z_global_int,
                                    &vel_x_pixelwise_int, &vel_z_pixelwise_int, &vel_body_x, &vel_body_y, &vel_body_x_filter, &vel_body_y_filter,
-                                   &dummy_float, &dummy_float);
+                                   &velocity_rot_gps.x, &velocity_rot_gps.y);
 
 #endif
 
@@ -188,7 +210,7 @@ void stereocam_to_state(void)
  * @param[in] reinitialize_kalman  Boolean to reinitialize the kalman filter
  */
 void kalman_edgeflow_stereocam(float *velocity_x, float *velocity_y, float *acceleration_measurement, float fps,
-                                      float *measurement_noise, float kalman_process_noise, bool reinitialize_kalman)
+                               float *measurement_noise, float kalman_process_noise, bool reinitialize_kalman)
 {
   // Initialize variables
   static float covariance_x[4], covariance_y[4], state_estimate_x[2], state_estimate_y[2];
