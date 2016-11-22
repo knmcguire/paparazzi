@@ -153,7 +153,7 @@ void stereocam_to_state(void)
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
   uint32_t now_ts = get_sys_time_usec();
 
-  if (!(abs(vel_body_x) > 0.5 || abs(vel_body_x) > 0.5)) {
+  if (!(fabs(vel_body_x) > 1.0 || fabs(vel_body_x) > 1.0)) {
     AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
                                 vel_body_x_filter,
                                 vel_body_y_filter,
