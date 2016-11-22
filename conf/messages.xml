@@ -2094,7 +2094,7 @@
    </message>
 
   <message name="EDGEFLOW_STEREOCAM" id="248">
-    <field name="fps"         		type="float"/>
+    <field name="timestamp"         		type="uint32"/>
     <field name="vel_camera_x_global" 	type="int16"/>
     <field name="vel_camera_y_global" 	type="int16"/>
     <field name="vel_camera_z_global" 	type="int16"/>

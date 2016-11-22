@@ -190,7 +190,7 @@ void stereocam_to_state(void)
   float dummy_float = 0;
 
   //TODO add body rotated optitrackc measurements here
-  DOWNLINK_SEND_EDGEFLOW_STEREOCAM(DefaultChannel, DefaultDevice, &dummy_int16, &vel_x_global_int, &vel_y_global_int,
+  DOWNLINK_SEND_EDGEFLOW_STEREOCAM(DefaultChannel, DefaultDevice, &now_ts, &vel_x_global_int, &vel_y_global_int,
                                    &vel_z_global_int,
                                    &vel_x_pixelwise_int, &vel_z_pixelwise_int, &vel_body_x, &vel_body_y, &vel_body_x_filter, &vel_body_y_filter,
                                    &velocity_rot_gps.x, &velocity_rot_gps.y);
