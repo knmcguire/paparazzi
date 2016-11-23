@@ -41,6 +41,9 @@ struct FloatVect3 velocity_rot_gps;
 struct MedianFilterF medianfilter_x, medianfilter_y;
 static Butterworth2LowPass butterfilter_x, butterfilter_y;
 
+#include "subsystems/radio_control.h"
+
+
 static void gps_cb(uint8_t sender_id __attribute__((unused)),
                    uint32_t stamp __attribute__((unused)),
                    struct GpsState *gps_s)
@@ -211,11 +214,16 @@ void stereocam_to_state(void)
   int16_t dummy_int16 = 0;
   float dummy_float = 0;
 
+  // include Rc messages
+  int64_t rc_x = -radio_control.values[RADIO_PITCH];
+  int64_t rc_y = radio_control.values[RADIO_ROLL];
+
   //TODO add body rotated optitrackc measurements here
   DOWNLINK_SEND_EDGEFLOW_STEREOCAM(DefaultChannel, DefaultDevice, &now_ts, &vel_x_global_int, &vel_y_global_int,
                                    &vel_z_global_int,
                                    &vel_x_pixelwise_int, &vel_z_pixelwise_int, &vel_body_x, &vel_body_y,
-                                   &vel_body_x_butter_filter, &vel_body_y_butter_filter, &velocity_rot_gps.x, &velocity_rot_gps.y);
+                                   &vel_body_x_butter_filter, &vel_body_y_butter_filter, &velocity_rot_gps.x, &velocity_rot_gps.y,
+								   &rc_x, &rc_y);
 
 #endif
 

@@ -2093,7 +2093,7 @@
      <field name="ground_distance" type="float" unit="m"/>
    </message>
 
-  <message name="EDGEFLOW_STEREOCAM" id="248">
+  <message name="EDGEFLOW_STEREOCAM" id="234">
     <field name="timestamp"         		type="uint32"/>
     <field name="vel_camera_x_global" 	type="int16"/>
     <field name="vel_camera_y_global" 	type="int16"/>
@@ -2106,6 +2106,8 @@
     <field name="vel_body_y_filtered"	type="float"/>
     <field name="vel_body_x_optitrack"  type="float"/>
     <field name="vel_body_y_optitrack"  type="float"/>
+		<field name="rc_pitch"							type="int64"/>
+		<field name="rc_roll"								type="int64"/>
   </message>
 
 
