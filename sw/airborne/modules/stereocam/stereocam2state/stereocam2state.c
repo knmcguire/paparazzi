@@ -35,6 +35,9 @@ static abi_event gps_ev;
 struct NedCoor_f opti_vel;
 struct FloatVect3 velocity_rot_gps;
 
+#include "filters/median_filter.h"
+
+struct MedianFilterF medianfilter_x, medianfilter_y;
 
 
 static void gps_cb(uint8_t sender_id __attribute__((unused)),
@@ -52,6 +55,10 @@ void stereocam_to_state(void);
 void stereo_to_state_init(void)
 {
   AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
+
+  init_median_filter_f(&medianfilter_x);
+  init_median_filter_f(&medianfilter_y);
+
 }
 
 void stereo_to_state_periodic(void)
@@ -151,12 +158,16 @@ void stereocam_to_state(void)
       acceleration_measurement[0] = accel_meas_body.x;
       acceleration_measurement[1] = accel_meas_body.y;
 
+      float vel_body_x_median_filter, vel_body_y_median_filter;
+
+      vel_body_x_median_filter = update_median_filter_f(&medianfilter_x, vel_body_x);
+      vel_body_y_median_filter = update_median_filter_f(&medianfilter_y, vel_body_y);
 
 
       if (!(fabs(vel_body_x) > 1.0 || fabs(vel_body_x) > 1.0)) {
 
-          vel_body_x_filter = vel_body_x;
-          vel_body_y_filter = vel_body_y;
+        vel_body_x_filter = vel_body_x;
+        vel_body_y_filter = vel_body_y;
 
         kalman_edgeflow_stereocam(&vel_body_x_filter, &vel_body_y_filter, acceleration_measurement, 26.0f,
                                   measurement_noise, kalman_filter_process_noise, reinitialize_kalman);
