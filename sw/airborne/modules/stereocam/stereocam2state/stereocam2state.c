@@ -36,9 +36,10 @@ struct NedCoor_f opti_vel;
 struct FloatVect3 velocity_rot_gps;
 
 #include "filters/median_filter.h"
+#include "filters/low_pass_filter.h"
 
 struct MedianFilterF medianfilter_x, medianfilter_y;
-
+static Butterworth2LowPass butterfilter_x, butterfilter_y;
 
 static void gps_cb(uint8_t sender_id __attribute__((unused)),
                    uint32_t stamp __attribute__((unused)),
@@ -58,6 +59,9 @@ void stereo_to_state_init(void)
 
   init_median_filter_f(&medianfilter_x);
   init_median_filter_f(&medianfilter_y);
+  init_butterworth_2_low_pass(&butterfilter_x, 14, 1. / 23, 0.0f);
+  init_butterworth_2_low_pass(&butterfilter_y, 14, 1. / 23, 0.0f);
+
 
 }
 
@@ -132,12 +136,22 @@ void stereocam_to_state(void)
 
   //TODO: give velocity body in z direction?
 
+  // Median filter and 2nd order butterworth filter
+  float vel_body_x_median_filter = update_median_filter_f(&medianfilter_x, vel_body_x);
+  float vel_body_y_median_filter = update_median_filter_f(&medianfilter_y, vel_body_y);
+
+  float vel_body_x_butter_filter = update_butterworth_2_low_pass(&medianfilter_x, vel_body_x_median_filter);
+  float vel_body_y_butter_filter = update_butterworth_2_low_pass(&medianfilter_y, vel_body_y_median_filter);
+
+
   // KALMAN filter
   static float vel_body_x_filter = 0;
   static float vel_body_y_filter = 0;
 
   bool kalman_filter_on = true;
   float kalman_filter_process_noise = 0.001f;
+
+
   // KALMAN filter on velocity
   float measurement_noise[2] = {0.5f, 1.0f};
   static bool reinitialize_kalman = true;
@@ -157,11 +171,6 @@ void stereocam_to_state(void)
       float acceleration_measurement[2];
       acceleration_measurement[0] = accel_meas_body.x;
       acceleration_measurement[1] = accel_meas_body.y;
-
-      float vel_body_x_median_filter, vel_body_y_median_filter;
-
-      vel_body_x_median_filter = update_median_filter_f(&medianfilter_x, vel_body_x);
-      vel_body_y_median_filter = update_median_filter_f(&medianfilter_y, vel_body_y);
 
 
       if (!(fabs(vel_body_x) > 1.0 || fabs(vel_body_x) > 1.0)) {
