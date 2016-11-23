@@ -144,7 +144,7 @@ void stereocam_to_state(void)
   float vel_body_y_butter_filter = update_butterworth_2_low_pass(&medianfilter_y, vel_body_y_median_filter);
 
 
-  // KALMAN filter
+  /*  // KALMAN filter
   static float vel_body_x_filter = 0;
   static float vel_body_y_filter = 0;
 
@@ -192,15 +192,15 @@ void stereocam_to_state(void)
   } else {
     reinitialize_kalman = true;
   }
-
+  */
 
   //Send velocity estimate to state
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
   uint32_t now_ts = get_sys_time_usec();
 
   AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
-                              vel_body_x_filter,
-                              vel_body_y_filter,
+                              vel_body_x_butter_filter,
+                              vel_body_y_butter_filter,
                               0.0f,
                               0.3f
                              );
@@ -214,8 +214,8 @@ void stereocam_to_state(void)
   //TODO add body rotated optitrackc measurements here
   DOWNLINK_SEND_EDGEFLOW_STEREOCAM(DefaultChannel, DefaultDevice, &now_ts, &vel_x_global_int, &vel_y_global_int,
                                    &vel_z_global_int,
-                                   &vel_x_pixelwise_int, &vel_z_pixelwise_int, &vel_body_x, &vel_body_y, &vel_body_x_filter, &vel_body_y_filter,
-                                   &velocity_rot_gps.x, &velocity_rot_gps.y);
+                                   &vel_x_pixelwise_int, &vel_z_pixelwise_int, &vel_body_x, &vel_body_y,
+                                   &vel_body_x_butter_filter, &vel_body_y_butter_filter, &velocity_rot_gps.x, &velocity_rot_gps.y);
 
 #endif
 
