@@ -126,11 +126,11 @@ void stereocam_to_state(void)
   //TODO: give velocity body in z direction?
 
   // KALMAN filter
-  float vel_body_x_filter = 0;
-  float vel_body_y_filter = 0;
+  static float vel_body_x_filter = 0;
+  static float vel_body_y_filter = 0;
 
   bool kalman_filter_on = true;
-  float kalman_filter_process_noise = 0.01f;
+  float kalman_filter_process_noise = 0.001f;
   // KALMAN filter on velocity
   float measurement_noise[2] = {0.5f, 1.0f};
   static bool reinitialize_kalman = true;
@@ -151,10 +151,12 @@ void stereocam_to_state(void)
       acceleration_measurement[0] = accel_meas_body.x;
       acceleration_measurement[1] = accel_meas_body.y;
 
-      vel_body_x_filter = vel_body_x;
-      vel_body_y_filter = vel_body_y;
+
 
       if (!(fabs(vel_body_x) > 1.0 || fabs(vel_body_x) > 1.0)) {
+
+          vel_body_x_filter = vel_body_x;
+          vel_body_y_filter = vel_body_y;
 
         kalman_edgeflow_stereocam(&vel_body_x_filter, &vel_body_y_filter, acceleration_measurement, 26.0f,
                                   measurement_noise, kalman_filter_process_noise, reinitialize_kalman);

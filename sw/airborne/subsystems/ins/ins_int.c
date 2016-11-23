@@ -385,6 +385,7 @@ void ins_int_update_gps(struct GpsState *gps_s)
   ins_int.propagation_cnt = 0;
 #endif
 
+#ifndef INS_USE_GPS_ALT
 #if USE_HFF
   /* horizontal gps transformed to NED in meters as float */
   struct FloatVect2 gps_pos_m_ned;
@@ -412,7 +413,7 @@ void ins_int_update_gps(struct GpsState *gps_s)
   INT32_VECT2_SCALE_2(ins_int.ltp_speed, gps_speed_cm_s_ned,
                       INT32_SPEED_OF_CM_S_NUM, INT32_SPEED_OF_CM_S_DEN);
 #endif /* USE_HFF */
-
+#endif
   ins_ned_to_state();
 
   /* reset the counter to indicate we just had a measurement update */
