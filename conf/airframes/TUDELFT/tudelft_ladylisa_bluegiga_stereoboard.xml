@@ -179,7 +179,7 @@
    <define name="DGAIN" value="40"/>
    <define name="IGAIN" value="0"/>
    <define name="REF_MAX_SPEED" value="0.5"/>
-   <define name="USE_REF" value="FALSE"/>
+   <define name="USE_SPEED_REF" value="TRUE"/>
  </section>
 
   <section name="NAVIGATION" prefix="NAV_">
