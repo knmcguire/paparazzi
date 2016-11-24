@@ -208,6 +208,7 @@
    <define name="IGAIN" value="19"/>
    <define name="MAX_BANK" value="RadOfDeg(15)"/>
    <define name="REF_MAX_SPEED" value="0.5"/>
+   <define name="USE_SPEED_REF" value="TRUE"/>
  </section>
 
   <section name="MISC">
