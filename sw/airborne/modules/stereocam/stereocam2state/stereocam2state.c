@@ -38,7 +38,8 @@ struct FloatVect3 velocity_rot_gps;
 #include "filters/median_filter.h"
 #include "filters/low_pass_filter.h"
 
-struct MedianFilterF medianfilter_x, medianfilter_y;
+struct MedianFilterInt medianfilter_x, medianfilter_y;
+
 static Butterworth2LowPass butterfilter_x, butterfilter_y;
 
 #include "subsystems/radio_control.h"
@@ -60,8 +61,8 @@ void stereo_to_state_init(void)
 {
   AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
 
-  init_median_filter_f(&medianfilter_x);
-  init_median_filter_f(&medianfilter_y);
+  init_median_filter(&medianfilter_x);
+  init_median_filter(&medianfilter_y);
   init_butterworth_2_low_pass(&butterfilter_x, 14, 1. / 23, 0.0f);
   init_butterworth_2_low_pass(&butterfilter_y, 14, 1. / 23, 0.0f);
 
@@ -140,11 +141,13 @@ void stereocam_to_state(void)
   //TODO: give velocity body in z direction?
 
   // Median filter and 2nd order butterworth filter
-  float vel_body_x_median_filter = update_median_filter_f(&medianfilter_x, vel_body_x);
-  float vel_body_y_median_filter = update_median_filter_f(&medianfilter_y, vel_body_y);
+  float vel_body_x_median_filter = (float)update_median_filter(&medianfilter_x, (int32_t)(vel_body_x * 100)) / 100;
+  float vel_body_y_median_filter = (float)update_median_filter(&medianfilter_y, (int32_t)(vel_body_y * 100)) / 100;
 
-  float vel_body_x_butter_filter = update_butterworth_2_low_pass(&medianfilter_x, vel_body_x_median_filter);
-  float vel_body_y_butter_filter = update_butterworth_2_low_pass(&medianfilter_y, vel_body_y_median_filter);
+  float vel_body_x_butter_filter =
+    vel_body_x_median_filter;//update_butterworth_2_low_pass(&medianfilter_x, vel_body_x_median_filter);
+  float vel_body_y_butter_filter =
+    vel_body_x_median_filter;//update_butterworth_2_low_pass(&medianfilter_y, vel_body_y_median_filter);
 
 
   /*  // KALMAN filter
@@ -223,7 +226,7 @@ void stereocam_to_state(void)
                                    &vel_z_global_int,
                                    &vel_x_pixelwise_int, &vel_z_pixelwise_int, &vel_body_x, &vel_body_y,
                                    &vel_body_x_butter_filter, &vel_body_y_butter_filter, &velocity_rot_gps.x, &velocity_rot_gps.y,
-								   &rc_x, &rc_y);
+                                   &rc_x, &rc_y);
 
 #endif
 
