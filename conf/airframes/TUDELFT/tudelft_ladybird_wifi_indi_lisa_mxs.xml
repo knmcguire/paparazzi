@@ -203,12 +203,13 @@
   </section>
 
  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-   <define name="PGAIN" value="39"/>
-   <define name="DGAIN" value="50"/>
-   <define name="IGAIN" value="19"/>
+   <define name="PGAIN" value="100"/>
+   <define name="DGAIN" value="40"/>
+   <define name="IGAIN" value="0"/>
    <define name="MAX_BANK" value="RadOfDeg(15)"/>
    <define name="REF_MAX_SPEED" value="0.5"/>
    <define name="USE_SPEED_REF" value="TRUE"/>
+
  </section>
 
   <section name="MISC">

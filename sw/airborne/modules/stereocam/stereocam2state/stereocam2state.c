@@ -63,8 +63,8 @@ void stereo_to_state_init(void)
 
   init_median_filter(&medianfilter_x);
   init_median_filter(&medianfilter_y);
-  init_butterworth_2_low_pass(&butterfilter_x, 0.3, 1. / 23, 0.0);
-  init_butterworth_2_low_pass(&butterfilter_y, 0.3, 1. / 23, 0.0);
+  init_butterworth_2_low_pass(&butterfilter_x, 0.2, 1. / 23, 0.0);
+  init_butterworth_2_low_pass(&butterfilter_y, 0.2, 1. / 23, 0.0);
 
 
 }
@@ -210,6 +210,16 @@ void stereocam_to_state(void)
                               0.0f,
                               0.3f
                              );
+
+/*
+  AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
+                              vel_body_x,
+                              vel_body_y,
+                              0.0f,
+                              0.3f
+                             );
+*/
+
 
 
   // EDGEFLOW_STEREOCAM telemetry messages, with some values replaced by 0
