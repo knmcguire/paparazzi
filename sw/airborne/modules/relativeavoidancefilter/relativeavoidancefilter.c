@@ -331,7 +331,10 @@ void relativeavoidancefilter_periodic(void)
 		}
 
 		polar2cart(v_des, psi_des, &vx_des, &vy_des);  		// new desired speed
-		autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);  	//send to guided mode
+		// autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);  	//send to guided mode
+		guidance_h_set_guided_vel(vx_des,vy_des);
+		guidance_v_set_guided_z(-1.0);
+		guidance_h_set_guided_heading(0.0);
 
 	}
 
