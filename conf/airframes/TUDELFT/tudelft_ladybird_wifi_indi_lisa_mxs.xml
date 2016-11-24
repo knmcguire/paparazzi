@@ -61,8 +61,8 @@
   </section>
 
   <section name="IMU" prefix="IMU_">
-    <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
-    <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
+    <define name="BODY_TO_IMU_PHI"   value="3.5" unit="deg"/>
+    <define name="BODY_TO_IMU_THETA" value="1.5" unit="deg"/>
     <define name="BODY_TO_IMU_PSI"   value="135." unit="deg"/>
 
     <define name="ACCEL_X_NEUTRAL" value="0"/>
@@ -87,7 +87,7 @@
    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
    <define name="MODE_AUTO1" value="AP_MODE_HOVER_Z_HOLD"/>
-   <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
+   <define name="MODE_AUTO2" value="AP_MODE_HOVER_Z_HOLD"/>
    <define name="NO_RC_THRUST_LIMIT"  value="TRUE"/>
  </section>
 
@@ -187,10 +187,11 @@
   </section>
 
  <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
-   <define name="HOVER_KP" value="276"/>
-   <define name="HOVER_KD" value="455"/>
-   <define name="HOVER_KI" value="100"/>
-   <define name="GUIDANCE_V_NOMINAL_HOVER_THROTTLE" value="0.5"/>
+   <define name="HOVER_KP" value="331"/>
+   <define name="HOVER_KD" value="546"/>
+   <define name="HOVER_KI" value="120"/>
+   <define name="NOMINAL_HOVER_THROTTLE" value="0.65"/>
+   <define name="ADAPT_THROTTLE_ENABLED" value="false"/>
   </section>
 
   <section name="AHRS" prefix="AHRS_">
@@ -205,6 +206,8 @@
    <define name="PGAIN" value="39"/>
    <define name="DGAIN" value="50"/>
    <define name="IGAIN" value="19"/>
+   <define name="MAX_BANK" value="RadOfDeg(15)"/>
+   <define name="REF_MAX_SPEED" value="0.5"/>
  </section>
 
   <section name="MISC">

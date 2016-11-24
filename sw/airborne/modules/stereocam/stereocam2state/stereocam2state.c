@@ -63,8 +63,8 @@ void stereo_to_state_init(void)
 
   init_median_filter(&medianfilter_x);
   init_median_filter(&medianfilter_y);
-  init_butterworth_2_low_pass(&butterfilter_x, 0.5, 1. / 23, 0.0);
-  init_butterworth_2_low_pass(&butterfilter_y, 0.5, 1. / 23, 0.0);
+  init_butterworth_2_low_pass(&butterfilter_x, 0.3, 1. / 23, 0.0);
+  init_butterworth_2_low_pass(&butterfilter_y, 0.3, 1. / 23, 0.0);
 
 
 }
