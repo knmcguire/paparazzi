@@ -63,8 +63,8 @@ void stereo_to_state_init(void)
 
   init_median_filter(&medianfilter_x);
   init_median_filter(&medianfilter_y);
-  init_butterworth_2_low_pass(&butterfilter_x, 14, 1. / 23, 0.0f);
-  init_butterworth_2_low_pass(&butterfilter_y, 14, 1. / 23, 0.0f);
+  init_butterworth_2_low_pass(&butterfilter_x, 0.5, 1. / 23, 0.0);
+  init_butterworth_2_low_pass(&butterfilter_y, 0.5, 1. / 23, 0.0);
 
 
 }
@@ -145,9 +145,9 @@ void stereocam_to_state(void)
   float vel_body_y_median_filter = (float)update_median_filter(&medianfilter_y, (int32_t)(vel_body_y * 100)) / 100;
 
   float vel_body_x_butter_filter =
-    vel_body_x_median_filter;//update_butterworth_2_low_pass(&medianfilter_x, vel_body_x_median_filter);
+    update_butterworth_2_low_pass(&butterfilter_x, vel_body_x_median_filter);
   float vel_body_y_butter_filter =
-    vel_body_x_median_filter;//update_butterworth_2_low_pass(&medianfilter_y, vel_body_y_median_filter);
+    update_butterworth_2_low_pass(&butterfilter_y, vel_body_y_median_filter);
 
 
   /*  // KALMAN filter
