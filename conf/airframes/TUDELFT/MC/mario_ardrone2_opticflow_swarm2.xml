@@ -15,7 +15,6 @@
       <module name="fdm" type="jsbsim"/>
     </target-->
 
-    <define name="FAILSAFE_DESCENT_SPEED" value="0.5"/>
     <define name="USE_SONAR" value="TRUE"/>
 
 	<!-- Subsystem section -->
@@ -27,8 +26,8 @@
     <module name="gps" type="datalink"/>
     <module name="stabilization" type="int_quat"/>
     <module name="ahrs" type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="TRUE"/>
-      <define name="AHRS_USE_GPS_HEADING" value="FALSE"/>
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
+      <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
     </module>
     <module name="ins" type="extended"/>
   </firmware>
@@ -140,10 +139,6 @@
   <!-- local magnetic field -->
   <!-- http://wiki.paparazziuav.org/wiki/Subsystem/ahrs#Local_Magnetic_Field -->
   <section name="AHRS" prefix="AHRS_">
-    <!-- Toulouse -->
-    <!--define name="H_X" value="0.513081"/>
-    <define name="H_Y" value="-0.00242783"/>
-    <define name="H_Z" value="0.858336"/-->
     <!-- Delft -->
     <define name="H_X" value="0.3892503"/>
     <define name="H_Y" value="0.0017972"/>
@@ -151,7 +146,7 @@
 
     <!-- Use GPS heading instead of magneto -->
     <define name="HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
-  </section>
+ </section>
 
   <section name="INS" prefix="INS_">
     <define name="SONAR_MAX_RANGE" value="2.2"/>
@@ -232,7 +227,6 @@
     <define name="MODE_MANUAL" value="AP_MODE_HOVER_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_GUIDED"/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
-    <define name="NO_RC_THRUST_LIMIT"  value="TRUE"/>
   </section>
 
   <section name="BAT">
