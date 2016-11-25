@@ -61,8 +61,8 @@
   </section>
 
   <section name="IMU" prefix="IMU_">
-    <define name="BODY_TO_IMU_PHI"   value="3.5" unit="deg"/>
-    <define name="BODY_TO_IMU_THETA" value="1.5" unit="deg"/>
+    <define name="BODY_TO_IMU_PHI"   value="-0.3" unit="deg"/>
+    <define name="BODY_TO_IMU_THETA" value="3.3" unit="deg"/>
     <define name="BODY_TO_IMU_PSI"   value="135." unit="deg"/>
 
     <define name="ACCEL_X_NEUTRAL" value="0"/>
