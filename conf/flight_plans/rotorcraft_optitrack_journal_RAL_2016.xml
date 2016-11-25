@@ -54,6 +54,9 @@
 		    <call fun="guidance_h_set_guided_body_vel(0.0f,0.0f)"/>
 		    <while cond="1"/>
 		</block>
+		<block name="Go Forward with forcefield">
+        <call fun="avoid_wall(0.1f)"/>
+    </block>
 		<block name="Go Forward">
         <call fun="guidance_h_set_guided_body_vel(0.3f,0.0f)"/>
         <!-- exception untill obstacle, derout to hover -->

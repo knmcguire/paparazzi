@@ -2108,6 +2108,7 @@
     <field name="vel_body_y_optitrack"  type="float"/>
 		<field name="rc_pitch"							type="int64"/>
 		<field name="rc_roll"								type="int64"/>
+		<field name="distance"								type="float"/>
   </message>
 
 

@@ -16,9 +16,12 @@
 #include <std.h>
 #include "modules/stereocam/stereocam.h"
 
+extern float distance_stereo;
+
+
 extern void stereo_to_state_init(void);
 extern void stereo_to_state_periodic(void);
 void kalman_edgeflow_stereocam(float *velocity_x, float *velocity_y, float *acceleration_measurement, float fps,
-                                      float *measurement_noise, float kalman_process_noise, bool reinitialize_kalman);
+                               float *measurement_noise, float kalman_process_noise, bool reinitialize_kalman);
 #endif
 

@@ -96,5 +96,8 @@ extern int8_t lost_frames;
 extern float initial_heading;
 
 extern bool WaitUntilMarker(void);
+extern bool avoid_wall(float vel_body_x_command);
+
+
 
 #endif

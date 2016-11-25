@@ -198,5 +198,44 @@ uint8_t MoveRight(float vy)
   return false;
 }
 
+void stereo_force_field(float *vel_body_x, float distance_stereo, float avoid_inner_border, float avoid_outer_border,
+                        float tinder_range, float min_vel_command, float max_vel_command)
+{
+  static const int16_t max_sensor_range = 2.0f;
 
+  int16_t difference_inner_outer = avoid_outer_border - avoid_inner_border;
 
+  // Velocity commands
+  float avoid_x_command = *vel_body_x;
+
+  // Balance avoidance command for front direction (sideways)
+  if (distance_stereo > max_sensor_range) {
+    //do nothing
+  } else if (distance_stereo < avoid_inner_border) {
+    avoid_x_command -= max_vel_command;
+  } else if (distance_stereo < avoid_outer_border) {
+    // Linear
+    avoid_x_command -= (max_vel_command - min_vel_command) *
+                       (avoid_outer_border - distance_stereo)
+                       / difference_inner_outer;
+  } else {
+    if (distance_stereo > tinder_range) {
+      avoid_x_command += max_vel_command;
+    }
+  }
+
+  *vel_body_x = avoid_x_command;
+}
+
+bool avoid_wall(float vel_body_x_command)
+{
+  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+
+  if (autopilot_mode == AP_MODE_GUIDED) {
+
+    stereo_force_field(&vel_body_x_command, distance_stereo, 0.60f, 1.0f, 2.0f , 0.0f, 0.3f);
+    MoveForward(vel_body_x_command);
+  }
+  return false;
+
+}

@@ -42,6 +42,8 @@ struct FloatVect3 velocity_rot_gps;
 #define STEREOCAM2STATE_BUTTER_TAU 0.1
 #endif
 
+float distance_stereo = 2.0f;
+
 
 struct MedianFilterInt medianfilter_x, medianfilter_y;
 
@@ -154,7 +156,7 @@ void stereocam_to_state(void)
   float vel_body_y_butter_filter = vel_body_y_median_filter;
   //  update_butterworth_2_low_pass(&butterfilter_y, vel_body_y_median_filter);
 
-
+  distance_stereo = (float)agl / 10;
   /*  // KALMAN filter
   static float vel_body_x_filter = 0;
   static float vel_body_y_filter = 0;
@@ -216,14 +218,14 @@ void stereocam_to_state(void)
                               0.3f
                              );
 
-/*
-  AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
-                              vel_body_x,
-                              vel_body_y,
-                              0.0f,
-                              0.3f
-                             );
-*/
+  /*
+    AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
+                                vel_body_x,
+                                vel_body_y,
+                                0.0f,
+                                0.3f
+                               );
+  */
 
 
 
@@ -241,7 +243,7 @@ void stereocam_to_state(void)
                                    &vel_z_global_int,
                                    &vel_x_pixelwise_int, &vel_z_pixelwise_int, &vel_body_x, &vel_body_y,
                                    &vel_body_x_butter_filter, &vel_body_y_butter_filter, &velocity_rot_gps.x, &velocity_rot_gps.y,
-                                   &rc_x, &rc_y);
+                                   &rc_x, &rc_y, &distance_stereo);
 
 #endif
 
