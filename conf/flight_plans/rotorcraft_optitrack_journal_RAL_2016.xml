@@ -56,6 +56,7 @@
 		</block>
 		<block name="Go Forward with forcefield">
         <call fun="avoid_wall(0.1f)"/>
+				<while cond="1"/>
     </block>
 		<block name="Go Forward">
         <call fun="guidance_h_set_guided_body_vel(0.3f,0.0f)"/>

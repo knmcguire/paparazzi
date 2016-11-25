@@ -203,7 +203,7 @@ void stereo_force_field(float *vel_body_x, float distance_stereo, float avoid_in
 {
   static const int16_t max_sensor_range = 2.0f;
 
-  int16_t difference_inner_outer = avoid_outer_border - avoid_inner_border;
+  float difference_inner_outer = avoid_outer_border - avoid_inner_border;
 
   // Velocity commands
   float avoid_x_command = *vel_body_x;
@@ -233,9 +233,9 @@ bool avoid_wall(float vel_body_x_command)
 
   if (autopilot_mode == AP_MODE_GUIDED) {
 
-    stereo_force_field(&vel_body_x_command, distance_stereo, 0.60f, 1.0f, 2.0f , 0.0f, 0.3f);
+    stereo_force_field(&vel_body_x_command, distance_stereo, 0.80f, 1.2, 1.8f , 0.0f, 0.3f);
     MoveForward(vel_body_x_command);
   }
-  return false;
+  return true;
 
 }
