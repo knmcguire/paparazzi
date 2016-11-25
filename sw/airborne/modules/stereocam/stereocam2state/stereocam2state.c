@@ -38,6 +38,11 @@ struct FloatVect3 velocity_rot_gps;
 #include "filters/median_filter.h"
 #include "filters/low_pass_filter.h"
 
+#ifndef STEREOCAM2STATE_BUTTER_TAU
+#define STEREOCAM2STATE_BUTTER_TAU 0.1
+#endif
+
+
 struct MedianFilterInt medianfilter_x, medianfilter_y;
 
 static Butterworth2LowPass butterfilter_x, butterfilter_y;
@@ -63,8 +68,8 @@ void stereo_to_state_init(void)
 
   init_median_filter(&medianfilter_x);
   init_median_filter(&medianfilter_y);
-  init_butterworth_2_low_pass(&butterfilter_x, 0.2, 1. / 23, 0.0);
-  init_butterworth_2_low_pass(&butterfilter_y, 0.2, 1. / 23, 0.0);
+  init_butterworth_2_low_pass(&butterfilter_x, STEREOCAM2STATE_BUTTER_TAU, 1. / 23, 0.0);
+  init_butterworth_2_low_pass(&butterfilter_y, STEREOCAM2STATE_BUTTER_TAU, 1. / 23, 0.0);
 
 
 }
@@ -144,10 +149,10 @@ void stereocam_to_state(void)
   float vel_body_x_median_filter = (float)update_median_filter(&medianfilter_x, (int32_t)(vel_body_x * 100)) / 100;
   float vel_body_y_median_filter = (float)update_median_filter(&medianfilter_y, (int32_t)(vel_body_y * 100)) / 100;
 
-  float vel_body_x_butter_filter =
-    update_butterworth_2_low_pass(&butterfilter_x, vel_body_x_median_filter);
-  float vel_body_y_butter_filter =
-    update_butterworth_2_low_pass(&butterfilter_y, vel_body_y_median_filter);
+  float vel_body_x_butter_filter = vel_body_x_median_filter;
+  //  update_butterworth_2_low_pass(&butterfilter_x, vel_body_x_median_filter);
+  float vel_body_y_butter_filter = vel_body_y_median_filter;
+  //  update_butterworth_2_low_pass(&butterfilter_y, vel_body_y_median_filter);
 
 
   /*  // KALMAN filter
