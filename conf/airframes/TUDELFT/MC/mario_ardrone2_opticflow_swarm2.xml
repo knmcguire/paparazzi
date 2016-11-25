@@ -26,8 +26,8 @@
     <module name="gps" type="datalink"/>
     <module name="stabilization" type="int_quat"/>
     <module name="ahrs" type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="FALSE"/>
-      <define name="AHRS_USE_GPS_HEADING" value="TRUE"/>
+      <configure name="USE_MAGNETOMETER" value="TRUE"/>
+      <define name="AHRS_USE_GPS_HEADING" value="FALSE"/>
     </module>
     <module name="ins" type="extended"/>
   </firmware>
@@ -119,12 +119,26 @@
     <define name="ACCEL_Z_NEUTRAL" value="2048"/>
 
     <!-- Magneto calibration -->
-    <define name="MAG_X_NEUTRAL" value="0"/>
+<!--     <define name="MAG_X_NEUTRAL" value="0"/>
     <define name="MAG_Y_NEUTRAL" value="0"/>
     <define name="MAG_Z_NEUTRAL" value="-180"/>
     <define name="MAG_X_SENS" value="16." integer="16"/>
     <define name="MAG_Y_SENS" value="16." integer="16"/>
     <define name="MAG_Z_SENS" value="16." integer="16"/>
+ -->
+<!--  <define name="MAG_X_NEUTRAL" value="15"/>
+<define name="MAG_Y_NEUTRAL" value="30"/>
+<define name="MAG_Z_NEUTRAL" value="-49"/>
+<define name="MAG_X_SENS" value="16.1266651807" integer="16"/>
+<define name="MAG_Y_SENS" value="14.3806753454" integer="16"/>
+<define name="MAG_Z_SENS" value="15.5549116272" integer="16"/> -->
+<define name="MAG_X_NEUTRAL" value="2"/>
+<define name="MAG_Y_NEUTRAL" value="32"/>
+<define name="MAG_Z_NEUTRAL" value="-27"/>
+<define name="MAG_X_SENS" value="15.2145924826" integer="16"/>
+<define name="MAG_Y_SENS" value="15.6841588464" integer="16"/>
+<define name="MAG_Z_SENS" value="16.206004664" integer="16"/>
+
 
     <!-- Magneto current calibration -->
     <define name="MAG_X_CURRENT_COEF" value="0.0"/>
@@ -145,7 +159,7 @@
     <define name="H_Z" value="0.9211303"/>
 
     <!-- Use GPS heading instead of magneto -->
-    <define name="HEADING_UPDATE_GPS_MIN_SPEED" value="0"/>
+    <!-- <define name="HEADING_UPDATE_GPS_MIN_SPEED" value="0"/> -->
  </section>
 
   <section name="INS" prefix="INS_">
