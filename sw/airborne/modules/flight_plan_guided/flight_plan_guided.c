@@ -153,8 +153,6 @@ bool RotateToHeading(float heading)
 
 bool WaitforHeading(float heading)
 {
-  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
-
   guidance_h_set_guided_heading_rate(1.);
   if (fabs(heading - stateGetNedToBodyEulers_f()->psi) < 0.1) {
     guidance_h_set_guided_heading(heading);
@@ -238,4 +236,40 @@ bool avoid_wall(float vel_body_x_command)
   }
   return true;
 
+}
+
+bool change_h_mode(uint8_t mode)
+{
+  guidance_h_mode_changed(mode);
+  return false;
+}
+
+bool RotateToHeading_ATT(float new_heading, float trim_phi, float trim_theta)
+{
+  struct Int32Eulers cmd;
+
+  if (guidance_h.mode == GUIDANCE_H_MODE_ATTITUDE) {
+    cmd.phi = ANGLE_BFP_OF_REAL(trim_phi); //trim?
+    cmd.theta = ANGLE_BFP_OF_REAL(trim_theta);
+    cmd.psi = ANGLE_BFP_OF_REAL(new_heading);
+
+    stabilization_attitude_set_rpy_setpoint_i(&cmd);
+    stabilization_attitude_run(autopilot_in_flight);
+  }
+  return false;
+}
+
+bool ResetAngles_ATT(float current_heading)
+{
+  struct Int32Eulers cmd;
+
+  if (guidance_h.mode == GUIDANCE_H_MODE_ATTITUDE) {
+    cmd.phi = ANGLE_BFP_OF_REAL(0.0f);
+    cmd.theta = ANGLE_BFP_OF_REAL(0.0f);
+    cmd.psi = ANGLE_BFP_OF_REAL(current_heading);
+
+    stabilization_attitude_set_rpy_setpoint_i(&cmd);
+    stabilization_attitude_run(autopilot_in_flight);
+  }
+  return false;
 }

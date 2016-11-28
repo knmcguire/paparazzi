@@ -96,8 +96,11 @@ extern int8_t lost_frames;
 extern float initial_heading;
 
 extern bool WaitUntilMarker(void);
+
+// guided function for RAL journal testing!
 extern bool avoid_wall(float vel_body_x_command);
-
-
+extern bool change_h_mode(uint8_t mode);
+extern bool RotateToHeading_ATT(float new_heading, float trim_phi, float trim_theta);
+extern bool  ResetAngles_ATT(float current_heading);
 
 #endif

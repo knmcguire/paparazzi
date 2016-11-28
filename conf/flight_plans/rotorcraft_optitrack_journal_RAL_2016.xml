@@ -49,20 +49,65 @@
       <call fun="NavResurrect()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
     </block>
-		<block name="Hover">
+
+<!--CLOSED LOOP EXPERIMENT-->
+
+ <!--start block: hover for 2 sec -->
+		<block name="CL Hover">
+		    <call fun="guidance_h_set_guided_body_vel(0.0,0.0)"/>
+        <exception cond="stage_time>2" deroute="CL Go Forward with forcefield"/>
+		</block>
+<!--go forward, with a forcefield to prevent collissons -->
+		<block name="CL Go Forward with forcefield"> 
+        <call fun="avoid_wall(0.2)"/>
+        <exception cond="1.0 > distance_stereo" deroute="CL Hover with forcefield"/> <!-- If obstacle is within 1 meter, go to hover -->
+    </block>
+<!--Hover with a forcefield to prevent collissons -->
+		<block name="CL Hover with forcefield">
+        <call fun="avoid_wall(-0.05)"/>
+        <exception cond="stage_time>2" deroute="CL Turn 60 deg"/> <!-- If 2 seconds are passed, go turn -->
+    </block>
+<!-- turn 60 deg from current heading -->
+    <block name = "CL Turn 60 deg"> 
+				<call fun="RotateToHeading(stateGetNedToBodyEulers_f()->psi + RadOfDeg(60.0))"/>
+        <exception cond="WaitforHeading(stateGetNedToBodyEulers_f()->psi + RadOfDeg(60.0))" deroute="CL Hover and Check obstacle"/> <!--wait until heading is reached, then check for obstacle -->
+ 		</block>
+ <!--check for obstacle -->
+    <block name = "CL Hover and Check obstacle"> 
+        <call fun="avoid_wall(-0.01f)"/>
+        <exception cond="1.0 > distance_stereo" deroute="CL Hover with forcefield"/>  <!-- if still obstacle, go to hover->turn again -->
+        <exception cond="stage_time>2" deroute="CL Go Forward with forcefield"/>			<!-- No obstacle, go forward -->
+ 		</block>
+
+
+<!-- TEST BLOCKS-->
+		<block name="TEST yaw rotation in ATT">
+        <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
+				<call fun="RotateToHeading_ATT(stateGetNedToBodyEulers_f()->psi + RadOfDeg(60), 0.0f,0.0f)"/>
+		    <while cond="WaitforHeading(stateGetNedToBodyEulers_f()->psi + RadOfDeg(60))"/>
+ 				<call fun="ResetAngles_ATT(stateGetNedToBodyEulers_f()->psi + RadOfDeg(60))"/>
+        <call fun="change_h_mode(GUIDANCE_H_MODE_GUIDED)"/>
+       	<call fun="guidance_h_set_guided_body_vel(0.0f,0.0f)"/>
+				<while cond="1"/>
+ 		</block>
+		<block name="TEST Hover">
 		    <call fun="guidance_v_set_guided_z(1)"/>
 		    <call fun="guidance_h_set_guided_body_vel(0.0f,0.0f)"/>
 		    <while cond="1"/>
 		</block>
-		<block name="Go Forward with forcefield">
+		<block name="TEST Go Forward with forcefield">
         <call fun="avoid_wall(0.1f)"/>
 				<while cond="1"/>
     </block>
-		<block name="Go Forward">
+		<block name="TEST Hover with forcefield">
+        <call fun="avoid_wall(0.0f)"/>
+				<while cond="1"/>
+    </block>
+		<block name="TEST Go Forward">
         <call fun="guidance_h_set_guided_body_vel(0.3f,0.0f)"/>
         <!-- exception untill obstacle, derout to hover -->
     </block>
-    <block name = "Turn 60 deg">
+    <block name = "TEST Turn 60 deg">
 				<call fun="guidance_h_set_guided_heading(stateGetNedToBodyEulers_f()->psi + RadOfDeg(60))"/>
     </block>
     <block name="land here" strip_button="Land Here" strip_icon="land-right.png">
