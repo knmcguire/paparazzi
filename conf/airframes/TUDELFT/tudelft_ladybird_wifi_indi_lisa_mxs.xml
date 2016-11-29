@@ -101,10 +101,10 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness -->
-    <define name="G1_P" value="0.039772"/> 
-    <define name="G1_Q" value="0.026695"/>
-    <define name="G1_R" value="0.003243"/>
-    <define name="G2_R" value="0.096054"/>
+    <define name="G1_P" value="0.038174"/> 
+    <define name="G1_Q" value="0.063857"/>
+    <define name="G1_R" value="0.002845"/>
+    <define name="G2_R" value="0.128776"/>
 
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="170.0"/>
@@ -230,10 +230,10 @@
      <configure name="STEREO_BAUD" value="B115200"/>
      <define name="SEND_STEREO" value="FALSE"/>
    </module>
-   <!--module name="stereocam_state2camera">
-     <configure name="STEREO_UART" value="UART2"/>
+   <module name="stereocam_state2camera">
+     <configure name="STEREO_UART" value="UART1"/>
      <configure name="STEREO_BAUD" value="B115200"/>
-   </module-->
+   </module>
    <module name="stereocam_stereocam2state">
 			<define name="STEREOCAM2STATE_BUTTER_TAU" value="0.2"/>
 	 </module>
