@@ -50,6 +50,9 @@
 #define LEGS_HEIGHT 0.2
 #endif
 
+
+float wanted_heading;
+
 #define NOM_FLIGHT_ALT 1.7  // nominal flight altitude
 float nom_flight_alt; // nominal flight altitude
 
@@ -273,3 +276,14 @@ bool ResetAngles_ATT(float current_heading)
   }
   return false;
 }
+
+bool WaitforHeadingCondition(float heading)
+{
+  if (fabs(heading - stateGetNedToBodyEulers_f()->psi) < 0.1) {
+    guidance_h_set_guided_heading(heading);
+    return true;
+  }
+
+  return false;
+}
+
