@@ -56,6 +56,7 @@ float ownVx_old;
 float ownVy_old;
 float trackedVx_old;
 float trackedVy_old;
+float height_other;
 
 struct FloatVect3 vel_body;   // body frame velocity from sensors
 
@@ -81,9 +82,9 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		ekf_filter_new(&ekf[nf]); // Initialize an ekf filter for each target tracker
 
 		// Set up the Q and R matrices and all the rest.
-		fmat_scal_mult(9,9, ekf[nf].Q, pow(0.5,2), ekf[nf].Q);
-		fmat_scal_mult(8,8, ekf[nf].R, pow(0.2,2), ekf[nf].R);
-		ekf[nf].Q[0]   = 0.01;
+		fmat_scal_mult(9,9, ekf[nf].Q, pow(SPEEDNOISE,2.0), ekf[nf].Q);
+		fmat_scal_mult(8,8, ekf[nf].R, pow(SPEEDNOISE,2.0), ekf[nf].R);
+		ekf[nf].Q[0]   = 0.01; // Reccomended 0.01 when flying with optitrack, but 0.1 when flying autonomously indoors
 		ekf[nf].Q[9+1] = 0.01;
 		ekf[nf].R[0]   = pow(RSSINOISE,2.0);
 		ekf[nf].X[0]   = 1.0; // Initial positions cannot be zero or else you'll divide by zero
@@ -100,40 +101,43 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 
 		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
 		{
+			// Make sure no value is NaN or it will mess up the EKF
+			// if ((isnan(acInfoGetGspeed(ac_id))) || (isnan(acInfoGetCourse(ac_id))) || (isnan(stateGetSpeedNed_f()->x)) || (isnan(stateGetSpeedNed_f()->y))) {
+			// 	return;
+			// }
+
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
 			now_ts[i] = get_sys_time_usec();
 			
 			// Get the aircraft info for that ID
-			float angle, trackedVx, trackedVy;
-			deg2rad   (acInfoGetCourse(ac_id)/10.0, &angle); // decidegrees
-			polar2cart(acInfoGetGspeed(ac_id)/100.0, angle, &trackedVx, &trackedVy); // get x and y velocities (cm/s)
+			float trackedVx, trackedVy;
+			polar2cart(acInfoGetGspeed(ac_id), acInfoGetCourse(ac_id), &trackedVx, &trackedVy); // get x and y velocities (m/s)
 			
 			// Bind received values in case of errors
-			float ownVx = vel_body.x; //From optical flow
-			float ownVy = vel_body.y;
+			float ownVx = stateGetSpeedEnu_f()->y; //vel_body.x; //From optical flow
+			float ownVy = stateGetSpeedEnu_f()->x; //vel_body.y;
 			
 			// Bind velocitiesto a known maximum to avoid occasional errors
 			keepbounded(&ownVx,-2.0,2.0);
 			keepbounded(&ownVy,-2.0,2.0);
 			keepbounded(&trackedVx,-2.0,2.0);
 			keepbounded(&trackedVy,-2.0,2.0);
-			
-			// See UtmCoor for north pos in z
-				// UtmCoor_f *posutm = 
 
 			// Construct measurement vector for EKF using the latest data obtained for each case
 			float Y[8];
 			Y[0] = (float)rssi;// + rand_normal(0.0, 5.0); // Bluetooth RSSI measurement
 			//Y[1] = stateGetSpeedNed_f()->x + rand_normal(0.0, 0.2); // next three are updated in the periodic function
 			//Y[2] = stateGetSpeedNed_f()->y + rand_normal(0.0, 0.2);
-			Y[1] = ownVx;
+			Y[1] = ownVx; //(already in earth frame)
 			Y[2] = ownVy;
 			Y[3] = 0.0; //stateGetNedToBodyEulers_f()->psi; // get own body orientation
-			Y[4] = trackedVx;  //Velocity tracked from other drone
+			Y[4] = trackedVx;  //Velocity tracked from other drone (already in earth frame!!)
 			Y[5] = trackedVy;	
 			Y[6] = 0.0;        //other drone heading towards north (hardcoded to be 0)
-			Y[7] = (-(float)acInfoGetPositionUtm_f(ac_id)->alt/1000.0) - (stateGetPositionNed_f()->z) + rand_normal(0.0, 0.2); //utm.alt is in mm above 0
+			Y[7] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z;
+
+			// Y[7] = (-acInfoGetPositionUtm_f(ac_id)->alt/1000.0) - (stateGetPositionEnu_f()->z); //utm.alt is in mm above 0
 			
 			// Run the steps of the EKF
 			ekf_filter_predict(&ekf[i], &model[i]);
@@ -165,13 +169,6 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
                        float x, float y, float z,
                        float noise __attribute__((unused)))
 {
-	//TODO make more generic
-	// static float vel_body_x_buf[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
-	// static float vel_body_y_buf[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
-
-	// vel_body.x = movingaveragefilter(vel_body_x_buf, 12, x);
-	// vel_body.y = movingaveragefilter(vel_body_y_buf, 12, y);
-
     vel_body.x = x;
 	vel_body.y = y;
 }
@@ -183,6 +180,7 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	// Store the relative localization data
 	uint8_t i;
 
+	// TODO: MAKE THIS SWITCHING NOT LAZY BUT PROPER FOR UNLIMITED MAVS
 	if (nf == 2) {
 		if (alternate) {
 			alternate = false;
@@ -201,17 +199,18 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&IDarray[i],			     // ID or filtered aircraft number
 		&RSSIarray[i], 		    	 // Received ID and RSSI
 		&srcstrength[i],		     // Source strength
-		//&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
-		//&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
-		&stateGetPositionNed_f()->x, &stateGetPositionNed_f()->y, // (test) posx and posy in cyberzoo
-		&stateGetSpeedNed_f()->x, &stateGetSpeedNed_f()->y, // (test) posx and posy in cyberzoo
-		&vel_body.x, &vel_body.y, // (test) opticflow speed
-		// &ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
-		&stateGetNedToBodyEulers_f()->psi, // (test) own orientation
-		//&ekf[i].X[6],  // Orientation own with respecet to north
+		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
+		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
+		// &stateGetPositionNed_f()->x, &stateGetPositionNed_f()->y, // (test) posx and posy in cyberzoo
+		// &stateGetSpeedNed_f()->x, &stateGetSpeedNed_f()->y, // (test) posx and posy in cyberzoo
+		// &vel_body.x, &vel_body.y, // (test) opticflow speed
+		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
+		// &stateGetNedToBodyEulers_f()->psi, // (test) own orientation
+		&ekf[i].X[6],  // Orientation own with respecet to north
 		&ekf[i].X[7],  // Orientation other with respect to north
-		&stateGetPositionNed_f()->z, // (test) height values
-		// &ekf[i].X[8],  // Height separation
+		// &stateGetPositionNed_f()->z, // (test) height values
+		&ekf[i].X[8],  // Height separation
+		// &stateGetPositionEnu_f()->z,
 		&vx_des, &vy_des);		     // Commanded velocities
 };
 
@@ -251,20 +250,16 @@ void relativeavoidancefilter_periodic(void)
 	/*********************************************
 		Sending speed directly between drones
 	*********************************************/
-	//float velx = stateGetSpeedNed_f()->x;
-	//float vely = stateGetSpeedNed_f()->y;
-	float velx = vel_body.x;
-	float vely = vel_body.y;
+	float velx = stateGetSpeedEnu_f()->y;
+	float vely = stateGetSpeedEnu_f()->x;
+	// float velx = vel_body.x;
+	// float vely = vel_body.y;
 		
-	float spd, crs_vel_body, crs_bodyaxis;
-	crs_bodyaxis = stateGetNedToBodyEulers_f()->psi;
+	float spd, crs_vel_body;
 	
 	// Convert Course to the proper format
 	cart2polar(velx, vely, &spd, &crs_vel_body); 	// Get the total speed and course
 	wrapTo2Pi(&crs_vel_body); 					    // Wrap to 2 Pi since the sent result is unsigned
-	wrapTo2Pi(&crs_bodyaxis); 					    // Wrap to 2 Pi since the sent result is unsigned
-	float crs_vel_earth = - crs_vel_body + crs_bodyaxis;
-	wrapTo2Pi(&crs_vel_earth); 					    // Wrap to 2 Pi since the sent result is unsigned
 
 	int32_t course = (int32_t)(crs_vel_body*(1e7)); // Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
 	// int32_t course = (int32_t)(crs*(1e7)); 	// Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
@@ -274,11 +269,14 @@ void relativeavoidancefilter_periodic(void)
 	multiplex_speed |= (((uint32_t)(spd*100)) & 0x7FF) << 10;         // bits 20-10 speed in cm/s
 	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);        // bits 9-0 z velocity in cm/s
 
-	int16_t alt = (int16_t)(gps.hmsl / 10); 						  // height in dm
+	/* from gps.h
+		 gps.hmsl = int32_t hmsl;                  ///< height above mean sea level (MSL) in mm
+	*/
+	// int16_t alt = (int16_t)(gps.hmsl / 10); 					  // height in cm
+	int16_t alt = (int16_t)(stateGetPositionEnu_f()->z*100.0);
 
 	DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat,
                           &gps.lla_pos.lon, &alt);                    // Messages throught USB bluetooth dongle to other drones
-
 
 	/*********************************************
 		Relative Avoidance Behavior
@@ -288,20 +286,21 @@ void relativeavoidancefilter_periodic(void)
 		float cc[nf][6];
 
 		// Pos in X and Y just for arena border detection!
-		float posx = stateGetPositionNed_f()->x; 
-		float posy = stateGetPositionNed_f()->y;
+		float posx = stateGetPositionEnu_f()->y; 
+		float posy = stateGetPositionEnu_f()->x;
 
 		bool flagglobal = false; 	// Null assumption
-		bool wallgettingcloser = false; // Null assumption
+		// bool wallgettingcloser = false; // Null assumption
 
 		// Wall detection algorithm
-		if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
-			wallgettingcloser = true;
-		}
-		magprev = sqrt(pow(posx,2) + pow(posy,2));
+		// if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
+		// 	wallgettingcloser = true;
+		// }
+		// magprev = sqrt(pow(posx,2) + pow(posy,2));
 
 		// Change direction to avoid wall
-		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wallgettingcloser) {
+		// if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wallgettingcloser) {
+		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) ) {
 			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
 			cart2polar(-posx,-posy, &v_des, &psi_des);
 			v_des = V_NOMINAL;
@@ -334,7 +333,7 @@ void relativeavoidancefilter_periodic(void)
 		// autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);  	//send to guided mode
 		guidance_h_set_guided_vel(vx_des,vy_des);
 		guidance_v_set_guided_z(-1.0);
-		guidance_h_set_guided_heading(0.0);
+		// guidance_h_set_guided_heading(0.0);
 
 	}
 

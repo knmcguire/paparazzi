@@ -26,17 +26,18 @@
     <module name="gps" type="datalink"/>
     <module name="stabilization" type="int_quat"/>
     <module name="ahrs" type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="TRUE"/>
-      <define name="AHRS_USE_GPS_HEADING" value="FALSE"/>
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
+      <configure name="AHRS_USE_GPS_HEADING" value="FALSE"/>
+      <configure name="AHRS_PROPAGATE_LOW_PASS_RATES" value="TRUE"/>
     </module>
     <module name="ins" type="extended"/>
   </firmware>
 
  <section name="RELATIVEAVOIDANCEFILTER" prefix="">
   <define name="MAVSIZE" value="0.6"/> <!-- Size of collision cone (= 1.0 + 2*radius)-->
-  <define name="ASIDE" value="2.0"/> <!-- Size of arena -->
+  <define name="ASIDE" value="1.5"/> <!-- Size of arena -->
   <define name="RSSINOISE" value="5.0"/> <!-- (Expected) Noise on RSSI -->
-  <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements -->
+  <define name="SPEEDNOISE" value="0.5"/> <!-- (Expected) Noise on other measurements -->
   <define name="V_NOMINAL" value="0.5"/> <!-- Desired nominal velocity -->
  </section>
 
@@ -124,20 +125,14 @@
     <define name="MAG_Z_NEUTRAL" value="-180"/>
     <define name="MAG_X_SENS" value="16." integer="16"/>
     <define name="MAG_Y_SENS" value="16." integer="16"/>
-    <define name="MAG_Z_SENS" value="16." integer="16"/>
- -->
-<!--  <define name="MAG_X_NEUTRAL" value="15"/>
-<define name="MAG_Y_NEUTRAL" value="30"/>
-<define name="MAG_Z_NEUTRAL" value="-49"/>
-<define name="MAG_X_SENS" value="16.1266651807" integer="16"/>
-<define name="MAG_Y_SENS" value="14.3806753454" integer="16"/>
-<define name="MAG_Z_SENS" value="15.5549116272" integer="16"/> -->
-<define name="MAG_X_NEUTRAL" value="2"/>
-<define name="MAG_Y_NEUTRAL" value="32"/>
-<define name="MAG_Z_NEUTRAL" value="-27"/>
-<define name="MAG_X_SENS" value="15.2145924826" integer="16"/>
-<define name="MAG_Y_SENS" value="15.6841588464" integer="16"/>
-<define name="MAG_Z_SENS" value="16.206004664" integer="16"/>
+    <define name="MAG_Z_SENS" value="16." integer="16"/> -->
+
+<define name="MAG_X_NEUTRAL" value="3"/>
+<define name="MAG_Y_NEUTRAL" value="-15"/>
+<define name="MAG_Z_NEUTRAL" value="-39"/>
+<define name="MAG_X_SENS" value="12.1098175484" integer="16"/>
+<define name="MAG_Y_SENS" value="11.9508975917" integer="16"/>
+<define name="MAG_Z_SENS" value="12.6085474184" integer="16"/>
 
 
     <!-- Magneto current calibration -->

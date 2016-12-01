@@ -56,7 +56,8 @@ void traffic_info_init(void)
   ti_acs[ti_acs_id[AC_ID]].ac_id = AC_ID;
   ti_acs_idx = 2;
 
-  geoid_height = NAV_MSL0;
+  // geoid_height = NAV_MSL0;
+  geoid_height=0.0;//NAV_ALT0; /* added this because to avoid offset when gps is not available */
 }
 
 /**
@@ -67,10 +68,13 @@ static void update_geoid_height(void) {
   if(bit_is_set(gps.valid_fields, GPS_VALID_HMSL_BIT) && bit_is_set(gps.valid_fields, GPS_VALID_POS_LLA_BIT))
   {
     geoid_height = gps.lla_pos.alt - gps.hmsl;
+
   } else if(bit_is_set(gps.valid_fields, GPS_VALID_POS_LLA_BIT))
   {
     geoid_height = wgs84_ellipsoid_to_geoid_i(gps.lla_pos.lat, gps.lla_pos.lon);
   } /* default is just keep last available height */
+    geoid_height = 0.0;
+    
 }
 
 bool parse_acinfo_dl(void)
