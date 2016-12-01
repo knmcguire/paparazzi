@@ -50,6 +50,7 @@
 #define LEGS_HEIGHT 0.2
 #endif
 
+int32_t counter = 0;
 
 float wanted_heading;
 
@@ -279,11 +280,41 @@ bool ResetAngles_ATT(float current_heading)
 
 bool WaitforHeadingCondition(float heading)
 {
-  if (fabs(heading - stateGetNedToBodyEulers_f()->psi) < 0.1) {
-    guidance_h_set_guided_heading(heading);
-    return true;
+  if (fabs(heading - stateGetNedToBodyEulers_f()->psi) < 0.2) {
+    return false;
   }
 
-  return false;
+  return true;
+}
+
+bool wait_for_mode(uint8_t mode)
+{
+	  if (guidance_h.mode == mode) {
+		  return false;
+	  }
+
+	  return true;
+
+
+}
+
+bool reset_counter()
+{
+	counter = 0;
+	  return false;
+
+}
+
+
+bool wait_counter(int32_t end_counter)
+{
+	counter++;
+	  if (counter>end_counter) {
+		  return false;
+	  }
+
+	  return true;
+
+
 }
 

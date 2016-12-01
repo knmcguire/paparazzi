@@ -105,4 +105,8 @@ extern bool change_h_mode(uint8_t mode);
 extern bool RotateToHeading_ATT(float new_heading, float trim_phi, float trim_theta);
 extern bool  ResetAngles_ATT(float current_heading);
 extern bool WaitforHeadingCondition(float heading);
+extern bool wait_for_mode(uint8_t mode);
+extern bool reset_counter(void);
+extern bool wait_counter(int32_t end_counter);
+
 #endif

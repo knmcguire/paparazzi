@@ -101,8 +101,8 @@ void stereocam_to_state(void)
   int16_t flow_y = (int16_t)stereocam_data.data[6] << 8;
   flow_y |= (int16_t)stereocam_data.data[7];
 
+  uint8_t agl = stereocam_data.data[8]; // in cm
   float fps = (float)stereocam_data.data[9];
-  int8_t agl = stereocam_data.data[8]; // in cm
 
   // velocity global
   int16_t vel_x_global_int = (int16_t)stereocam_data.data[10] << 8;
@@ -156,7 +156,7 @@ void stereocam_to_state(void)
   float vel_body_y_butter_filter = vel_body_y_median_filter;
   //  update_butterworth_2_low_pass(&butterfilter_y, vel_body_y_median_filter);
 
-  distance_stereo = (float)agl / 10;
+  distance_stereo = (float)agl /10;
   /*  // KALMAN filter
   static float vel_body_x_filter = 0;
   static float vel_body_y_filter = 0;
@@ -239,11 +239,20 @@ void stereocam_to_state(void)
   int64_t rc_y = radio_control.values[RADIO_ROLL];
 
   //TODO add body rotated optitrackc measurements here
+
+  static int32_t downlink_counter =0 ;
+  if (downlink_counter >5)
+  {
   DOWNLINK_SEND_EDGEFLOW_STEREOCAM(DefaultChannel, DefaultDevice, &now_ts, &vel_x_global_int, &vel_y_global_int,
                                    &vel_z_global_int,
                                    &vel_x_pixelwise_int, &vel_z_pixelwise_int, &vel_body_x, &vel_body_y,
                                    &vel_body_x_butter_filter, &vel_body_y_butter_filter, &velocity_rot_gps.x, &velocity_rot_gps.y,
                                    &rc_x, &rc_y, &distance_stereo);
+  downlink_counter=0;
+  }else
+  {
+	  downlink_counter++;
+  }
 
 #endif
 
