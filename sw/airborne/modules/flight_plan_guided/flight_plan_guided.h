@@ -108,5 +108,6 @@ extern bool WaitforHeadingCondition(float heading);
 extern bool wait_for_mode(uint8_t mode);
 extern bool reset_counter(void);
 extern bool wait_counter(int32_t end_counter);
+extern bool change_v_mode(uint8_t mode);
 
 #endif

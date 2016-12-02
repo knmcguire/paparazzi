@@ -235,7 +235,7 @@ bool avoid_wall(float vel_body_x_command)
 
   if (autopilot_mode == AP_MODE_GUIDED) {
 
-    stereo_force_field(&vel_body_x_command, distance_stereo, 0.80f, 1.2, 1.8f , 0.0f, 0.3f);
+    stereo_force_field(&vel_body_x_command, distance_stereo, 0.80f, 1.2, 5.0f , 0.0f, 0.3f);
     MoveForward(vel_body_x_command);
   }
   return true;
@@ -247,6 +247,13 @@ bool change_h_mode(uint8_t mode)
   guidance_h_mode_changed(mode);
   return false;
 }
+
+bool change_v_mode(uint8_t mode)
+{
+  guidance_v_mode_changed(mode);
+  return false;
+}
+
 
 bool RotateToHeading_ATT(float new_heading, float trim_phi, float trim_theta)
 {
@@ -266,7 +273,6 @@ bool RotateToHeading_ATT(float new_heading, float trim_phi, float trim_theta)
 bool ResetAngles_ATT(float current_heading)
 {
   struct Int32Eulers cmd;
-
   if (guidance_h.mode == GUIDANCE_H_MODE_ATTITUDE) {
     cmd.phi = ANGLE_BFP_OF_REAL(0.0f);
     cmd.theta = ANGLE_BFP_OF_REAL(0.0f);

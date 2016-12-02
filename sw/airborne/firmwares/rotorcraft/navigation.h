@@ -34,7 +34,7 @@
 #include "subsystems/navigation/waypoints.h"
 #include "subsystems/navigation/common_flight_plan.h"
 
-#define NAV_FREQ 16
+#define NAV_FREQ 25
 
 extern struct EnuCoor_i navigation_target;
 extern struct EnuCoor_i navigation_carrot;

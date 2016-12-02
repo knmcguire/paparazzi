@@ -45,7 +45,7 @@ struct FloatVect3 velocity_rot_gps;
 float distance_stereo = 2.0f;
 
 
-struct MedianFilterInt medianfilter_x, medianfilter_y;
+struct MedianFilterInt medianfilter_x, medianfilter_y, medianfilter_dist;
 
 static Butterworth2LowPass butterfilter_x, butterfilter_y;
 
@@ -70,6 +70,7 @@ void stereo_to_state_init(void)
 
   init_median_filter(&medianfilter_x);
   init_median_filter(&medianfilter_y);
+  init_median_filter(&medianfilter_dist);
   init_butterworth_2_low_pass(&butterfilter_x, STEREOCAM2STATE_BUTTER_TAU, 1. / 23, 0.0);
   init_butterworth_2_low_pass(&butterfilter_y, STEREOCAM2STATE_BUTTER_TAU, 1. / 23, 0.0);
 
@@ -156,7 +157,7 @@ void stereocam_to_state(void)
   float vel_body_y_butter_filter = vel_body_y_median_filter;
   //  update_butterworth_2_low_pass(&butterfilter_y, vel_body_y_median_filter);
 
-  distance_stereo = (float)agl /10;
+  distance_stereo = (float)update_median_filter(&medianfilter_dist, (int32_t)(agl)) / 10; ;
   /*  // KALMAN filter
   static float vel_body_x_filter = 0;
   static float vel_body_y_filter = 0;
