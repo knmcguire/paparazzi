@@ -37,7 +37,7 @@
   <define name="MAVSIZE" value="0.6"/> <!-- Size of collision cone (= 1.0 + 2*radius)-->
   <define name="ASIDE" value="1.5"/> <!-- Size of arena -->
   <define name="RSSINOISE" value="5.0"/> <!-- (Expected) Noise on RSSI -->
-  <define name="SPEEDNOISE" value="0.5"/> <!-- (Expected) Noise on other measurements -->
+  <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements -->
   <define name="V_NOMINAL" value="0.5"/> <!-- Desired nominal velocity -->
  </section>
 
