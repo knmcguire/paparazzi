@@ -27,7 +27,7 @@
 #include "subsystems/datalink/telemetry.h"
 #include "modules/multi/traffic_info.h"
 
-#define PSISEARCH 15.0 		// Search grid for psi_des
+#define CRSSEARCH 15.0 		// Search grid for crs_des
 #define NUAVS 5				// Maximum expected number of drones
 #define MAF_SIZE_POS 1  	// Moving Average Filter size; 1 = No filter
 #define MAF_SIZE_VEL 1  	// Moving Average Filter size; 1 = No filter
@@ -43,7 +43,7 @@ int8_t srcstrength[NUAVS-1];// Source strength
 uint32_t now_ts[NUAVS-1]; 	// Time of last received message from each MAV
 
 int nf; 					// Number of filters registered
-float psi_des, v_des; 		// psi_des = desired course w.r.t. north, v_des = magnitude of velocity
+float crs_des, v_des; 		// crs_des = desired course w.r.t. north, v_des = magnitude of velocity
 float vx_des, vy_des;		// Desired velocities in NED frame
 float RSSIarray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
 float magprev;				// Previous magnitude from 0,0 (for simulated wall detection)
@@ -67,28 +67,37 @@ static void vel_est_cb(uint8_t sender_id, uint32_t stamp, float x, float y, floa
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
 	uint8_t ac_id, int8_t source_strength, int8_t rssi)
 {
-	int i= -1; // Initialize index
-	printf("message received with rssi %d for drone %d number %d \n", rssi, ac_id, i);
+	int i= -1; // Initialize index (null assumption, no drone is present)
+
 	// If it's a new ID we start a new EKF for it
 	// TODO: aircraft ID are now hard coded here, make it more general (set in airframe file?)
+	// The hardcoding was done to make sure that no other bluetooth devices or drone accidentally interfere with testing
 	if ((!array_find_int(NUAVS-1, IDarray, ac_id, &i)) && (nf < NUAVS-1) && ( (ac_id== 200) || (ac_id == 201) || (ac_id == 202) ) )
-	{ //check if a new aircraft ID is present, continue
-		IDarray[nf] = ac_id;
-		srcstrength[nf] = source_strength;
-		ekf_filter_new(&ekf[nf]); // Initialize an ekf filter for each target tracker
+	{ // Check if a new aircraft ID is present, continue
+		IDarray[nf] = ac_id; 				// Store ID
+		srcstrength[nf] = source_strength;  // Store source strength
+		ekf_filter_new(&ekf[nf]); 			// Initialize an ekf filter for each target tracker
 
 		// Set up the Q and R matrices and all the rest.
-		fmat_scal_mult(9,9, ekf[nf].Q, pow(SPEEDNOISE,2.0), ekf[nf].Q);
+		fmat_scal_mult(9,9, ekf[nf].Q, pow(0.5,2.0), ekf[nf].Q);
 		fmat_scal_mult(8,8, ekf[nf].R, pow(SPEEDNOISE,2.0), ekf[nf].R);
 		ekf[nf].Q[0]   = 0.01; // Reccomended 0.01 to give this process a high level of trust
 		ekf[nf].Q[9+1] = 0.01;
 		ekf[nf].R[0]   = pow(RSSINOISE,2.0);
 		ekf[nf].X[0]   = 1.0; // Initial positions cannot be zero or else you'll divide by zero
 		ekf[nf].X[1]   = 1.0;
-		ekf[nf].dt     = 0.2; // Initial assumption (STDMA code runs at 5Hz)
-		model[nf].Pn   = -63.0 - 8.0 + (float)source_strength; // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
-		model[nf].gammal = 2.0;
-		nf++;
+
+		// If not sending the orientation but only NED velocity, then orientation noises may be set to 0
+		// TODO: Maybe remove this idea altogether and just make it based on ned only all the time?
+		ekf[nf].Q[9*6+6] = 0.01;
+		ekf[nf].Q[9*7+7] = 0.01;
+		ekf[nf].R[8*3+3] = 0.01;
+		ekf[nf].R[8*6+6] = 0.01;
+
+		ekf[nf].dt     = 0.2; 								    // Initial assumption (STDMA code runs at 5Hz)
+		model[nf].Pn   = -63.0 - 8.0 + (float)source_strength;  // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
+		model[nf].gammal = 2.0;									// Assuming free space loss
+		nf++; // Number of filter is present is increased!
 	}
 
 	// If we do recognize the ID, then we can update the measurement message data
@@ -109,7 +118,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			float ownVx = stateGetSpeedEnu_f()->y; //vel_body.x; //From optical flow
 			float ownVy = stateGetSpeedEnu_f()->x; //vel_body.y;
 			
-			// Bind velocities to a known maximum to avoid occasional errors
+			// Bind velocities to a known maximum to avoid occasional NaN or inf errors
 			keepbounded(&ownVx,-2.0,2.0);
 			keepbounded(&ownVy,-2.0,2.0);
 			keepbounded(&trackedVx,-2.0,2.0);
@@ -199,9 +208,9 @@ void relativeavoidancefilter_init(void)
 	randomgen_init();    	// Initialize the random generator (for simulation purposes)
 	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
 	
-	alternate = 0;
+	alternate = 0;			// Logging variable
 	nf 		  = 0; 		   	// Number of active filters
-	psi_des   = 0.0;	   	// Initialize
+	crs_des   = 0.0;	   	// Initialize
 	v_des     = V_NOMINAL; 	// Initial desired velocity
 	magprev   = 3.0; 	   	// Just a random high value
 
@@ -230,20 +239,12 @@ void relativeavoidancefilter_periodic(void)
 	/*********************************************
 		Sending speed directly between drones
 	*********************************************/
-	float velx = stateGetSpeedEnu_f()->y;
-	float vely = stateGetSpeedEnu_f()->x;
-	// float velx = vel_body.x;
-	// float vely = vel_body.y;
-		
-	float spd, crs_vel_body;
-	
-	// Convert Course to the proper format
-	cart2polar(velx, vely, &spd, &crs_vel_body); 	// Get the total speed and course
-	wrapTo2Pi(&crs_vel_body); 					    // Wrap to 2 Pi since the sent result is unsigned
+	// Convert Course to the proper format (NED)
+	float spd, crs;
+	cart2polar(stateGetSpeedEnu_f()->y, stateGetSpeedEnu_f()->x, &spd, &crs); // Get the total speed and course
+	wrapTo2Pi(&crs); 					    								  // Wrap to 2 Pi since the sent result is unsigned
 
-	int32_t course = (int32_t)(crs_vel_body*(1e7)); // Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
-	// int32_t course = (int32_t)(crs*(1e7)); 	// Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
-
+	int32_t course = (int32_t)(crs*(1e7)); // Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
 	uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(course) / 1e7) / 2)) & 0x7FF) <<
 	                        21; 									  // bits 31-21 course (where the magnitude is pointed at)
 	multiplex_speed |= (((uint32_t)(spd*100)) & 0x7FF) << 10;         // bits 20-10 speed in cm/s
@@ -266,24 +267,23 @@ void relativeavoidancefilter_periodic(void)
 		float posx = stateGetPositionEnu_f()->y; 
 		float posy = stateGetPositionEnu_f()->x;
 
-		bool collision_imminent = false; 	// Null assumption
-		bool wallgettingcloser = false; // Null assumption
+		bool collision_imminent = false; // Null assumption
+		bool wall_imminent = false;  // Null assumption
 
 		// Wall detection algorithm
 		if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
-			wallgettingcloser = true;
+			wall_imminent = true;
 		}
 		magprev = sqrt(pow(posx,2) + pow(posy,2));
 
 		// Change direction to avoid wall
-		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wallgettingcloser) {
-		// if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) ) {
+		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wall_imminent) {
 			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
-			cart2polar(-posx,-posy, &v_des, &psi_des);
+			cart2polar(-posx,-posy, &v_des, &crs_des);
 			v_des = V_NOMINAL;
 		}
 		else {
-			polar2cart(v_des, psi_des, &vx_des, &vy_des); // vx_des & vy_des = desired velocity
+			polar2cart(v_des, crs_des, &vx_des, &vy_des); // vx_des & vy_des = desired velocity
 			uint8_t i;
 			for ( i = 0; i < nf; i++ ) { // nf is amount of filters running
 				float dist = sqrt(pow(ekf[i].X[0],2) + pow(ekf[i].X[1],2));
@@ -299,12 +299,11 @@ void relativeavoidancefilter_periodic(void)
 	
 			if (collision_imminent) { 		// If the desired velocity doesn't work, then let's find the next best thing according to VO
 				v_des = V_NOMINAL;
-				collisioncone_findnewcmd(cc, &v_des, &psi_des, PSISEARCH, nf); // Go 15 degrees clockwise until save direction in found
-			}
-			
+				collisioncone_findnewcmd(cc, &v_des, &crs_des, CRSSEARCH, nf); // Go 15 degrees clockwise until save direction in found
+			}	
 		}
 
-		polar2cart(v_des, psi_des, &vx_des, &vy_des);  		// new desired speed
+		polar2cart(v_des, crs_des, &vx_des, &vy_des);  		// new desired speed
 		/* Optitrack Guided commands */
 		// autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);  	//send to guided mode -- use this if flying with optitrack
 		/* Opticflow Guided commands */
