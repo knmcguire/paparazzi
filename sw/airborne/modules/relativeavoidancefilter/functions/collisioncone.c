@@ -88,7 +88,7 @@ void collisioncone_findnewcmd( float cc[2][6],
 	float psi0 = *psi_des;
 	float vx, vy;
 
-	while (*v_des <= 2.0) {
+	while (*v_des <= 1.0) {
 		polar2cart(*v_des, *psi_des, &vx, &vy);
 
 		for (i = 0; i < nfilters; i++) { // Check if we succeed

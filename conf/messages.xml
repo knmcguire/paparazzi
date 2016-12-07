@@ -2220,8 +2220,6 @@
     <field name="vy_own"        type="float"    unit="m/s"/>
     <field name="vx_tracked"    type="float"    unit="m/s"/>
     <field name="vy_tracked"    type="float"    unit="m/s"/>
-    <field name="psi_own"       type="float"    unit="rad"/>
-    <field name="psi_tracked"   type="float"    unit="rad"/>
     <field name="z_pos"         type="float"    unit="m"/>
     <field name="vx_des"        type="float"    unit="m/s"/>
     <field name="vy_des"        type="float"    unit="m/s"/>

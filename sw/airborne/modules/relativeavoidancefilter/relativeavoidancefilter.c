@@ -29,8 +29,8 @@
 
 #define CRSSEARCH 15.0 		// Search grid for crs_des
 #define NUAVS 5				// Maximum expected number of drones
-#define MAF_SIZE_POS 1  	// Moving Average Filter size; 1 = No filter
-#define MAF_SIZE_VEL 1  	// Moving Average Filter size; 1 = No filter
+#define MAF_SIZE_POS 3  	// Moving Average Filter size; 1 = No filter
+#define MAF_SIZE_VEL 3  	// Moving Average Filter size; 1 = No filter
 
 #ifndef INS_INT_VEL_ID
 #define INS_INT_VEL_ID ABI_BROADCAST
@@ -79,21 +79,16 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		ekf_filter_new(&ekf[nf]); 			// Initialize an ekf filter for each target tracker
 
 		// Set up the Q and R matrices and all the rest.
-		fmat_scal_mult(9,9, ekf[nf].Q, pow(0.5,2.0), ekf[nf].Q);
-		fmat_scal_mult(8,8, ekf[nf].R, pow(SPEEDNOISE,2.0), ekf[nf].R);
-		ekf[nf].Q[0]   = 0.01; // Reccomended 0.01 to give this process a high level of trust
-		ekf[nf].Q[9+1] = 0.01;
+		fmat_scal_mult(EKF_N,EKF_N, ekf[nf].Q, pow(SPEEDNOISE,2.0), ekf[nf].Q);
+		fmat_scal_mult(EKF_M,EKF_M, ekf[nf].R, pow(SPEEDNOISE,2.0), ekf[nf].R);
+		ekf[nf].Q[0]   	   = 0.01; // Reccomended 0.01 to give this process a high level of trust
+		ekf[nf].Q[EKF_N+1] = 0.01;
 		ekf[nf].R[0]   = pow(RSSINOISE,2.0);
 		ekf[nf].X[0]   = 1.0; // Initial positions cannot be zero or else you'll divide by zero
 		ekf[nf].X[1]   = 1.0;
 
 		// If not sending the orientation but only NED velocity, then orientation noises may be set to 0
 		// TODO: Maybe remove this idea altogether and just make it based on ned only all the time?
-		ekf[nf].Q[9*6+6] = 0.01;
-		ekf[nf].Q[9*7+7] = 0.01;
-		ekf[nf].R[8*3+3] = 0.01;
-		ekf[nf].R[8*6+6] = 0.01;
-
 		ekf[nf].dt     = 0.2; 								    // Initial assumption (STDMA code runs at 5Hz)
 		model[nf].Pn   = -63.0 - 8.0 + (float)source_strength;  // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
 		model[nf].gammal = 2.0;									// Assuming free space loss
@@ -125,15 +120,13 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			keepbounded(&trackedVy,-2.0,2.0);
 
 			// Construct measurement vector for EKF using the latest data obtained for each case
-			float Y[8];
+			float Y[EKF_M];
 			Y[0] = (float)rssi;// + rand_normal(0.0, 5.0); // Bluetooth RSSI measurement
 			Y[1] = ownVx; //(already in earth frame)
 			Y[2] = ownVy;
-			Y[3] = 0.0; //stateGetNedToBodyEulers_f()->psi; // get own body orientation (no need because velocity is already in north)
-			Y[4] = trackedVx;  //Velocity tracked from other drone (already in earth frame!!)
-			Y[5] = trackedVy;	
-			Y[6] = 0.0;        //other drone heading towards north (hardcoded to be 0)
-			Y[7] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z;
+			Y[3] = trackedVx;  //Velocity tracked from other drone (already in earth frame!!)
+			Y[4] = trackedVy;
+			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z;
 			
 			// Run the steps of the EKF
 			ekf_filter_predict(&ekf[i], &model[i]);
@@ -197,9 +190,7 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
-		&ekf[i].X[6],  // Orientation own with respecet to north
-		&ekf[i].X[7],  // Orientation other with respect to north
-		&ekf[i].X[8],  // Height separation
+		&ekf[i].X[6],  				 // Height separation
 		&vx_des, &vy_des);		     // Commanded velocities
 };
 
@@ -251,15 +242,14 @@ void relativeavoidancefilter_periodic(void)
 	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);        // bits 9-0 z velocity in cm/s
 
 	// int16_t alt = (int16_t)(gps.hmsl / 10); 					  // height in cm
-	int16_t alt = (int16_t)(stateGetPositionEnu_f()->z*100.0);	  // height in cm
+	int16_t alt = (int16_t)(stateGetPositionEnu_f()->z*100.0);
 
-	DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat,
-                          &gps.lla_pos.lon, &alt);                    // Messages throught USB bluetooth dongle to other drones
-
+    // Message through USB bluetooth dongle to other drones
+	DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat, &gps.lla_pos.lon, &alt);
+	
 	/*********************************************
 		Relative Avoidance Behavior
 	*********************************************/
-
 	if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
 		float cc[nf][6];
 
@@ -268,20 +258,22 @@ void relativeavoidancefilter_periodic(void)
 		float posy = stateGetPositionEnu_f()->x;
 
 		bool collision_imminent = false; // Null assumption
-		bool wall_imminent = false;  // Null assumption
+		// bool wall_imminent 		= false; // Null assumption
 
-		// Wall detection algorithm
-		if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
-			wall_imminent = true;
-		}
-		magprev = sqrt(pow(posx,2) + pow(posy,2));
+		// Wall detection
+		// if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
+		// 	wall_imminent = true;
+		// }
+		// magprev = sqrt(pow(posx,2) + pow(posy,2));
 
-		// Change direction to avoid wall
-		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wall_imminent) {
+		// If approaching wall, then change direction to avoid wall
+		// if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wall_imminent) {
+		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5)))) {
 			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
 			cart2polar(-posx,-posy, &v_des, &crs_des);
 			v_des = V_NOMINAL;
 		}
+		// Otherwise worry about other drones
 		else {
 			polar2cart(v_des, crs_des, &vx_des, &vy_des); // vx_des & vy_des = desired velocity
 			uint8_t i;
@@ -299,15 +291,15 @@ void relativeavoidancefilter_periodic(void)
 	
 			if (collision_imminent) { 		// If the desired velocity doesn't work, then let's find the next best thing according to VO
 				v_des = V_NOMINAL;
-				collisioncone_findnewcmd(cc, &v_des, &crs_des, CRSSEARCH, nf); // Go 15 degrees clockwise until save direction in found
+				collisioncone_findnewcmd(cc, &v_des, &crs_des, CRSSEARCH, nf); // Go clockwise until save direction in found
 			}	
 		}
 
-		polar2cart(v_des, crs_des, &vx_des, &vy_des);  		// new desired speed
+		polar2cart(v_des, crs_des, &vx_des, &vy_des);  		// new desired speed in North (x) and East(y)
 		/* Optitrack Guided commands */
 		// autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);  	//send to guided mode -- use this if flying with optitrack
 		/* Opticflow Guided commands */
-		guidance_h_set_guided_vel(vx_des,vy_des);
+		guidance_h_set_guided_vel(vx_des, vy_des);
 		guidance_v_set_guided_z(-1.0);
 		// guidance_h_set_guided_heading(0.0); % not reccommended if without a good heading estimate
 
