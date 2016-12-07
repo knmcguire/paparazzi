@@ -27,7 +27,7 @@
 #include "subsystems/datalink/telemetry.h"
 #include "modules/multi/traffic_info.h"
 
-#define CRSSEARCH 15.0 		// Search grid for crs_des
+#define CRSSEARCH 30.0 		// Search grid for crs_des
 #define NUAVS 5				// Maximum expected number of drones
 #define MAF_SIZE_POS 3  	// Moving Average Filter size; 1 = No filter
 #define MAF_SIZE_VEL 3  	// Moving Average Filter size; 1 = No filter
