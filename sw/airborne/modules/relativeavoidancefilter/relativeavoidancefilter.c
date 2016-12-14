@@ -29,8 +29,8 @@
 
 #define CRSSEARCH 30.0 		// Search grid for crs_des
 #define NUAVS 5				// Maximum expected number of drones
-#define MAF_SIZE_POS 3  	// Moving Average Filter size; 1 = No filter
-#define MAF_SIZE_VEL 3  	// Moving Average Filter size; 1 = No filter
+#define MAF_SIZE_POS 1  	// Moving Average Filter size; 1 = No filter
+#define MAF_SIZE_VEL 1  	// Moving Average Filter size; 1 = No filter
 
 #ifndef INS_INT_VEL_ID
 #define INS_INT_VEL_ID ABI_BROADCAST
@@ -187,8 +187,10 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&IDarray[i],			     // ID or filtered aircraft number
 		&RSSIarray[i], 		    	 // Received ID and RSSI
 		&srcstrength[i],		     // Source strength
+		// &ccvec[i][0], &ccvec[i][1],    //
 		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
+		// &ccvec[i][2], &ccvec[i][3],
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
 		&ekf[i].X[6],  				 // Height separation
 		&vx_des, &vy_des);		     // Commanded velocities

@@ -16,6 +16,7 @@
     </target-->
 
     <define name="USE_SONAR" value="TRUE"/>
+    <!-- <define name="USE_BARO_BOARD" value="FALSE"/> -->
 
   <!-- Subsystem section -->
     <module name="telemetry" type="transparent_udp"/>
@@ -24,11 +25,13 @@
     <module name="actuators" type="ardrone2"/>
     <module name="imu" type="ardrone2"/>
     <module name="gps" type="datalink"/>
-    <module name="stabilization" type="int_quat"/>
+    <module name="stabilization" type="indi"/>
     <module name="ahrs" type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="FALSE"/>
       <configure name="AHRS_USE_GPS_HEADING" value="FALSE"/>
-      <configure name="AHRS_PROPAGATE_LOW_PASS_RATES" value="TRUE"/>
+      <configure name="AHRS_USE_GPS_ALT" value="TRUE"/>
+      <configure name="AHRS_USE_GPS_ALT_SPEED" value="TRUE"/>
+       <configure name="AHRS_PROPAGATE_LOW_PASS_RATES" value="TRUE"/>
     </module>
     <module name="ins" type="extended"/>
   </firmware>
@@ -62,6 +65,9 @@
     <module name="pose_history"/>
     <module name="cv_opticflow">
       <define name="OPTICFLOW_CAMERA" value="bottom_camera"/>
+      <define name="OPTICFLOW_METHOD" value="1"/>
+      <define name="OPTICFLOW_MEDIAN_FILTER" value="TRUE"/>
+      <define name="OPTICFLOW_KALMAN_FILTER" value="FALSE"/>
     </module>
 
     <!--module name="video_capture">
@@ -125,13 +131,14 @@
     <define name="MAG_Z_NEUTRAL" value="-180"/>
     <define name="MAG_X_SENS" value="16." integer="16"/>
     <define name="MAG_Y_SENS" value="16." integer="16"/>
-    <define name="MAG_Z_SENS" value="16." integer="16"/>-->
-<define name="MAG_X_NEUTRAL" value="62"/>
-<define name="MAG_Y_NEUTRAL" value="-39"/>
-<define name="MAG_Z_NEUTRAL" value="-19"/>
-<define name="MAG_X_SENS" value="12.1440327828" integer="16"/>
-<define name="MAG_Y_SENS" value="11.9419676713" integer="16"/>
-<define name="MAG_Z_SENS" value="12.6575389331" integer="16"/>
+    <define name="MAG_Z_SENS" value="16." integer="16"/> -->
+
+<define name="MAG_X_NEUTRAL" value="3"/>
+<define name="MAG_Y_NEUTRAL" value="-15"/>
+<define name="MAG_Z_NEUTRAL" value="-39"/>
+<define name="MAG_X_SENS" value="12.1098175484" integer="16"/>
+<define name="MAG_Y_SENS" value="11.9508975917" integer="16"/>
+<define name="MAG_Z_SENS" value="12.6085474184" integer="16"/>
 
 
     <!-- Magneto current calibration -->
@@ -159,8 +166,40 @@
   <section name="INS" prefix="INS_">
     <define name="SONAR_MAX_RANGE" value="2.2"/>
     <define name="SONAR_UPDATE_ON_AGL" value="TRUE"/>
+    <define name="OPTITRACK_DONOTUSESPEED" value="TRUE"/>
   </section>
 
+
+  <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
+    <!-- control effectiveness -->
+    <define name="G1_P" value="0.019713"/>
+    <define name="G1_Q" value="0.017643"/>
+    <define name="G1_R" value="0.001492"/>
+    <define name="G2_R" value="0.082319"/>
+
+    <!-- reference acceleration for attitude control -->
+    <define name="REF_ERR_P" value="380.0"/>
+    <define name="REF_ERR_Q" value="380.0"/>
+    <define name="REF_ERR_R" value="70.0"/>
+    <define name="REF_RATE_P" value="21.6"/>
+    <define name="REF_RATE_Q" value="21.6"/>
+    <define name="REF_RATE_R" value="11.0"/>
+
+    <!-- second order filter parameters -->
+    <define name="FILT_OMEGA" value="20.0"/>
+    <define name="FILT_ZETA" value="0.55"/>
+    <define name="FILT_OMEGA_R" value="20.0"/>
+    <define name="FILT_ZETA_R" value="0.55"/>
+
+    <!-- first order actuator dynamics -->
+    <define name="ACT_DYN_P" value="0.06"/>
+    <define name="ACT_DYN_Q" value="0.06"/>
+    <define name="ACT_DYN_R" value="0.06"/>
+
+    <!-- Adaptive Learning Rate -->
+    <define name="USE_ADAPTIVE" value="FALSE"/>
+    <define name="ADAPTIVE_MU" value="0.0001"/>
+  </section>
 
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
     <!-- setpoints -->
@@ -219,9 +258,9 @@
     <define name="MAX_BANK" value="20" unit="deg"/>
     <!-- Bad weather -->
     <!-- define name="MAX_BANK" value="32" unit="deg"/ -->
-    <define name="PGAIN" value="40"/>
-    <define name="DGAIN" value="100"/>
-    <define name="IGAIN" value="30"/>
+    <define name="PGAIN" value="20"/>
+    <define name="DGAIN" value="65"/>
+    <define name="IGAIN" value="0"/>
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">

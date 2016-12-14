@@ -118,6 +118,9 @@ PRINT_CONFIG_MSG("USE_INS_NAV_INIT defaulting to TRUE")
 #endif
 #endif
 PRINT_CONFIG_VAR(INS_INT_BARO_ID)
+PRINT_CONFIG_VAR(INS_OPTITRACK_DONOTUSESPEED)
+
+
 abi_event baro_ev;
 static void baro_cb(uint8_t sender_id, float pressure);
 
@@ -409,8 +412,10 @@ void ins_int_update_gps(struct GpsState *gps_s)
   /* simply copy horizontal pos/speed from gps */
   INT32_VECT2_SCALE_2(ins_int.ltp_pos, gps_pos_cm_ned,
                       INT32_POS_OF_CM_NUM, INT32_POS_OF_CM_DEN);
-  //INT32_VECT2_SCALE_2(ins_int.ltp_speed, gps_speed_cm_s_ned,
-    //                  INT32_SPEED_OF_CM_S_NUM, INT32_SPEED_OF_CM_S_DEN);
+  #ifndef INS_OPTITRACK_DONOTUSESPEED
+  INT32_VECT2_SCALE_2(ins_int.ltp_speed, gps_speed_cm_s_ned,
+                     INT32_SPEED_OF_CM_S_NUM, INT32_SPEED_OF_CM_S_DEN);
+  #endif
 #endif /* USE_HFF */
 
   ins_ned_to_state();
@@ -541,8 +546,10 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
   ins_int.ltp_speed.x = SPEED_BFP_OF_REAL(vel_ned.x);
   ins_int.ltp_speed.y = SPEED_BFP_OF_REAL(vel_ned.y);
   if (last_stamp > 0) {
+    #ifndef INS_OPTITRACK_DONOTUSESPEED
     ins_int.ltp_pos.x = ins_int.ltp_pos.x + POS_BFP_OF_REAL(dt * vel_ned.x);
     ins_int.ltp_pos.y = ins_int.ltp_pos.y + POS_BFP_OF_REAL(dt * vel_ned.y);
+    #endif
   }
 #endif
 
