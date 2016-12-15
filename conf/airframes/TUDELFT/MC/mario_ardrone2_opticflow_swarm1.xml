@@ -31,7 +31,7 @@
       <configure name="AHRS_USE_GPS_HEADING" value="FALSE"/>
       <configure name="AHRS_USE_GPS_ALT" value="TRUE"/>
       <configure name="AHRS_USE_GPS_ALT_SPEED" value="TRUE"/>
-       <configure name="AHRS_PROPAGATE_LOW_PASS_RATES" value="TRUE"/>
+      <configure name="AHRS_PROPAGATE_LOW_PASS_RATES" value="TRUE"/>
     </module>
     <module name="ins" type="extended"/>
   </firmware>

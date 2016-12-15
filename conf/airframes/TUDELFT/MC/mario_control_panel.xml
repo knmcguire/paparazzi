@@ -209,9 +209,9 @@
         <arg flag="-tf" constant="10"/>
         <arg flag="-ac" constant="10"/>
         <arg flag="200"/>
-        <arg flag="-ac" constant="11"/>
+        <arg flag="-ac" constant="3"/>
         <arg flag="201"/>
-        <arg flag="-ac" constant="12"/>
+        <arg flag="-ac" constant="4"/>
         <arg flag="202"/>
       </program>
       <program name="Joystick">

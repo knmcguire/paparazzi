@@ -18,7 +18,7 @@
     <define name="USE_SONAR" value="TRUE"/>
     <!-- <define name="USE_BARO_BOARD" value="FALSE"/> -->
 
-	<!-- Subsystem section -->
+  <!-- Subsystem section -->
     <module name="telemetry" type="transparent_udp"/>
     <module name="radio_control" type="datalink"/>
     <module name="motor_mixing"/>
