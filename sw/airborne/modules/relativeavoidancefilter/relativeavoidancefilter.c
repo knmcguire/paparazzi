@@ -52,29 +52,22 @@ float ccvec[NUAVS-1][4];
 float x_est[NUAVS-1][MAF_SIZE_POS], y_est[NUAVS-1][MAF_SIZE_POS];
 float vx_est[NUAVS-1][MAF_SIZE_VEL], vy_est[NUAVS-1][MAF_SIZE_VEL];
 
-float height_other;
-
-struct FloatVect3 vel_body;   // body frame velocity from sensors
-
 static abi_event rssi_ev;
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
 	uint8_t ac_id, int8_t source_strength, int8_t rssi);
-
+/*
 static abi_event vel_est_ev;
 static void vel_est_cb(uint8_t sender_id, uint32_t stamp, float x, float y, float z, float noise);
+*/
 
-float posx, posy;
+struct NedCoor_i gps_pos_cm_ned_i;
 static abi_event gps_ev;
 static void gps_cb(uint8_t sender_id __attribute__((unused)),
                    uint32_t stamp __attribute__((unused)),
                    struct GpsState *gps_s)
 {
-  struct NedCoor_i gps_pos_cm_ned;
   struct LtpDef_i ltp_pos;
-  ned_of_ecef_point_i(&gps_pos_cm_ned, &ins_int.ltp_def, &gps_s->ecef_pos);
-  posx = (float)gps_pos_cm_ned.x/100.0;
-  posy = (float)gps_pos_cm_ned.y/100.0;
-
+  ned_of_ecef_point_i(&gps_pos_cm_ned_i, &ins_int.ltp_def, &gps_s->ecef_pos);
 }
 
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
@@ -164,7 +157,9 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	}
 };
 
+/*
 
+struct FloatVect3 vel_body;   // body frame velocity from sensors
 static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
                        uint32_t stamp,
                        float x, float y, float z,
@@ -173,7 +168,7 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
     vel_body.x = x;
 	vel_body.y = y;
 }
-
+*/
 
 bool alternate;
 static void send_rafilterdata(struct transport_tx *trans, struct link_device *dev)
@@ -200,8 +195,8 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&IDarray[i],			     // ID or filtered aircraft number
 		&RSSIarray[i], 		    	 // Received ID and RSSI
 		&srcstrength[i],		     // Source strength
-		&posx, &posy,    //
-		// &ekf[i].X[0], &ekf[i].X[1],  // x and y pos
+		&gps_pos_cm_ned_i.x, &gps_pos_cm_ned_i.y, &gps_pos_cm_ned_i.z    //
+		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
 		// &ccvec[i][2], &ccvec[i][3],
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
@@ -229,7 +224,7 @@ void relativeavoidancefilter_init(void)
 
 	// Subscribe to the ABI RSSI messages
 	AbiBindMsgRSSI(ABI_BROADCAST,  &rssi_ev,    bluetoothmsg_cb);
-	AbiBindMsgVELOCITY_ESTIMATE(ABI_BROADCAST, &vel_est_ev, vel_est_cb);
+	// AbiBindMsgVELOCITY_ESTIMATE(ABI_BROADCAST, &vel_est_ev, vel_est_cb);
 	AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
 
 	// Send out the filter data
@@ -272,6 +267,8 @@ void relativeavoidancefilter_periodic(void)
 		// Pos in X and Y just for arena border detection!
 		// float posx = stateGetPositionEnu_f()->y; 
 		// float posy = stateGetPositionEnu_f()->x;
+		float posx = (float)gps_pos_cm_ned_i.x/100.0;
+		float posy = (float)gps_pos_cm_ned_i.y/100.0;
 
 		bool collision_imminent = false; // Null assumption
 		bool wall_imminent 		= false; // Null assumption
@@ -305,15 +302,17 @@ void relativeavoidancefilter_periodic(void)
 				}
 			}
 	
-			if (collision_imminent) { 		// If the desired velocity doesn't work, then let's find the next best thing according to VO
+			if (collision_imminent) { // If the desired velocity doesn't work, then let's find the next best thing according to VO
 				v_des = V_NOMINAL;
 				collisioncone_findnewcmd(cc, &v_des, &crs_des, CRSSEARCH, nf); // Go clockwise until save direction in found
 			}	
 		}
 
 		polar2cart(v_des, crs_des, &vx_des, &vy_des);  		// new desired speed in North (x) and East(y)
+		
 		/* Optitrack Guided commands */
 		// autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);  	//send to guided mode -- use this if flying with optitrack
+		
 		/* Opticflow Guided commands */
 		guidance_h_set_guided_vel(vx_des, vy_des);
 		guidance_v_set_guided_z(-1.0);

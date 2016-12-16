@@ -2211,18 +2211,20 @@
 
   <message name="RAFILTERDATA" id="248">
     <description>Relative localization data for other tracked MAVs in terms of x y and z in the body axis</description>
-    <field name="trackedID"     type="int32"    unit=""/>
-    <field name="RSSI"          type="float"    unit="dB"/>
-    <field name="src_strenght"  type="int8"     unit="dB"/> 
-    <field name="x_pos"         type="float"    unit="m"/>
-    <field name="y_pos"         type="float"    unit="m"/>
-    <field name="vx_own"        type="float"    unit="m/s"/>
-    <field name="vy_own"        type="float"    unit="m/s"/>
-    <field name="vx_tracked"    type="float"    unit="m/s"/>
-    <field name="vy_tracked"    type="float"    unit="m/s"/>
-    <field name="z_pos"         type="float"    unit="m"/>
-    <field name="vx_des"        type="float"    unit="m/s"/>
-    <field name="vy_des"        type="float"    unit="m/s"/>
+    <field name="trackedID"      type="int32"    unit=""/>
+    <field name="RSSI"           type="float"    unit="dB"/>
+    <field name="gt_x_pos"       type="float"    unit="m"/>
+    <field name="gt_y_pos"       type="float"    unit="m"/>
+    <field name="gt_z_pos"       type="float"    unit="m"/>
+    <field name="ekf_x_tracked"  type="float"    unit="m/s"/>
+    <field name="ekf_y_tracked"  type="float"    unit="m/s"/>
+    <field name="ekf_vx_own"     type="float"    unit="m/s"/>
+    <field name="ekf_vy_own"     type="float"    unit="m/s"/>
+    <field name="ekf_vx_tracked" type="float"    unit="m/s"/>
+    <field name="ekf_vy_tracked" type="float"    unit="m/s"/>
+    <field name="ekf_z_pos"      type="float"    unit="m"/>
+    <field name="vx_des"         type="float"    unit="m/s"/>
+    <field name="vy_des"         type="float"    unit="m/s"/>
   </message>
   
   <!-- 249 is free -->
