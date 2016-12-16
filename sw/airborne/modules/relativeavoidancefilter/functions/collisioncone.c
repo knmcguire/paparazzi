@@ -82,24 +82,30 @@ void collisioncone_findnewcmd( float cc[2][6],
 	int count = 1;
 	// int ng = 1;
 	bool flag = true;
+
+	// Angle search resolution
 	float psi_add;
 	deg2rad(psisearch, &psi_add);
 
+	// Start out with the desired heading
 	float psi0 = *psi_des;
 	float vx, vy;
 
 	while (*v_des <= 1.0) {
+		// Transform V_nominal (v_des) with desired heading to a vx/vy command
 		polar2cart(*v_des, *psi_des, &vx, &vy);
 
+		// Check for each collision cone if the desired velocity creates an obstacle free path
 		for (i = 0; i < nfilters; i++) { // Check if we succeed
 			flag = collisioncone_checkdanger(cc[i], vx, vy);
-			if (flag)
+			if (flag) //If danger is found in one of the cones
 				break;
 		}
 
-		if(!flag) // No issues found
+		if(!flag) // No issues found, so move ahead with the algorithm
 			return;
 
+		// If there is still something in the collision cone, search for desired angle
 		*psi_des = psi0 + (count * psi_add);
 		wrapTo2Pi(psi_des);
 
@@ -112,6 +118,80 @@ void collisioncone_findnewcmd( float cc[2][6],
 		}
 	}
 	
+	// Failed to find a solution, so just stop this time
+	*v_des = 0.0;
+};
+
+
+void collisioncone_findnewcmd_withwalls( float cc[2][6],
+	float *v_des, float *psi_des,
+	float psisearch, int nfilters, float posx, float posy, float border)
+{
+	int i;
+	int count = 1;
+	// int ng = 1;
+	bool flag = true;
+
+	// Angle search resolution
+	float psi_add;
+	deg2rad(psisearch, &psi_add);
+
+	float wall_avoid_angle;
+	deg2rad(20.0, &wall_avoid_angle);
+
+	// Start out with the desired heading
+	float psi0 = *psi_des;
+	float vx, vy;
+
+	while (*v_des <= 1.0) {
+		// Transform V_nominal (v_des) with desired heading to a vx/vy command
+		polar2cart(*v_des, *psi_des, &vx, &vy);
+
+		// Check for each collision cone if the desired velocity creates an obstacle free path
+		for (i = 0; i < nfilters; i++) { // Check if we succeed
+			flag = collisioncone_checkdanger(cc[i], vx, vy);
+			if (flag) //If danger is found in one of the cones
+				break;
+		}
+
+		if(!flag) // No issues found, so move ahead with the algorithm
+			return;
+
+		float angle_relative_from_center_room = 0;
+		float radius = 0;
+		if ( ((abs(posx) > (border-0.5)) || (abs(posy) > (border-0.5)))) {
+			//calculate the angle of the drone relative to the center of the room
+
+			cart2polar(posx, posy, &radius, &angle_relative_from_center_room);
+
+			// If there is still something in the collision cone, search for desired angle
+			// If it was moving towards a wall, it will not take that direction into account
+			float psi_extra = psi0 + (count * psi_add);
+
+			if(!(psi_extra > angle_relative_from_center_room - wall_avoid_angle &&
+					psi_extra < angle_relative_from_center_room + wall_avoid_angle))
+			{
+				*psi_des = psi_extra;
+				wrapTo2Pi(psi_des);
+			}
+			else {}
+		}
+		else
+		{
+			// If there is still something in the collision cone, search for desired angle
+			*psi_des = psi0 + (count * psi_add);
+			wrapTo2Pi(psi_des);
+		}
+
+		// ng = ng * -1;
+		count++;
+
+		if (count >= (2*M_PI)/psi_add) {
+			*v_des = *v_des + *v_des;
+			count = 1;
+		}
+	}
+
 	// Failed to find a solution, so just stop this time
 	*v_des = 0.0;
 };

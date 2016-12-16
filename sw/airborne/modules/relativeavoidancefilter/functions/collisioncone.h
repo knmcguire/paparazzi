@@ -25,6 +25,10 @@ bool collisioncone_checkdanger( float *cc,
 void collisioncone_findnewcmd(	float cc[][6], 
 	float *v_des, float *psi_des,
 	float psisearch, int nfilters );
+
+void collisioncone_findnewcmd_withwalls( float cc[2][6],
+	float *v_des, float *psi_des,
+	float psisearch, int nfilters, float posx, float posy, float border);
 	
 // float collisioncone_expansionangle ( float range, float R, float e );
 float movingaveragefilter(float *array, int size, float newelement);

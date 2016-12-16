@@ -307,7 +307,9 @@ void relativeavoidancefilter_periodic(void)
 	
 			if (collision_imminent) { 		// If the desired velocity doesn't work, then let's find the next best thing according to VO
 				v_des = V_NOMINAL;
-				collisioncone_findnewcmd(cc, &v_des, &crs_des, CRSSEARCH, nf); // Go clockwise until save direction in found
+				collisioncone_findnewcmd_withwalls(cc, &v_des, &crs_des, CRSSEARCH, nf, posx,posy,ASIDE); // Go clockwise until save direction in found
+				//collisioncone_findnewcmd(cc, &v_des, &crs_des, CRSSEARCH, nf); // Go clockwise until save direction in found
+
 			}	
 		}
 
