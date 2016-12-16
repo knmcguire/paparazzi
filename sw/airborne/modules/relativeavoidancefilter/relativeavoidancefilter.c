@@ -27,7 +27,7 @@
 #include "subsystems/datalink/telemetry.h"
 #include "modules/multi/traffic_info.h"
 
-#define CRSSEARCH 30.0 		// Search grid for crs_des
+#define CRSSEARCH 15.0 		// Search grid for crs_des
 #define NUAVS 5				// Maximum expected number of drones
 #define MAF_SIZE_POS 1  	// Moving Average Filter size; 1 = No filter
 #define MAF_SIZE_VEL 1  	// Moving Average Filter size; 1 = No filter
@@ -56,13 +56,23 @@ float height_other;
 
 struct FloatVect3 vel_body;   // body frame velocity from sensors
 
-//  AbiBindMsgVELOCITY_ESTIMATE(INS_INT_VEL_ID, &vel_est_ev, vel_est_cb);
 static abi_event rssi_ev;
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
 	uint8_t ac_id, int8_t source_strength, int8_t rssi);
 
 static abi_event vel_est_ev;
 static void vel_est_cb(uint8_t sender_id, uint32_t stamp, float x, float y, float z, float noise);
+
+float xpos, ypos;
+static abi_event gps_ev;
+static void gps_cb(uint8_t sender_id __attribute__((unused)),
+                   uint32_t stamp __attribute__((unused)),
+                   struct GpsState *gps_s)
+{
+  struct NedCoor_i gps_pos_cm_ned;
+  ned_of_ecef_point_i(&gps_pos_cm_ned, &ins_int.ltp_def, &gps_s->ecef_pos);
+
+}
 
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
 	uint8_t ac_id, int8_t source_strength, int8_t rssi)
@@ -217,6 +227,7 @@ void relativeavoidancefilter_init(void)
 	// Subscribe to the ABI RSSI messages
 	AbiBindMsgRSSI(ABI_BROADCAST,  &rssi_ev,    bluetoothmsg_cb);
 	AbiBindMsgVELOCITY_ESTIMATE(ABI_BROADCAST, &vel_est_ev, vel_est_cb);
+	AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
 
 	// Send out the filter data
 	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_RAFILTERDATA, send_rafilterdata);
@@ -260,17 +271,17 @@ void relativeavoidancefilter_periodic(void)
 		float posy = stateGetPositionEnu_f()->x;
 
 		bool collision_imminent = false; // Null assumption
-		// bool wall_imminent 		= false; // Null assumption
+		bool wall_imminent 		= false; // Null assumption
 
 		// Wall detection
-		// if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
-		// 	wall_imminent = true;
-		// }
-		// magprev = sqrt(pow(posx,2) + pow(posy,2));
+		if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
+			wall_imminent = true;
+		}
+		magprev = sqrt(pow(posx,2) + pow(posy,2));
 
 		// If approaching wall, then change direction to avoid wall
-		// if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wall_imminent) {
-		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5)))) {
+		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wall_imminent) {
+		// if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5)))) {
 			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
 			cart2polar(-posx,-posy, &v_des, &crs_des);
 			v_des = V_NOMINAL;

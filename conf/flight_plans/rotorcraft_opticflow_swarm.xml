@@ -36,7 +36,7 @@
     </block>
     <block name="Takeoff" strip_button="Takeoff" strip_icon="takeoff.png">
       <exception cond="stateGetPositionEnu_f()->z > 0.5" deroute="Standby"/>
-      <call fun="NavSetWaypointHere(WP_STDBY)"/>
+      <!-- <call fun="NavSetWaypointHere(WP_STDBY)"/> -->
       <stay climb="nav_climb_vspeed" vmode="climb" wp="STDBY"/>
     </block>
     <block name="Standby" strip_button="Standby" strip_icon="home.png">

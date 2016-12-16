@@ -38,7 +38,7 @@
 
  <section name="RELATIVEAVOIDANCEFILTER" prefix="">
   <define name="MAVSIZE" value="0.6"/>    <!-- MAV diameter -->
-  <define name="ASIDE" value="1.5"/>      <!-- Size of arena (for testing) -->
+  <define name="ASIDE" value="2.0"/>      <!-- Size of arena (for testing) -->
   <define name="RSSINOISE" value="5.0"/>  <!-- (Expected) Noise on RSSI -->
   <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements -->
   <define name="V_NOMINAL" value="0.5"/>  <!-- Desired nominal velocity -->
@@ -258,7 +258,7 @@
     <define name="MAX_BANK" value="20" unit="deg"/>
     <!-- Bad weather -->
     <!-- define name="MAX_BANK" value="32" unit="deg"/ -->
-    <define name="PGAIN" value="20"/>
+    <define name="PGAIN" value="50"/>
     <define name="DGAIN" value="65"/>
     <define name="IGAIN" value="0"/>
   </section>

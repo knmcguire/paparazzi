@@ -412,10 +412,8 @@ void ins_int_update_gps(struct GpsState *gps_s)
   /* simply copy horizontal pos/speed from gps */
   INT32_VECT2_SCALE_2(ins_int.ltp_pos, gps_pos_cm_ned,
                       INT32_POS_OF_CM_NUM, INT32_POS_OF_CM_DEN);
-  #ifndef INS_OPTITRACK_DONOTUSESPEED
   INT32_VECT2_SCALE_2(ins_int.ltp_speed, gps_speed_cm_s_ned,
                      INT32_SPEED_OF_CM_S_NUM, INT32_SPEED_OF_CM_S_DEN);
-  #endif
 #endif /* USE_HFF */
 
   ins_ned_to_state();
@@ -426,7 +424,6 @@ void ins_int_update_gps(struct GpsState *gps_s)
 #else
 void ins_int_update_gps(struct GpsState *gps_s __attribute__((unused))) {}
 #endif /* USE_GPS */
-
 
 #if USE_SONAR
 static void sonar_cb(uint8_t __attribute__((unused)) sender_id, float distance)
@@ -509,7 +506,9 @@ static void gps_cb(uint8_t sender_id __attribute__((unused)),
                    uint32_t stamp __attribute__((unused)),
                    struct GpsState *gps_s)
 {
+  #ifndef INS_OPTITRACK_DONOTUSESPEED
   ins_int_update_gps(gps_s);
+  #endif
 }
 
 static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
