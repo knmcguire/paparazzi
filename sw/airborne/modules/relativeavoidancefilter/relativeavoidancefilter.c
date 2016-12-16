@@ -63,14 +63,17 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 static abi_event vel_est_ev;
 static void vel_est_cb(uint8_t sender_id, uint32_t stamp, float x, float y, float z, float noise);
 
-float xpos, ypos;
+float posx, posy;
 static abi_event gps_ev;
 static void gps_cb(uint8_t sender_id __attribute__((unused)),
                    uint32_t stamp __attribute__((unused)),
                    struct GpsState *gps_s)
 {
   struct NedCoor_i gps_pos_cm_ned;
+  struct LtpDef_i ltp_pos;
   ned_of_ecef_point_i(&gps_pos_cm_ned, &ins_int.ltp_def, &gps_s->ecef_pos);
+  posx = (float)gps_pos_cm_ned.x/100.0;
+  posy = (float)gps_pos_cm_ned.y/100.0;
 
 }
 
@@ -197,8 +200,8 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&IDarray[i],			     // ID or filtered aircraft number
 		&RSSIarray[i], 		    	 // Received ID and RSSI
 		&srcstrength[i],		     // Source strength
-		// &ccvec[i][0], &ccvec[i][1],    //
-		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
+		&posx, &posy,    //
+		// &ekf[i].X[0], &ekf[i].X[1],  // x and y pos
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
 		// &ccvec[i][2], &ccvec[i][3],
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
@@ -267,8 +270,8 @@ void relativeavoidancefilter_periodic(void)
 		float cc[nf][6];
 
 		// Pos in X and Y just for arena border detection!
-		float posx = stateGetPositionEnu_f()->y; 
-		float posy = stateGetPositionEnu_f()->x;
+		// float posx = stateGetPositionEnu_f()->y; 
+		// float posy = stateGetPositionEnu_f()->x;
 
 		bool collision_imminent = false; // Null assumption
 		bool wall_imminent 		= false; // Null assumption
