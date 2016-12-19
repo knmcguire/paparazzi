@@ -28,7 +28,7 @@
     <module name="stabilization" type="indi"/>
     <module name="ahrs" type="int_cmpl_quat">
       <configure name="USE_MAGNETOMETER" value="FALSE"/>
-      <!-- <configure name="AHRS_USE_GPS" value="FALSE"/> -->
+      <configure name="AHRS_USE_GPS" value="FALSE"/>
       <configure name="AHRS_USE_GPS_HEADING" value="FALSE"/>
       <configure name="AHRS_USE_GPS_ALT" value="TRUE"/>
       <configure name="AHRS_USE_GPS_ALT_SPEED" value="TRUE"/>
@@ -260,8 +260,9 @@
     <!-- Bad weather -->
     <!-- define name="MAX_BANK" value="32" unit="deg"/ -->
     <define name="PGAIN" value="0"/>
-    <define name="DGAIN" value="65"/>
-    <define name="IGAIN" value="20"/>
+    <define name="DGAIN" value="90"/>
+    <define name="IGAIN" value="50"/>
+    <define name="REF_MAX_SPEED" value="1.0" unit="m/s"/>
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">

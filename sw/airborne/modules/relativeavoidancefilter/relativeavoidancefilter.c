@@ -66,13 +66,12 @@ static void gps_cb(uint8_t sender_id __attribute__((unused)),
                    uint32_t stamp __attribute__((unused)),
                    struct GpsState *gps_s)
 {
-  struct LtpDef_i ltp_pos;
   ned_of_ecef_point_i(&gps_pos_cm_ned_i, &ins_int.ltp_def, &gps_s->ecef_pos);
 }
 
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
 	uint8_t ac_id, int8_t source_strength, int8_t rssi)
-{
+{ 
 	int i= -1; // Initialize index (null assumption, no drone is present)
 
 	// If it's a new ID we start a new EKF for it
@@ -103,40 +102,38 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 
 	// If we do recognize the ID, then we can update the measurement message data
 	else if ((i != -1) || (nf == (NUAVS-1)) ) {
-		RSSIarray[i] = rssi; //logging
+		RSSIarray[i] = (float)rssi; //logging
+		float ownVx = stateGetSpeedEnu_f()->y; //vel_body.x; //From optical flow
+		float ownVy = stateGetSpeedEnu_f()->x; //vel_body.y;
+		
+		// Bind velocities to a known maximum to avoid occasional NaN or inf errors
+		keepbounded(&ownVx,-2.0,2.0);
+		keepbounded(&ownVy,-2.0,2.0);
 
 		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
 		{
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
-			now_ts[i] = get_sys_time_usec();
-			
-			// Get the aircraft info for that ID
+
 			float trackedVx, trackedVy;
+			// Get the aircraft info for that ID
 			polar2cart(acInfoGetGspeed(ac_id), acInfoGetCourse(ac_id), &trackedVx, &trackedVy); // get x and y velocities (m/s)
 			
-			// Bind received values in case of errors
-			float ownVx = stateGetSpeedEnu_f()->y; //vel_body.x; //From optical flow
-			float ownVy = stateGetSpeedEnu_f()->x; //vel_body.y;
-			
-			// Bind velocities to a known maximum to avoid occasional NaN or inf errors
-			keepbounded(&ownVx,-2.0,2.0);
-			keepbounded(&ownVy,-2.0,2.0);
 			keepbounded(&trackedVx,-2.0,2.0);
 			keepbounded(&trackedVy,-2.0,2.0);
 
 			// Construct measurement vector for EKF using the latest data obtained for each case
 			float Y[EKF_M];
-			Y[0] = (float)rssi;// + rand_normal(0.0, 5.0); // Bluetooth RSSI measurement
-			Y[1] = ownVx; //(already in earth frame)
+			Y[0] = (float)rssi;
+			Y[1] = ownVx; 	   // Own velocity already in Earth NED frame
 			Y[2] = ownVy;
-			Y[3] = trackedVx;  //Velocity tracked from other drone (already in earth frame!!)
+			Y[3] = trackedVx;  // Velocity tracked from other drone (already in Earth NED frame!)
 			Y[4] = trackedVy;
 			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z;
 			
 			// Run the steps of the EKF
 			ekf_filter_predict(&ekf[i], &model[i]);
-			ekf_filter_update (&ekf[i], Y);
+			ekf_filter_update(&ekf[i], Y);
 				
 			/*
 			 * Xvector: dotx_other and doty_other are expressed in own bodyframe
@@ -151,14 +148,21 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 				ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
 		}
 		else { // Initial estimate is towards the initial direction of flight (filter of other drone!)
-			ekf[i].X[0] = -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero
-			ekf[i].X[1] = -stateGetPositionNed_f()->y;
+			ekf[i].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
+			ekf[i].X[1] = 1.0;
+			ekf[i].X[2] = 0.0;
+			ekf[i].X[3] = 0.0;
+			ekf[i].X[4] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero
+			ekf[i].X[5] = 0.0;// -stateGetPositionNed_f()->y;
+			ekf[i].X[6] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero					
 		}
+		// Update latest time
+		now_ts[i] = get_sys_time_usec();
+
 	}
 };
 
 /*
-
 struct FloatVect3 vel_body;   // body frame velocity from sensors
 static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
                        uint32_t stamp,
@@ -190,15 +194,21 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	else { //only data on first
 		i = 0;
 	}
-	
+
+	float px, py, pz;
+	px = (float)gps_pos_cm_ned_i.x/100.0;
+	py = (float)gps_pos_cm_ned_i.y/100.0;
+	pz = (float)gps_pos_cm_ned_i.z/100.0;
+
 	pprz_msg_send_RAFILTERDATA(trans, dev, AC_ID,
 		&IDarray[i],			     // ID or filtered aircraft number
 		&RSSIarray[i], 		    	 // Received ID and RSSI
 		&srcstrength[i],		     // Source strength
-		&gps_pos_cm_ned_i.x, &gps_pos_cm_ned_i.y, &gps_pos_cm_ned_i.z    //
+		&px, &py, &pz, 				 // &gps_pos_cm_ned_i.z    //
 		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
+		// &stateGetSpeedEnu_f()->x, &stateGetSpeedEnu_f()->y,
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
-		// &ccvec[i][2], &ccvec[i][3],
+		// &trackedVx,&trackedVy,
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
 		&ekf[i].X[6],  				 // Height separation
 		&vx_des, &vy_des);		     // Commanded velocities
@@ -305,7 +315,7 @@ void relativeavoidancefilter_periodic(void)
 			if (collision_imminent) { // If the desired velocity doesn't work, then let's find the next best thing according to VO
 				v_des = V_NOMINAL;
 				collisioncone_findnewcmd(cc, &v_des, &crs_des, CRSSEARCH, nf); // Go clockwise until save direction in found
-			}	
+			}
 		}
 
 		polar2cart(v_des, crs_des, &vx_des, &vy_des);  		// new desired speed in North (x) and East(y)
