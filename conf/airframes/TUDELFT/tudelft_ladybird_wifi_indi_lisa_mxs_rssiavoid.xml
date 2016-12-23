@@ -259,7 +259,7 @@
     <module name="traffic_info.xml"/>
     <module name="rssi.xml"/>
     <module name="relativeavoidancefilter.xml"/>
-   <!-- <module name="flight_plan_guided"/> -->
+    <module name="flight_plan_guided"/> 
  </modules>
 
   <firmware name="rotorcraft">
