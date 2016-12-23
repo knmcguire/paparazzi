@@ -200,15 +200,15 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	py = (float)gps_pos_cm_ned_i.y/100.0;
 	pz = (float)gps_pos_cm_ned_i.z/100.0;
 
+	uint8_t id = (uint8_t)IDarray[i];
+
 	pprz_msg_send_RAFILTERDATA(trans, dev, AC_ID,
-		&IDarray[i],			     // ID or filtered aircraft number
+		&id,			     // ID or filtered aircraft number
 		&RSSIarray[i], 		    	 // Received ID and RSSI
 		&srcstrength[i],		     // Source strength
 		&px, &py, &pz, 				 // &gps_pos_cm_ned_i.z    //
 		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
-		// &stateGetSpeedEnu_f()->x, &stateGetSpeedEnu_f()->y,
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
-		// &trackedVx,&trackedVy,
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
 		&ekf[i].X[6],  				 // Height separation
 		&vx_des, &vy_des);		     // Commanded velocities
@@ -245,8 +245,8 @@ void relativeavoidancefilter_init(void)
 void relativeavoidancefilter_periodic(void)
 {	
 	// FAKE MESSAGE for testing purposes from the 0.0 position if a BT source is not available!
-	// float d = sqrt(pow(stateGetPositionEnu_f()->x,2)+pow(stateGetPositionEnu_f()->y,2));
-	// AbiSendMsgRSSI(1, 2, 2,  (int)(-63 -2*10*log10(d)));
+	float d = sqrt(pow(stateGetPositionEnu_f()->x,2)+pow(stateGetPositionEnu_f()->y,2));
+	AbiSendMsgRSSI(1, 2, 2,  (int)(-63 -2*10*log10(d)));
 
 	/*********************************************
 		Sending speed directly between drones
@@ -263,10 +263,10 @@ void relativeavoidancefilter_periodic(void)
 	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);        // bits 9-0 z velocity in cm/s
 
 	// int16_t alt = (int16_t)(gps.hmsl / 10); 					  // height in cm
-	int16_t alt = (int16_t)(stateGetPositionEnu_f()->z*100.0);
+	// int16_t alt = (int16_t)(stateGetPositionEnu_f()->z*100.0);
 
     // Message through USB bluetooth dongle to other drones
-	DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat, &gps.lla_pos.lon, &alt);
+	// DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat, &gps.lla_pos.lon, &alt);
 	
 	/*********************************************
 		Relative Avoidance Behavior

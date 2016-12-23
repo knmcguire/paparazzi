@@ -249,12 +249,13 @@
      <!--define name="UART3_STOP" value="USTOP_2"/-->
   </module>
 
-   <module name="extra_dl.xml">
+  <!-- <module name="extra_dl.xml">
       <configure name="EXTRA_DL_PORT" value="UDP1"/>
       <define name="UDP1_PORT_IN" value="5000"/>
       <define name="UDP1_PORT_OUT" value="5001"/>
       <define name="UDP1_HOST" value="127.0.0.1"/>
-    </module>
+    </module> 
+  -->
     <module name="traffic_info.xml"/>
     <module name="rssi.xml"/>
     <module name="relativeavoidancefilter.xml"/>

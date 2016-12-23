@@ -2211,7 +2211,7 @@
 
   <message name="RAFILTERDATA" id="248">
     <description>Relative localization data for other tracked MAVs in terms of x y and z in the body axis</description>
-    <field name="trackedID"      type="int32"    unit=""/>
+    <field name="trackedID"      type="uint8"    unit=""/>
     <field name="RSSI"           type="float"    unit="dB"/>
     <field name="src_strength"	 type="int8"     unit="dB"/>
     <field name="gt_x_pos"       type="float"    unit="m"/>
