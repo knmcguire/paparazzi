@@ -38,10 +38,6 @@ struct FloatVect3 velocity_rot_gps;
 #include "filters/median_filter.h"
 #include "filters/low_pass_filter.h"
 
-#ifndef STEREOCAM2STATE_BUTTER_TAU
-#define STEREOCAM2STATE_BUTTER_TAU 0.1
-#endif
-
 float distance_stereo = 2.0f;
 
 
@@ -71,9 +67,6 @@ void stereo_to_state_init(void)
   init_median_filter(&medianfilter_x);
   init_median_filter(&medianfilter_y);
   init_median_filter(&medianfilter_dist);
-  init_butterworth_2_low_pass(&butterfilter_x, STEREOCAM2STATE_BUTTER_TAU, 1. / 23, 0.0);
-  init_butterworth_2_low_pass(&butterfilter_y, STEREOCAM2STATE_BUTTER_TAU, 1. / 23, 0.0);
-
 
 }
 
@@ -120,13 +113,14 @@ void stereocam_to_state(void)
   vel_z_pixelwise_int |= (int16_t)stereocam_data.data[19];
 
   // Velocity (global pixelwise) in camera coordinates
-  struct Int16Vect3 vel_pixelwise, vel_global;
+  struct Int16Vect3 vel_pixelwise;
   vel_pixelwise.x = vel_x_pixelwise_int;
   vel_pixelwise.z = vel_z_pixelwise_int;
 
+/*  struct Int16Vect3 vel_global;
   vel_global.x = vel_x_global_int;
   vel_global.y = vel_y_global_int;
-  vel_global.z = vel_z_global_int;
+  vel_global.z = vel_z_global_int;*/
 
   // Derotate velocity and transform from frame to body coordinates
   // TODO: send resolution directly from stereocam
@@ -142,9 +136,11 @@ void stereocam_to_state(void)
 #endif
 
 //optitrack data
+/*
   struct FloatVect3 velocity_rot_gps;
   struct Int32Vect3 velocity_rot_gps_int;
   float_rmat_vmult(&velocity_rot_gps , stateGetNedToBodyRMat_f(), (struct FloatVect3 *)&opti_vel);
+*/
 
   //TODO: give velocity body in z direction?
 
@@ -182,7 +178,7 @@ void stereocam_to_state(void)
   float dummy_float = 0;
 
   DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y, &dummy_int16, &dummy_int16,
-		  &vel_x, &vel_y,&dummy_float, &dummy_float, &dummy_float);
+		  &vel_body_x_median_filter, &vel_body_y_median_filter,&dummy_float, &dummy_float, &dummy_float);
 
 #endif
 

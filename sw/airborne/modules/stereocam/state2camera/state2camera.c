@@ -28,7 +28,7 @@
 #include "subsystems/abi.h"
 #include "state.h"
 #include "mcu_periph/uart.h"
-static int frame_number_sending = 0;
+
 float lastKnownHeight = 0.0;
 int pleaseResetOdroid = 0;
 
