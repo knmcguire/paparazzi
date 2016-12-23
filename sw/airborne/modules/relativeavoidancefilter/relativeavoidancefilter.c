@@ -26,6 +26,7 @@
 #include "relativeavoidancefilter.h"
 #include "subsystems/datalink/telemetry.h"
 #include "modules/multi/traffic_info.h"
+#include "modules/stdma/stdma.h"
 
 #define CRSSEARCH 15.0 		// Search grid for crs_des
 #define NUAVS 5				// Maximum expected number of drones
@@ -254,7 +255,7 @@ void relativeavoidancefilter_periodic(void)
 	int16_t alt = (int16_t)(stateGetPositionEnu_f()->z*100.0);
 
     // Message through USB bluetooth dongle to other drones
-	DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat, &gps.lla_pos.lon, &alt);
+	DOWNLINK_SEND_GPS_SMALL(stdma_trans, bluegiga_p, &multiplex_speed, &gps.lla_pos.lat, &gps.lla_pos.lon, &alt);
 	
 	/*********************************************
 		Relative Avoidance Behavior
