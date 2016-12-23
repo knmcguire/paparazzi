@@ -162,18 +162,6 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	}
 };
 
-/*
-struct FloatVect3 vel_body;   // body frame velocity from sensors
-static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
-                       uint32_t stamp,
-                       float x, float y, float z,
-                       float noise __attribute__((unused)))
-{
-    vel_body.x = x;
-	vel_body.y = y;
-}
-*/
-
 bool alternate;
 static void send_rafilterdata(struct transport_tx *trans, struct link_device *dev)
 {	
@@ -245,8 +233,8 @@ void relativeavoidancefilter_init(void)
 void relativeavoidancefilter_periodic(void)
 {	
 	// FAKE MESSAGE for testing purposes from the 0.0 position if a BT source is not available!
-	float d = sqrt(pow(stateGetPositionEnu_f()->x,2)+pow(stateGetPositionEnu_f()->y,2));
-	AbiSendMsgRSSI(1, 2, 2,  (int)(-63 -2*10*log10(d)));
+	// float d = sqrt(pow(stateGetPositionEnu_f()->x,2)+pow(stateGetPositionEnu_f()->y,2));
+	// AbiSendMsgRSSI(1, 2, 2, );
 
 	/*********************************************
 		Sending speed directly between drones
@@ -263,10 +251,10 @@ void relativeavoidancefilter_periodic(void)
 	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);        // bits 9-0 z velocity in cm/s
 
 	// int16_t alt = (int16_t)(gps.hmsl / 10); 					  // height in cm
-	// int16_t alt = (int16_t)(stateGetPositionEnu_f()->z*100.0);
+	int16_t alt = (int16_t)(stateGetPositionEnu_f()->z*100.0);
 
     // Message through USB bluetooth dongle to other drones
-	// DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat, &gps.lla_pos.lon, &alt);
+	DOWNLINK_SEND_GPS_SMALL(extra_pprz_tp, EXTRA_DOWNLINK_DEVICE, &multiplex_speed, &gps.lla_pos.lat, &gps.lla_pos.lon, &alt);
 	
 	/*********************************************
 		Relative Avoidance Behavior
