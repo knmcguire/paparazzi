@@ -28,13 +28,16 @@
 #include "subsystems/abi.h"
 #include "state.h"
 #include "mcu_periph/uart.h"
-static int frame_number_sending = 0;
+
 float lastKnownHeight = 0.0;
 int pleaseResetOdroid = 0;
 
 #ifndef STATE2CAMERA_SEND_DATA_TYPE
-#define STATE2CAMERA_SEND_DATA_TYPE 0
+#define STATE2CAMERA_SEND_DATA_TYPE 1
 #endif
+
+uint8_t derotation = 1;
+float derotation_scaling = 2.5f;
 
 void write_serial_rot()
 {
@@ -58,7 +61,8 @@ void write_serial_rot()
   int16_t *pointer = (int16_t *) ar;
   pointer[0] =   (int16_t)(stateGetNedToBodyEulers_f()->theta*100);
   pointer[1] =    (int16_t)(stateGetNedToBodyEulers_f()->phi*100);
-  pointer[2] =    (int16_t)(stateGetNedToBodyEulers_f()->psi*100);
+  pointer[2] =    (int16_t)(derotation_scaling*-1*stateGetNedToBodyEulers_f()->psi*100);
+  pointer[3] =    (int16_t)(derotation);
 
   stereoprot_sendArray(&((UART_LINK).device), ar,lengthArrayInformation, 1);
 
