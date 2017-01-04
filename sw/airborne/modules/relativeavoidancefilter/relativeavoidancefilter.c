@@ -111,8 +111,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		keepbounded(&ownVx,-2.0,2.0);
 		keepbounded(&ownVy,-2.0,2.0);
 
-		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
-		{
+		// if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
+		// {
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
 
@@ -147,16 +147,16 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 				ccvec[i][1] = movingaveragefilter(y_est[i],  MAF_SIZE_POS, ekf[i].X[1]);
 				ccvec[i][2] = movingaveragefilter(vx_est[i], MAF_SIZE_VEL, ekf[i].X[4]);
 				ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
-		}
-		else { // Initial estimate is towards the initial direction of flight (filter of other drone!)
-			ekf[i].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
-			ekf[i].X[1] = 1.0;
-			ekf[i].X[2] = 0.0;
-			ekf[i].X[3] = 0.0;
-			ekf[i].X[4] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero
-			ekf[i].X[5] = 0.0;// -stateGetPositionNed_f()->y;
-			ekf[i].X[6] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero					
-		}
+		// }
+		// else { // Initial estimate is towards the initial direction of flight (filter of other drone!)
+		// 	ekf[i].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
+		// 	ekf[i].X[1] = 1.0;
+		// 	ekf[i].X[2] = 0.0;
+		// 	ekf[i].X[3] = 0.0;
+		// 	ekf[i].X[4] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero
+		// 	ekf[i].X[5] = 0.0;// -stateGetPositionNed_f()->y;
+		// 	ekf[i].X[6] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero					
+		// }
 		// Update latest time
 		now_ts[i] = get_sys_time_usec();
 
@@ -255,8 +255,9 @@ void relativeavoidancefilter_periodic(void)
 	int16_t alt = (int16_t)(stateGetPositionEnu_f()->z*100.0);
 
     // Message through USB bluetooth dongle to other drones
+    // Pocketdrones (STDMA Running within Paparazzi)
 	DOWNLINK_SEND_GPS_SMALL(stdma_trans, bluegiga_p, &multiplex_speed, &gps.lla_pos.lat, &gps.lla_pos.lon, &alt);
-	
+
 	/*********************************************
 		Relative Avoidance Behavior
 	*********************************************/
