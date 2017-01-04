@@ -74,11 +74,11 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	uint8_t ac_id, int8_t source_strength, int8_t rssi)
 { 
 	int i= -1; // Initialize index (null assumption, no drone is present)
-
+	RSSIarray[0]=30;	
 	// If it's a new ID we start a new EKF for it
 	// TODO: aircraft ID are now hard coded here, make it more general (set in airframe file?)
 	// The hardcoding was done to make sure that no other bluetooth devices or drone accidentally interfere with testing
-	if ((!array_find_int(NUAVS-1, IDarray, ac_id, &i)) && (nf < NUAVS-1) && ( (ac_id== 200) || (ac_id == 201) || (ac_id == 202) ) )
+	if ((!array_find_int(NUAVS-1, IDarray, ac_id, &i)) && (nf < NUAVS-1) )
 	{ // Check if a new aircraft ID is present, continue
 		IDarray[nf] = ac_id; 				// Store ID
 		srcstrength[nf] = source_strength;  // Store source strength
@@ -222,10 +222,10 @@ void relativeavoidancefilter_init(void)
 	}
 
 	// Subscribe to the ABI RSSI messages
-	AbiBindMsgRSSI(ABI_BROADCAST,  &rssi_ev,    bluetoothmsg_cb);
-	// AbiBindMsgVELOCITY_ESTIMATE(ABI_BROADCAST, &vel_est_ev, vel_est_cb);
+	AbiBindMsgRSSI(ABI_BROADCAST, &rssi_ev, bluetoothmsg_cb);
 	AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
-
+	// AbiBindMsgVELOCITY_ESTIMATE(ABI_BROADCAST, &vel_est_ev, vel_est_cb);
+	
 	// Send out the filter data
 	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_RAFILTERDATA, send_rafilterdata);
 };
@@ -234,8 +234,7 @@ void relativeavoidancefilter_init(void)
 void relativeavoidancefilter_periodic(void)
 {	
 	// FAKE MESSAGE for testing purposes from the 0.0 position if a BT source is not available!
-	// float d = sqrt(pow(stateGetPositionEnu_f()->x,2)+pow(stateGetPositionEnu_f()->y,2));
-	// AbiSendMsgRSSI(1, 2, 2, );
+	// AbiSendMsgRSSI(1, 2, 2, 30);
 
 	/*********************************************
 		Sending speed directly between drones
@@ -261,7 +260,7 @@ void relativeavoidancefilter_periodic(void)
 	/*********************************************
 		Relative Avoidance Behavior
 	*********************************************/
-	if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
+	// if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
 		float cc[nf][6];
 
 		// Pos in X and Y just for arena border detection!
@@ -318,6 +317,6 @@ void relativeavoidancefilter_periodic(void)
 		guidance_v_set_guided_z(-1.0);
 		// guidance_h_set_guided_heading(0.0); % not reccommended if without a good heading estimate
 
-	}
+	// }
 
 };

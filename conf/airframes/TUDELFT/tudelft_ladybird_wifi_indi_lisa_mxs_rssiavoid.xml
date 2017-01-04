@@ -231,12 +231,12 @@
    <!--module name="gps" type="ubx_ucenter"/-->
    <module name="send_imu_mag_current"/>
    <module name="stereocam">
-     <configure name="STEREO_UART" value="UART1"/>
+     <configure name="STEREO_UART" value="UART2"/>
      <configure name="STEREO_BAUD" value="B115200"/>
      <define name="SEND_STEREO" value="FALSE"/>
    </module>
    <module name="stereocam_state2camera">
-     <configure name="STEREO_UART" value="UART1"/>
+     <configure name="STEREO_UART" value="UART2"/>
      <configure name="STEREO_BAUD" value="B115200"/>
    </module>
    <module name="stereocam_stereocam2state">
@@ -252,14 +252,13 @@
     <module name="traffic_info.xml"/>
     <module name="rssi.xml"/>
     <module name="relativeavoidancefilter.xml"/>
-    <module name="flight_plan_guided"/> 
+<!--     <module name="flight_plan_guided"/>  -->
  </modules>
 
   <firmware name="rotorcraft">
     <target name="ap" board="lisa_mx_2.1">
 
       <define name="REMAP_UART3" value="TRUE" />
-
       <module name="radio_control" type="datalink"/>
       <!--module name="radio_control" type="spektrum">
         <configure name="RADIO_CONTROL_SPEKTRUM_PRIMARY_PORT" value="UART5" />

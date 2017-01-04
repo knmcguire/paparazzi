@@ -467,13 +467,6 @@ void ble_evt_system_boot(const struct ble_msg_system_boot_evt_t __attribute__((u
   stdma_start();
 }
 
-// /* Function to convert cartesian coordinates to polar */
-// static void cart2polar(float x, float y, float *radius, float *radians)
-// {
-//   *radius  = sqrt(pow(x,2) + pow(y,2));
-//   *radians = atan2(y,x);
-// };
-
 /* stdma_periodic() - staged new advertise message to be set as advertisement
  *
  */
