@@ -85,7 +85,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		ekf_filter_new(&ekf[nf]); 			// Initialize an ekf filter for each target tracker
 
 		// Set up the Q and R matrices and all the rest.
-		fmat_scal_mult(EKF_N,EKF_N, ekf[nf].Q, pow(SPEEDNOISE,2.0), ekf[nf].Q);
+		fmat_scal_mult(EKF_N,EKF_N, ekf[nf].Q, pow(0.5,2.0), ekf[nf].Q);
 		fmat_scal_mult(EKF_M,EKF_M, ekf[nf].R, pow(SPEEDNOISE,2.0), ekf[nf].R);
 		ekf[nf].Q[0]   	   = 0.01; // Reccomended 0.01 to give this process a high level of trust
 		ekf[nf].Q[EKF_N+1] = 0.01;
