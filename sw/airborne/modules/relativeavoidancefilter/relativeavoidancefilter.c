@@ -104,14 +104,14 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	// If we do recognize the ID, then we can update the measurement message data
 	else if ((i != -1) || (nf == (NUAVS-1)) ) {
 		RSSIarray[i] = (float)rssi; //logging
-		float ownVx = stateGetSpeedEnu_f()->y; //vel_body.x; //From optical flow
-		float ownVy = stateGetSpeedEnu_f()->x; //vel_body.y;
+		float ownVx = -stateGetSpeedEnu_f()->y; //vel_body.x; //From optical flow directly
+		float ownVy = -stateGetSpeedEnu_f()->x; //vel_body.y;
 		
 		// Bind velocities to a known maximum to avoid occasional NaN or inf errors
 		keepbounded(&ownVx,-2.0,2.0);
 		keepbounded(&ownVy,-2.0,2.0);
 
-		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
+		if (guidance_h.mode == GUIDANCE_H_MODE_ATTITUDE) // only in guided mode (flight) (take off in NAV)
 		{
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
@@ -243,7 +243,7 @@ void relativeavoidancefilter_periodic(void)
 	*********************************************/
 	// Convert Course to the proper format (NED)
 	float spd, crs;
-	cart2polar(stateGetSpeedEnu_f()->y, stateGetSpeedEnu_f()->x, &spd, &crs); // Get the total speed and course
+	cart2polar(-stateGetSpeedEnu_f()->y, -stateGetSpeedEnu_f()->x, &spd, &crs); // Get the total speed and course
 	wrapTo2Pi(&crs); 					    								  // Wrap to 2 Pi since the sent result is unsigned
 
 	int32_t course = (int32_t)(crs*(1e7)); // Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)

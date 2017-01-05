@@ -82,9 +82,10 @@
 
  <section name="AUTOPILOT">
    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
-   <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
+   <define name="MODE_MANUAL" value="AP_MODE_HOVER_Z_HOLD"/>
    <define name="MODE_AUTO1" value="AP_MODE_HOVER_Z_HOLD"/>
-   <define name="MODE_AUTO2" value="AP_MODE_GUIDED"/>
+   <!--define name="MODE_AUTO2" value="AP_MODE_GUIDED"/-->
+  <define name="MODE_AUTO2" value="AP_MODE_ATTITUDE_DIRECT"/>
    <define name="NO_RC_THRUST_LIMIT"  value="TRUE"/>
  </section>
 
@@ -181,6 +182,7 @@
   <section name="INS" prefix="INS_">
      <!--define name="INT_GPS_ID" value="ABI_DISABLE"/-->
      <define name="USE_GPS_ALT" value="true"/>
+    <define name="OPTITRACK_DONOTUSESPEED" value="TRUE"/>
   </section>
 
  <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
@@ -296,7 +298,11 @@
 
     <!--module name="stabilization" type="int_quat"/-->
     <module name="stabilization" type="indi"/>
-    <module name="ahrs" type="int_cmpl_quat"/>
+    <module name="ahrs" type="int_cmpl_quat">
+      <configure name="USE_MAGNETOMETER" value="FALSE"/>
+      <configure name="AHRS_USE_GPS" value="FALSE"/>
+      <configure name="AHRS_USE_GPS_HEADING" value="FALSE"/>
+    </module>
     <module name="ins"/>
     <configure name="USE_MAGNETOMETER" value="FALSE"/>
     <module name="air_data">

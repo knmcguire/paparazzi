@@ -128,8 +128,8 @@ void stereocam_to_state(void)
   float vel_body_y = 0;
 
 #if STEREOCAM2STATE_CAM_FORWARD == 1
-  vel_body_x = - (float)vel_pixelwise.z / RES;
-  vel_body_y = (float)vel_pixelwise.x / RES;
+  vel_body_x = (float)vel_pixelwise.z / RES;
+  vel_body_y = - (float)vel_pixelwise.x / RES;
 #else
   vel_body_x = - (float)vel_global.x / RES;
   vel_body_y = (float)vel_global.y / RES;
@@ -177,8 +177,8 @@ void stereocam_to_state(void)
   int16_t dummy_int16 = 0;
   float dummy_float = 0;
 
-  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y, &dummy_int16, &dummy_int16,
-		  &vel_body_x_median_filter, &vel_body_y_median_filter,&dummy_float, &dummy_float, &dummy_float);
+  // DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y, &dummy_int16, &dummy_int16,
+		  // &vel_body_x_median_filter, &vel_body_y_median_filter,&dummy_float, &dummy_float, &dummy_float);
 
 #endif
 
