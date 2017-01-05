@@ -96,7 +96,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		// If not sending the orientation but only NED velocity, then orientation noises may be set to 0
 		// TODO: Maybe remove this idea altogether and just make it based on ned only all the time?
 		ekf[nf].dt     = 0.2; 								    // Initial assumption (STDMA code runs at 5Hz)
-		model[nf].Pn   = -63.0 - 8.0 + (float)source_strength;  // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
+		// model[nf].Pn   = -63.0 - 8.0 + (float)source_strength;  // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
+		model[nf].Pn     = -55;  // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
 		model[nf].gammal = 2.0;									// Assuming free space loss
 		nf++; // Number of filter is present is increased!
 	}
