@@ -60,7 +60,7 @@
   <section name="IMU" prefix="IMU_">
     <define name="BODY_TO_IMU_PHI"   value="-2.0" unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="-0.0" unit="deg"/>
-    <define name="BODY_TO_IMU_PSI"   value="135." unit="deg"/>
+    <define name="BODY_TO_IMU_PSI"   value="135" unit="deg"/> <!-- Do not touch this! -->
 
     <define name="ACCEL_X_NEUTRAL" value="0"/>
     <define name="ACCEL_Y_NEUTRAL" value="0"/>
@@ -82,8 +82,8 @@
 
  <section name="AUTOPILOT">
    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
-   <define name="MODE_MANUAL" value="AP_MODE_HOVER_DIRECT"/>
-   <define name="MODE_AUTO1" value="AP_MODE_HOVER_Z_HOLD"/>
+   <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
+   <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_DIRECT"/>
    <define name="MODE_AUTO2" value="AP_MODE_GUIDED"/>
   <!--define name="MODE_AUTO2" value="AP_MODE_ATTITUDE_DIRECT"/-->
    <define name="NO_RC_THRUST_LIMIT"  value="TRUE"/>
@@ -222,11 +222,11 @@
  </section>
 
  <section name="RELATIVEAVOIDANCEFILTER" prefix="">
-  <define name="MAVSIZE" value="0.6"/>    <!-- MAV diameter -->
-  <define name="ASIDE" value="2.0"/>      <!-- Size of arena (for testing) -->
+  <define name="MAVSIZE" value="0.15"/>    <!-- MAV diameter -->
+  <define name="ASIDE" value="0.5"/>      <!-- Size of arena (for testing) -->
   <define name="RSSINOISE" value="5.0"/>  <!-- (Expected) Noise on RSSI -->
-  <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements -->
-  <define name="V_NOMINAL" value="0.5"/>  <!-- Desired nominal velocity -->
+  <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements, roughly also based on kimberly's journal paper-->
+  <define name="V_NOMINAL" value="0.25"/>  <!-- Desired nominal velocity -->
  </section>
 
  <modules main_freq="512">

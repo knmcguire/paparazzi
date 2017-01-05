@@ -20,7 +20,7 @@
 		<file name="functions/randomgenerator.h"/>
 	</header>
 	<init fun="relativeavoidancefilter_init()"/>
-	<periodic fun="relativeavoidancefilter_periodic()" freq="5" autorun="TRUE"/>
+	<periodic fun="relativeavoidancefilter_periodic()" freq="20" autorun="TRUE"/>
 	<makefile>
 		<!-- Main file -->
 		<file name="relativeavoidancefilter.c"/>

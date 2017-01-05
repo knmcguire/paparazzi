@@ -46,6 +46,7 @@ uint32_t now_ts[NUAVS-1]; 	// Time of last received message from each MAV
 int nf; 					// Number of filters registered
 float crs_des, v_des; 		// crs_des = desired course w.r.t. north, v_des = magnitude of velocity
 float vx_des, vy_des;		// Desired velocities in NED frame
+float vx_des_b, vy_des_b;		// Desired velocities in NED frame
 float RSSIarray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
 float magprev;				// Previous magnitude from 0,0 (for simulated wall detection)
 
@@ -286,7 +287,7 @@ void relativeavoidancefilter_periodic(void)
 		magprev = sqrt(pow(posx,2) + pow(posy,2));
 
 		// If approaching wall, then change direction to avoid wall
-		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wall_imminent) {
+		if ( ((abs(posx) > (ASIDE-0.25)) || (abs(posy) > (ASIDE-0.25))) && wall_imminent) {
 		// if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5)))) {
 			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
 			cart2polar(-posx,-posy, &v_des, &crs_des);
@@ -320,9 +321,12 @@ void relativeavoidancefilter_periodic(void)
 		// autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);  	//send to guided mode -- use this if flying with optitrack
 		
 		/* Opticflow Guided commands */
-		guidance_h_set_guided_vel(vx_des, vy_des);
+		// vx_des_b = vx_des*cos(-stateGetNedToBodyEulers_f()->psi) - vy_des*sin(-stateGetNedToBodyEulers_f()->psi);
+		// vy_des_b = vx_des*sin(-stateGetNedToBodyEulers_f()->psi) + vy_des*cos(-stateGetNedToBodyEulers_f()->psi);
+		// guidance_h_set_guided_body_vel(vx_des, vy_des);
 
-		//guidance_v_set_guided_z(-1.0);
+		guidance_h_set_guided_vel(-vx_des,-vy_des);
+		// guidance_v_set_guided_z(-1.0);
 		// guidance_h_set_guided_heading(0.0); % not reccommended if without a good heading estimate
 
 	}

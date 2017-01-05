@@ -129,7 +129,7 @@ void stereocam_to_state(void)
 
 #if STEREOCAM2STATE_CAM_FORWARD == 1
   vel_body_x = (float)vel_pixelwise.z / RES;
-  vel_body_y = - (float)vel_pixelwise.x / RES;
+  vel_body_y = -(float)vel_pixelwise.x / RES;
 #else
   vel_body_x = - (float)vel_global.x / RES;
   vel_body_y = (float)vel_global.y / RES;
