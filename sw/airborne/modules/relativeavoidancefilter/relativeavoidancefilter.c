@@ -74,7 +74,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	uint8_t ac_id, int8_t source_strength, int8_t rssi)
 { 
 	int i= -1; // Initialize index (null assumption, no drone is present)
-	RSSIarray[0]=30;	
+	
 	// If it's a new ID we start a new EKF for it
 	// TODO: aircraft ID are now hard coded here, make it more general (set in airframe file?)
 	// The hardcoding was done to make sure that no other bluetooth devices or drone accidentally interfere with testing
@@ -170,6 +170,8 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	uint8_t i;
 
 	// TODO: MAKE THIS SWITCHING NOT LAZY BUT PROPER FOR UNLIMITED MAVS
+	// array_shiftleft(vec, nf, 1);
+	// vec is a vector of 0 to nf defined each time nf increases
 	if (nf == 2) {
 		if (alternate) {
 			alternate = false;
