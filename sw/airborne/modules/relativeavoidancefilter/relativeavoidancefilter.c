@@ -112,7 +112,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		keepbounded(&ownVx,-2.0,2.0);
 		keepbounded(&ownVy,-2.0,2.0);
 
-		if (guidance_h.mode == GUIDANCE_H_MODE_ATTITUDE) // only in guided mode (flight) (take off in NAV)
+		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
 		{
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
@@ -264,6 +264,10 @@ void relativeavoidancefilter_periodic(void)
 		Relative Avoidance Behavior
 	*********************************************/
 	if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
+
+		//switch height to RC controlled height (for pocket drone without IR sensor!)
+	    guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
+
 		float cc[nf][6];
 
 		// Pos in X and Y just for arena border detection!
@@ -317,7 +321,8 @@ void relativeavoidancefilter_periodic(void)
 		
 		/* Opticflow Guided commands */
 		guidance_h_set_guided_vel(vx_des, vy_des);
-		guidance_v_set_guided_z(-1.0);
+
+		//guidance_v_set_guided_z(-1.0);
 		// guidance_h_set_guided_heading(0.0); % not reccommended if without a good heading estimate
 
 	}
