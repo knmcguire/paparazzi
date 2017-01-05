@@ -263,6 +263,10 @@ void relativeavoidancefilter_periodic(void)
 		Relative Avoidance Behavior
 	*********************************************/
 	if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
+
+		//switch height to RC controlled height (for pocket drone without IR sensor!)
+	    guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
+
 		float cc[nf][6];
 
 		// Pos in X and Y just for arena border detection!
