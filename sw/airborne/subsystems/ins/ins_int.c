@@ -545,10 +545,10 @@ static void vel_est_cb(uint8_t sender_id __attribute__((unused)),
   ins_int.ltp_speed.x = SPEED_BFP_OF_REAL(vel_ned.x);
   ins_int.ltp_speed.y = SPEED_BFP_OF_REAL(vel_ned.y);
   if (last_stamp > 0) {
-    #ifndef INS_OPTITRACK_DONOTUSESPEED
+   // #ifndef INS_OPTITRACK_DONOTUSESPEED
     ins_int.ltp_pos.x = ins_int.ltp_pos.x + POS_BFP_OF_REAL(dt * vel_ned.x);
     ins_int.ltp_pos.y = ins_int.ltp_pos.y + POS_BFP_OF_REAL(dt * vel_ned.y);
-    #endif
+    //#endif
   }
 #endif
 

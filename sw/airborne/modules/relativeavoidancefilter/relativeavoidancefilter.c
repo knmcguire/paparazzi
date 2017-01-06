@@ -327,7 +327,7 @@ void relativeavoidancefilter_periodic(void)
 		// vy_des_b = vx_des*sin(-stateGetNedToBodyEulers_f()->psi) + vy_des*cos(-stateGetNedToBodyEulers_f()->psi);
 		// guidance_h_set_guided_body_vel(vx_des, vy_des);
 
-		guidance_h_set_guided_vel(-vx_des,-vy_des);
+		guidance_h_set_guided_vel(vx_des,vy_des);
 		
 		// guidance_v_set_guided_z(-1.0);
 		// guidance_h_set_guided_heading(0.0); % not reccommended if without a good heading estimate

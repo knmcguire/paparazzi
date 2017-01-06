@@ -26,6 +26,7 @@
 #ifndef STEREOCAM2STATE_CAM_FORWARD
 #define STEREOCAM2STATE_CAM_FORWARD 1
 #endif
+PRINT_CONFIG_VAR(STEREOCAM2STATE_CAM_FORWARD)
 
 #include "subsystems/datalink/telemetry.h"
 
@@ -117,10 +118,10 @@ void stereocam_to_state(void)
   vel_pixelwise.x = vel_x_pixelwise_int;
   vel_pixelwise.z = vel_z_pixelwise_int;
 
-/*  struct Int16Vect3 vel_global;
+  struct Int16Vect3 vel_global;
   vel_global.x = vel_x_global_int;
   vel_global.y = vel_y_global_int;
-  vel_global.z = vel_z_global_int;*/
+  vel_global.z = vel_z_global_int;
 
   // Derotate velocity and transform from frame to body coordinates
   // TODO: send resolution directly from stereocam
@@ -131,8 +132,8 @@ void stereocam_to_state(void)
   vel_body_x = (float)vel_pixelwise.z / RES;
   vel_body_y = -(float)vel_pixelwise.x / RES;
 #else
-  vel_body_x = - (float)vel_global.x / RES;
-  vel_body_y = (float)vel_global.y / RES;
+  vel_body_x = -(float)vel_global.y / RES;
+  vel_body_y = (float)vel_global.x / RES;
 #endif
 
 //optitrack data
