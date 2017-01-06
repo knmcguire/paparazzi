@@ -388,6 +388,7 @@ void ins_int_update_gps(struct GpsState *gps_s)
   ins_int.propagation_cnt = 0;
 #endif
 
+#ifndef INS_USE_GPS_ALT
 #if USE_HFF
   /* horizontal gps transformed to NED in meters as float */
   struct FloatVect2 gps_pos_m_ned;
@@ -415,6 +416,7 @@ void ins_int_update_gps(struct GpsState *gps_s)
   INT32_VECT2_SCALE_2(ins_int.ltp_speed, gps_speed_cm_s_ned,
                      INT32_SPEED_OF_CM_S_NUM, INT32_SPEED_OF_CM_S_DEN);
 #endif /* USE_HFF */
+#endif
 
   ins_ned_to_state();
 
@@ -506,9 +508,9 @@ static void gps_cb(uint8_t sender_id __attribute__((unused)),
                    uint32_t stamp __attribute__((unused)),
                    struct GpsState *gps_s)
 {
-  #ifndef INS_OPTITRACK_DONOTUSESPEED
+ // #ifndef INS_OPTITRACK_DONOTUSESPEED
   ins_int_update_gps(gps_s);
-  #endif
+  // #endif
 }
 
 static void vel_est_cb(uint8_t sender_id __attribute__((unused)),

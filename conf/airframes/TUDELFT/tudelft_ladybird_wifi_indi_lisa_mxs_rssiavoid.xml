@@ -181,7 +181,7 @@
 
   <section name="INS" prefix="INS_">
      <!--define name="INT_GPS_ID" value="ABI_DISABLE"/-->
-     <define name="USE_GPS_ALT" value="true"/>
+     <define name="USE_GPS_ALT" value="TRUE"/>
     <define name="OPTITRACK_DONOTUSESPEED" value="TRUE"/>
   </section>
 
@@ -203,7 +203,7 @@
 
  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
    <define name="PGAIN" value="80"/>
-   <define name="DGAIN" value="184"/>
+   <define name="DGAIN" value="165"/>
    <define name="IGAIN" value="0"/>
    <define name="MAX_BANK" value="RadOfDeg(10)"/>
    <define name="REF_MAX_SPEED" value="0.3"/>
@@ -223,7 +223,7 @@
 
  <section name="RELATIVEAVOIDANCEFILTER" prefix="">
   <define name="MAVSIZE" value="0.15"/>    <!-- MAV diameter -->
-  <define name="ASIDE" value="0.5"/>      <!-- Size of arena (for testing) -->
+  <define name="ASIDE" value="1.0"/>      <!-- Size of arena (for testing) -->
   <define name="RSSINOISE" value="5.0"/>  <!-- (Expected) Noise on RSSI -->
   <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements, roughly also based on kimberly's journal paper-->
   <define name="V_NOMINAL" value="0.25"/>  <!-- Desired nominal velocity -->
@@ -270,6 +270,7 @@
 
       <configure name="AHRS_PROPAGATE_FREQUENCY" value="500"/>
       <define name="USE_PERSISTENT_SETTINGS" value="TRUE"/>
+      <configure name="USE_BARO_BOARD" value="FALSE"/>
     </target>
 
     <target name="nps" board="pc">

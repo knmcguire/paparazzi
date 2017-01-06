@@ -49,6 +49,7 @@ float vx_des, vy_des;		// Desired velocities in NED frame
 float vx_des_b, vy_des_b;		// Desired velocities in NED frame
 float RSSIarray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
 float magprev;				// Previous magnitude from 0,0 (for simulated wall detection)
+float pxother, pyother;
 
 float ccvec[NUAVS-1][4];
 float x_est[NUAVS-1][MAF_SIZE_POS], y_est[NUAVS-1][MAF_SIZE_POS];
@@ -97,10 +98,9 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 
 		// If not sending the orientation but only NED velocity, then orientation noises may be set to 0
 		// TODO: Maybe remove this idea altogether and just make it based on ned only all the time?
-		ekf[nf].dt     = 0.2; 								    // Initial assumption (STDMA code runs at 5Hz)
-		// model[nf].Pn   = -63.0 - 8.0 + (float)source_strength;  // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
-		model[nf].Pn     = -55;  // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
-		model[nf].gammal = 2.0;									// Assuming free space loss
+		ekf[nf].dt       = 0.2; 							      // Initial assumption (STDMA code runs at 5Hz)
+		model[nf].Pn     = -63.0 - 8.0 + (float)source_strength;  // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
+		model[nf].gammal = 2.0;	 // Assuming free space loss
 		nf++; // Number of filter is present is increased!
 	}
 
@@ -111,8 +111,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		float ownVy = -stateGetSpeedEnu_f()->x; //vel_body.y;
 		
 		// Bind velocities to a known maximum to avoid occasional NaN or inf errors
-		// keepbounded(&ownVx,-2.0,2.0);
-		// keepbounded(&ownVy,-2.0,2.0);
+		keepbounded(&ownVx,-2.0,2.0);
+		keepbounded(&ownVy,-2.0,2.0);
 
 		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
 		{
@@ -123,6 +123,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			float trackedVx, trackedVy;
 			// Get the aircraft info for that ID
 			polar2cart(acInfoGetGspeed(ac_id), acInfoGetCourse(ac_id), &trackedVx, &trackedVy); // get x and y velocities (m/s)
+			pxother = acInfoGetPositionEnu_f(ac_id)->x;
+			pyother = acInfoGetPositionEnu_f(ac_id)->y;
 			
 			keepbounded(&trackedVx,-2.0,2.0);
 			keepbounded(&trackedVy,-2.0,2.0);
@@ -207,6 +209,10 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
 		&ekf[i].X[6],  				 // Height separation
 		&vx_des, &vy_des);		     // Commanded velocities
+
+	float temp = 0;
+	pprz_msg_send_GPS_ERROR(trans, dev, AC_ID,
+		&pxother,&pyother,&temp,&temp,&temp,&temp);
 };
 
 void relativeavoidancefilter_init(void)
@@ -234,6 +240,7 @@ void relativeavoidancefilter_init(void)
 	
 	// Send out the filter data
 	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_RAFILTERDATA, send_rafilterdata);
+	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GPS_ERROR, send_rafilterdata);
 };
 
 
@@ -289,7 +296,7 @@ void relativeavoidancefilter_periodic(void)
 		magprev = sqrt(pow(posx,2) + pow(posy,2));
 
 		// If approaching wall, then change direction to avoid wall
-		if ( ((abs(posx) > (ASIDE-0.25)) || (abs(posy) > (ASIDE-0.25)))) {
+		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5)))) {
 		// if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5)))) {
 			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
 			cart2polar(-posx,-posy, &v_des, &crs_des);
