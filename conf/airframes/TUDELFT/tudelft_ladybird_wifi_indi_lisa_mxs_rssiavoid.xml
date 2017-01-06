@@ -203,10 +203,10 @@
 
  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
    <define name="PGAIN" value="80"/>
-   <define name="DGAIN" value="260"/>
+   <define name="DGAIN" value="184"/>
    <define name="IGAIN" value="0"/>
-   <define name="MAX_BANK" value="RadOfDeg(15)"/>
-   <define name="REF_MAX_SPEED" value="0.5"/>
+   <define name="MAX_BANK" value="RadOfDeg(10)"/>
+   <define name="REF_MAX_SPEED" value="0.3"/>
    <define name="USE_SPEED_REF" value="TRUE"/>
 
  </section>
@@ -240,9 +240,11 @@
    <module name="stereocam_state2camera">
      <configure name="STEREO_UART" value="UART2"/>
      <configure name="STEREO_BAUD" value="B115200"/>
+     <define name="STATE2CAMERA_SEND_DATA_TYPE" value="2"/>
    </module>
    <module name="stereocam_stereocam2state">
 			<define name="STEREOCAM2STATE_BUTTER_TAU" value="0.2"/>
+      <define name="STEREOCAM2STATE_CAM_FORWARD" value="0"/>
 	 </module>
 
    <module name="stdma">
@@ -304,7 +306,6 @@
       <configure name="AHRS_USE_GPS_HEADING" value="FALSE"/>
     </module>
     <module name="ins"/>
-    <configure name="USE_MAGNETOMETER" value="FALSE"/>
     <module name="air_data">
       <define name="AIR_DATA_CALC_AMSL_BARO" value="TRUE"/>
     </module>
