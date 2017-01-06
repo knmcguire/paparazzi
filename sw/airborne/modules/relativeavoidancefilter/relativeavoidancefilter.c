@@ -75,12 +75,13 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	uint8_t ac_id, int8_t source_strength, int8_t rssi)
 { 
 	int i= -1; // Initialize index (null assumption, no drone is present)
-	
+	bool firsttime;
 	// If it's a new ID we start a new EKF for it
 	// TODO: aircraft ID are now hard coded here, make it more general (set in airframe file?)
 	// The hardcoding was done to make sure that no other bluetooth devices or drone accidentally interfere with testing
 	if ((!array_find_int(NUAVS-1, IDarray, ac_id, &i)) && (nf < NUAVS-1) )
 	{ // Check if a new aircraft ID is present, continue
+		firsttime = false;
 		IDarray[nf] = ac_id; 				// Store ID
 		srcstrength[nf] = source_strength;  // Store source strength
 		ekf_filter_new(&ekf[nf]); 			// Initialize an ekf filter for each target tracker
@@ -110,11 +111,12 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		float ownVy = -stateGetSpeedEnu_f()->x; //vel_body.y;
 		
 		// Bind velocities to a known maximum to avoid occasional NaN or inf errors
-		keepbounded(&ownVx,-2.0,2.0);
-		keepbounded(&ownVy,-2.0,2.0);
+		// keepbounded(&ownVx,-2.0,2.0);
+		// keepbounded(&ownVy,-2.0,2.0);
 
 		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
 		{
+			firsttime == true;
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
 
@@ -150,7 +152,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 				ccvec[i][2] = movingaveragefilter(vx_est[i], MAF_SIZE_VEL, ekf[i].X[4]);
 				ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
 		}
-		else { // Initial estimate is towards the initial direction of flight (filter of other drone!)
+		else if (firsttime == false) { // Initial estimate is towards the initial direction of flight (filter of other drone!)
 			ekf[i].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
 			ekf[i].X[1] = 1.0;
 			ekf[i].X[2] = 0.0;
@@ -287,7 +289,7 @@ void relativeavoidancefilter_periodic(void)
 		magprev = sqrt(pow(posx,2) + pow(posy,2));
 
 		// If approaching wall, then change direction to avoid wall
-		if ( ((abs(posx) > (ASIDE-0.25)) || (abs(posy) > (ASIDE-0.25))) && wall_imminent) {
+		if ( ((abs(posx) > (ASIDE-0.25)) || (abs(posy) > (ASIDE-0.25)))) {
 		// if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5)))) {
 			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
 			cart2polar(-posx,-posy, &v_des, &crs_des);
@@ -305,7 +307,7 @@ void relativeavoidancefilter_periodic(void)
 				collisioncone_update(cc[i], ccvec[i][0], ccvec[i][1], ccvec[i][2], ccvec[i][3], dist+MAVSIZE+eps);	// x y xdot_0 ydot_0 (characteristics collision cones)
 				
 				if ( collisioncone_checkdanger( cc[i], vx_des, vy_des )) {
-					collision_imminent = true; 		// We could be colliding!
+					// collision_imminent = true; 		// We could be colliding!
 				}
 			}
 	
@@ -326,6 +328,7 @@ void relativeavoidancefilter_periodic(void)
 		// guidance_h_set_guided_body_vel(vx_des, vy_des);
 
 		guidance_h_set_guided_vel(-vx_des,-vy_des);
+		
 		// guidance_v_set_guided_z(-1.0);
 		// guidance_h_set_guided_heading(0.0); % not reccommended if without a good heading estimate
 
