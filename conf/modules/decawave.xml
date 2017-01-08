@@ -7,10 +7,13 @@
   <header>
     <file name="decawave.h"/>
   </header>
+
   <init fun="decawave_init()"/>
   <periodic fun="decawave_run()" freq="512" autorun="TRUE"/>
   <makefile>
     <file name="decawave.c"/>
+    <file name="deca_device.c" dir="modules/decawave/decadriver"/>
+    <file name="deca_params_init.c" dir="modules/decawave/decadriver"/>
   </makefile>
 </module>
 

@@ -24,14 +24,13 @@
  */
 
 #include "modules/decawave/decawave.h"
-#include "decadriver/deca_device_api.h"
-#include "decadriver/deca_regs.h"
-//#include "sleep.h"
-#include "lcd.h"
-#include "port.h"
-#include "mcu_periph/sys_time.h"
-#include "mcu_periph/sys_time_arch.h"
-
+#include "modules/decawave/decadriver/deca_device_api.h"
+#include "modules/decawave/decadriver/deca_regs.h"
+#include "platform/sleep.h"
+ #include "platform/lcd.h"
+#include "platform/port.h"
+#include <sys/time.h>
+#include "mcu_periph/spi.h"
 
 /* Example application name and version to display on LCD screen. */
 #define APP_NAME "SIMPLE TX v1.2"
@@ -77,13 +76,17 @@ void decawave_init() {
 	     * For initialisation, DW1000 clocks must be temporarily set to crystal speed. After initialisation SPI rate can be increased for optimum
 	     * performance. */
 	    reset_DW1000(); /* Target specific drive of RSTn line into DW1000 low for a period. */
+
+	    // SPI set rate low (how to do this???)
 	    spi_set_rate_low();
 	    if (dwt_initialise(DWT_LOADNONE) == DWT_ERROR)
 	    {
-	        lcd_display_str("INIT FAILED");
+	        //lcd_display_str("INIT FAILED");
 	        while (1)
 	        { };
 	    }
+	    // SPI set rate high (how to do this???)
+
 	    spi_set_rate_high();
 
 	    /* Configure DW1000. See NOTE 3 below. */
@@ -109,7 +112,9 @@ void decawave_run() {
 
     /* Execute a delay between transmissions. */
    // sleep_ms(TX_DELAY_MS);
-    sys_time_msleep(TX_DELAY_MS);
+//    sys_time_msleep(TX_DELAY_MS);
+    usleep(TX_DELAY_MS * 1000);
+
 
     /* Increment the blink frame sequence number (modulo 256). */
     tx_msg[BLINK_FRAME_SN_IDX]++;
