@@ -1,0 +1,16 @@
+<!DOCTYPE module SYSTEM "module.dtd">
+
+<module name="decawave">
+  <doc>
+    <description></description>
+  </doc>
+  <header>
+    <file name="decawave.h"/>
+  </header>
+  <init fun="decawave_init()"/>
+  <periodic fun="decawave_run()" freq="512" autorun="TRUE"/>
+  <makefile>
+    <file name="decawave.c"/>
+  </makefile>
+</module>
+
