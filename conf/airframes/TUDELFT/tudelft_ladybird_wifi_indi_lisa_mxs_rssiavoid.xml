@@ -226,7 +226,7 @@
   <define name="ASIDE" value="1.0"/>      <!-- Size of arena (for testing) -->
   <define name="RSSINOISE" value="5.0"/>  <!-- (Expected) Noise on RSSI -->
   <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements, roughly also based on kimberly's journal paper-->
-  <define name="V_NOMINAL" value="0.25"/>  <!-- Desired nominal velocity -->
+  <define name="V_NOMINAL" value="0.5"/>  <!-- Desired nominal velocity -->
  </section>
 
  <modules main_freq="512">
