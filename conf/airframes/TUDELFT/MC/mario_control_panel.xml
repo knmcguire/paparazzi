@@ -197,7 +197,25 @@
         <arg flag="-c" constant="*:telemetry:BARO_RAW:abs"/>
       </program>
     </session>
-    <session name="pocketdrones_swarm">
+    <session name="pocketdrones_swarm_1">
+      <program name="Data Link">
+        <arg flag="-udp"/>
+      </program>
+      <program name="Server"/>
+      <program name="Messages"/>
+      <program name="GCS"/>
+      <program name="NatNet">
+        <arg flag="-ac" constant="1"/>
+        <arg flag="15"/>
+      </program>
+      <program name="Joystick">
+        <arg flag="-d" constant="2"/>
+        <arg flag="hobbyking.xml"/>
+        <arg flag="-ac" constant="LadybirdMXS_swarm_1"/>
+      </program>
+      <program name="Real-time Plotter"/>
+    </session>
+    <session name="pocketdrones_swarm_2">
       <program name="Data Link">
         <arg flag="-udp"/>
       </program>
@@ -206,12 +224,12 @@
       <program name="GCS"/>
       <program name="NatNet">
         <arg flag="-ac" constant="2"/>
-        <arg flag="15"/>
+        <arg flag="16"/>
       </program>
       <program name="Joystick">
         <arg flag="-d" constant="2"/>
         <arg flag="hobbyking.xml"/>
-        <arg flag="-ac" constant="LadybirdMXS_swarm_1"/>
+        <arg flag="-ac" constant="LadybirdMXS_swarm_2"/>
       </program>
       <program name="Real-time Plotter"/>
     </session>

@@ -137,8 +137,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			Y[2] = ownVy;
 			Y[3] = trackedVx;  // Velocity tracked from other drone (already in Earth NED frame!)
 			Y[4] = trackedVy;
-			// Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z;
-			Y[5] = 0.74 - stateGetPositionEnu_f()->z;
+			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z;
+			
 			// Run the steps of the EKF
 			ekf_filter_predict(&ekf[i], &model[i]);
 			ekf_filter_update(&ekf[i], Y);
