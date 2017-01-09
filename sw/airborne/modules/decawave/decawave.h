@@ -26,8 +26,10 @@
 #ifndef DECAWAVE_H
 #define DECAWAVE_H
 
- void decawave_init(void);
- void decawave_run(void);
+extern void decawave_init(void);
+extern void decawave_run(void);
+extern void decaware_event_init_check(void);
+extern void decaware_event_transmit_succes(void);
 
 #endif
 

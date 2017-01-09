@@ -54,10 +54,28 @@ int closespi(void)
  * returns 0 for success, or -1 for error
  */
 #pragma GCC optimize ("O3")
+#include "mcu_periph/spi.h"
+
 int writetospi(uint16 headerLength, const uint8 *headerBuffer, uint32 bodylength, const uint8 *bodyBuffer)
 {
 
-	int i=0;
+	struct spi_transaction decawave_spi_link_transaction;
+
+	uint8_t header_body_array[255];
+	//copy header and buffer in one
+
+	 decawave_spi_link_transaction.select        = SPISelectUnselect;
+	  decawave_spi_link_transaction.cpol          = SPICpolIdleHigh; //find out
+	  decawave_spi_link_transaction.cpha          = SPICphaEdge2;    //find out
+	  decawave_spi_link_transaction.dss           = SPIDss8bit;
+	  decawave_spi_link_transaction.bitorder      = SPIMSBFirst;
+	  decawave_spi_link_transaction.cdiv          = SPIDiv64;
+	  decawave_spi_link_transaction.slave_idx     = SPI_SLAVE0;//DECAWAVE_SPI_LINK_SLAVE_NUMBER;
+	  decawave_spi_link_transaction.output_length = headerLength + bodylength;
+	  decawave_spi_link_transaction.output_buf    = (uint8_t *) &decawave_spi_link_data;
+	  decawave_spi_link_transaction.input_length  = 0;
+	  decawave_spi_link_transaction.input_buf     = NULL;
+	  decawave_spi_link_transaction.after_cb      = decawave_spi_link_trans_cb;	int i=0;
 
     decaIrqStatus_t  stat ;
 

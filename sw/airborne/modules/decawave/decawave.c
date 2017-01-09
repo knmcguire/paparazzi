@@ -32,6 +32,7 @@
 #include <sys/time.h>
 #include "mcu_periph/spi.h"
 
+
 /* Example application name and version to display on LCD screen. */
 #define APP_NAME "SIMPLE TX v1.2"
 
@@ -65,12 +66,56 @@ static uint8 tx_msg[] = {0xC5, 0, 'D', 'E', 'C', 'A', 'W', 'A', 'V', 'E', 0, 0};
  * Application entry point.
  */
 
+bool initialized = false;
+bool transmit = false;
+bool transmit_succes = false;
+
+void decaware_event_init_check()
+{
+	// check if init worked
+if(initialized == false)
+	{
+	if (dwt_initialise(DWT_LOADNONE) != DWT_ERROR)
+		{
+			initialized = true;
+		}
+	}
+
+}
+
+
+void decaware_event_transmit_succes()
+{
+	// check if init worked
+if(transmit == true)
+	{
+	if (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS))
+		{
+			transmit_succes = true;
+		}
+	}
+
+}
+
+void decaware_event_init()
+{
+	// check if init worked
+if(initialized == false)
+	{
+	if (dwt_initialise(DWT_LOADNONE) != DWT_ERROR)
+		{
+			initialized = true;
+		}
+	}
+
+}
+
 void decawave_init() {
 	 /* Start with board specific hardware init. */
 	    peripherals_init();
 
 	    /* Display application name on LCD. */
-	    lcd_display_str(APP_NAME);
+	    //lcd_display_str(APP_NAME);
 
 	    /* Reset and initialise DW1000. See NOTE 2 below.
 	     * For initialisation, DW1000 clocks must be temporarily set to crystal speed. After initialisation SPI rate can be increased for optimum
@@ -79,12 +124,13 @@ void decawave_init() {
 
 	    // SPI set rate low (how to do this???)
 	    spi_set_rate_low();
-	    if (dwt_initialise(DWT_LOADNONE) == DWT_ERROR)
+	    // made an event function for this
+/*	    if (dwt_initialise(DWT_LOADNONE) == DWT_ERROR)
 	    {
 	        //lcd_display_str("INIT FAILED");
 	        while (1)
 	        { };
-	    }
+	    }*/
 	    // SPI set rate high (how to do this???)
 
 	    spi_set_rate_high();
@@ -99,20 +145,29 @@ void decawave_run() {
     dwt_writetxfctrl(sizeof(tx_msg), 0, 0); /* Zero offset in TX buffer, no ranging. */
 
     /* Start transmission. */
+    if (transmit_succes == true)
+    {
     dwt_starttx(DWT_START_TX_IMMEDIATE);
+    transmit = true;
+    }
 
     /* Poll DW1000 until TX frame sent event set. See NOTE 5 below.
      * STATUS register is 5 bytes long but, as the event we are looking at is in the first byte of the register, we can use this simplest API
      * function to access it.*/
-    while (!(dwt_read32bitreg(SYS_STATUS_ID) & SYS_STATUS_TXFRS))
-    { };
+    // DO NOT USE A WHILE LOOP, NO FLIGHT!!
 
-    /* Clear TX frame sent event. */
+    if (transmit_succes ==  true)
+    {
+    	  /* Clear TX frame sent event. */
     dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
+    transmit_succes = false;
+    transmit = false;
+    }
 
     /* Execute a delay between transmissions. */
    // sleep_ms(TX_DELAY_MS);
 //    sys_time_msleep(TX_DELAY_MS);
+    // periodic function will already handle this.
     usleep(TX_DELAY_MS * 1000);
 
 
