@@ -82,7 +82,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	// The hardcoding was done to make sure that no other bluetooth devices or drone accidentally interfere with testing
 	if ((!array_find_int(NUAVS-1, IDarray, ac_id, &i)) && (nf < NUAVS-1) )
 	{ // Check if a new aircraft ID is present, continue
-		firsttime = false;
+		// firsttime = false;
 		IDarray[nf] = ac_id; 				// Store ID
 		srcstrength[nf] = source_strength;  // Store source strength
 		ekf_filter_new(&ekf[nf]); 			// Initialize an ekf filter for each target tracker
@@ -99,7 +99,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		// If not sending the orientation but only NED velocity, then orientation noises may be set to 0
 		// TODO: Maybe remove this idea altogether and just make it based on ned only all the time?
 		ekf[nf].dt       = 0.2; 							      // Initial assumption (STDMA code runs at 5Hz)
-		model[nf].Pn     = -63.0 - 8.0 + (float)source_strength;  // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
+		// model[nf].Pn     = -63.0 - 8.0 + (float)source_strength;  // -63 is from calibration with antenna that had 8dB power, so the source_strength recalibrates
+		model[nf].Pn     = -55;
 		model[nf].gammal = 2.0;	 // Assuming free space loss
 		nf++; // Number of filter is present is increased!
 	}
@@ -107,16 +108,16 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	// If we do recognize the ID, then we can update the measurement message data
 	else if ((i != -1) || (nf == (NUAVS-1)) ) {
 		RSSIarray[i] = (float)rssi; //logging
-		float ownVx = -stateGetSpeedEnu_f()->y; //vel_body.x; //From optical flow directly
-		float ownVy = -stateGetSpeedEnu_f()->x; //vel_body.y;
+		float ownVx = stateGetSpeedEnu_f()->y; //vel_body.x; //From optical flow directly
+		float ownVy = stateGetSpeedEnu_f()->x; //vel_body.y;
 		
-		// Bind velocities to a known maximum to avoid occasional NaN or inf errors
+		// Bind velocities to a maximum to avoid occasional NaN or inf errors
 		keepbounded(&ownVx,-2.0,2.0);
 		keepbounded(&ownVy,-2.0,2.0);
 
 		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
 		{
-			firsttime == true;
+			// firsttime == true;
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
 
@@ -136,8 +137,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			Y[2] = ownVy;
 			Y[3] = trackedVx;  // Velocity tracked from other drone (already in Earth NED frame!)
 			Y[4] = trackedVy;
-			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z;
-			
+			// Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z;
+			Y[5] = 0.74 - stateGetPositionEnu_f()->z;
 			// Run the steps of the EKF
 			ekf_filter_predict(&ekf[i], &model[i]);
 			ekf_filter_update(&ekf[i], Y);
@@ -149,12 +150,14 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			 * Y = [RSSI dotx_own doty_own psi_own dotx_other doty_other psi_other dh]
 			 */
 			// Moving average filter to state (MAF_SIZE of 1, average with direct last measurment)
-				ccvec[i][0] = movingaveragefilter(x_est[i],  MAF_SIZE_POS, ekf[i].X[0]);
-				ccvec[i][1] = movingaveragefilter(y_est[i],  MAF_SIZE_POS, ekf[i].X[1]);
-				ccvec[i][2] = movingaveragefilter(vx_est[i], MAF_SIZE_VEL, ekf[i].X[4]);
-				ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
+			ccvec[i][0] = movingaveragefilter(x_est[i],  MAF_SIZE_POS, ekf[i].X[0]);
+			ccvec[i][1] = movingaveragefilter(y_est[i],  MAF_SIZE_POS, ekf[i].X[1]);
+			ccvec[i][2] = movingaveragefilter(vx_est[i], MAF_SIZE_VEL, ekf[i].X[4]);
+			ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
 		}
-		else if (firsttime == false) { // Initial estimate is towards the initial direction of flight (filter of other drone!)
+		// else if (firsttime == false) { // Initial estimate is towards the initial direction of flight (filter of other drone!)
+		else
+		{
 			ekf[i].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
 			ekf[i].X[1] = 1.0;
 			ekf[i].X[2] = 0.0;
@@ -276,12 +279,12 @@ void relativeavoidancefilter_periodic(void)
 	if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
 
 		//switch height to RC controlled height (for pocket drone without IR sensor!)
-	    guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
+	    // guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
 
 		float cc[nf][6];
 
 		// Pos in X and Y just for arena border detection!
-		// float posx = stateGetPositionEnu_f()->y; 
+		// float posx = stateGetPositionEnu_f()->y;
 		// float posy = stateGetPositionEnu_f()->x;
 		float posx = (float)gps_pos_cm_ned_i.x/100.0;
 		float posy = (float)gps_pos_cm_ned_i.y/100.0;
@@ -296,7 +299,7 @@ void relativeavoidancefilter_periodic(void)
 		magprev = sqrt(pow(posx,2) + pow(posy,2));
 
 		// If approaching wall, then change direction to avoid wall
-		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5)))) {
+		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wall_imminent ) {
 		// if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5)))) {
 			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
 			cart2polar(-posx,-posy, &v_des, &crs_des);
@@ -314,7 +317,7 @@ void relativeavoidancefilter_periodic(void)
 				collisioncone_update(cc[i], ccvec[i][0], ccvec[i][1], ccvec[i][2], ccvec[i][3], dist+MAVSIZE+eps);	// x y xdot_0 ydot_0 (characteristics collision cones)
 				
 				if ( collisioncone_checkdanger( cc[i], vx_des, vy_des )) {
-					// collision_imminent = true; 		// We could be colliding!
+					collision_imminent = true; 		// We could be colliding!
 				}
 			}
 	
@@ -336,7 +339,7 @@ void relativeavoidancefilter_periodic(void)
 
 		guidance_h_set_guided_vel(vx_des,vy_des);
 		
-		// guidance_v_set_guided_z(-1.0);
+		guidance_v_set_guided_z(-1.5);
 		// guidance_h_set_guided_heading(0.0); % not reccommended if without a good heading estimate
 
 	}

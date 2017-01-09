@@ -388,35 +388,35 @@ void ins_int_update_gps(struct GpsState *gps_s)
   ins_int.propagation_cnt = 0;
 #endif
 
-#ifndef INS_USE_GPS_ALT
-#if USE_HFF
-  /* horizontal gps transformed to NED in meters as float */
-  struct FloatVect2 gps_pos_m_ned;
-  VECT2_ASSIGN(gps_pos_m_ned, gps_pos_cm_ned.x, gps_pos_cm_ned.y);
-  VECT2_SDIV(gps_pos_m_ned, gps_pos_m_ned, 100.0f);
+// #ifndef INS_USE_GPS_ALT
+// #if USE_HFF
+//   /* horizontal gps transformed to NED in meters as float */
+//   struct FloatVect2 gps_pos_m_ned;
+//   VECT2_ASSIGN(gps_pos_m_ned, gps_pos_cm_ned.x, gps_pos_cm_ned.y);
+//   VECT2_SDIV(gps_pos_m_ned, gps_pos_m_ned, 100.0f);
 
-  struct FloatVect2 gps_speed_m_s_ned;
-  VECT2_ASSIGN(gps_speed_m_s_ned, gps_speed_cm_s_ned.x, gps_speed_cm_s_ned.y);
-  VECT2_SDIV(gps_speed_m_s_ned, gps_speed_m_s_ned, 100.);
+//   struct FloatVect2 gps_speed_m_s_ned;
+//   VECT2_ASSIGN(gps_speed_m_s_ned, gps_speed_cm_s_ned.x, gps_speed_cm_s_ned.y);
+//   VECT2_SDIV(gps_speed_m_s_ned, gps_speed_m_s_ned, 100.);
 
-  if (ins_int.hf_realign) {
-    ins_int.hf_realign = false;
-    const struct FloatVect2 zero = {0.0f, 0.0f};
-    b2_hff_realign(gps_pos_m_ned, zero);
-  }
-  // run horizontal filter
-  b2_hff_update_gps(&gps_pos_m_ned, &gps_speed_m_s_ned);
-  // convert and copy result to ins_int
-  ins_update_from_hff();
+//   if (ins_int.hf_realign) {
+//     ins_int.hf_realign = false;
+//     const struct FloatVect2 zero = {0.0f, 0.0f};
+//     b2_hff_realign(gps_pos_m_ned, zero);
+//   }
+//   // run horizontal filter
+//   b2_hff_update_gps(&gps_pos_m_ned, &gps_speed_m_s_ned);
+//   // convert and copy result to ins_int
+//   ins_update_from_hff();
 
-#else  /* hff not used */
-  /* simply copy horizontal pos/speed from gps */
-  INT32_VECT2_SCALE_2(ins_int.ltp_pos, gps_pos_cm_ned,
-                      INT32_POS_OF_CM_NUM, INT32_POS_OF_CM_DEN);
-  INT32_VECT2_SCALE_2(ins_int.ltp_speed, gps_speed_cm_s_ned,
-                     INT32_SPEED_OF_CM_S_NUM, INT32_SPEED_OF_CM_S_DEN);
-#endif /* USE_HFF */
-#endif
+// #else  /* hff not used */
+//   /* simply copy horizontal pos/speed from gps */
+//   INT32_VECT2_SCALE_2(ins_int.ltp_pos, gps_pos_cm_ned,
+//                       INT32_POS_OF_CM_NUM, INT32_POS_OF_CM_DEN);
+//   INT32_VECT2_SCALE_2(ins_int.ltp_speed, gps_speed_cm_s_ned,
+//                      INT32_SPEED_OF_CM_S_NUM, INT32_SPEED_OF_CM_S_DEN);
+// #endif /* USE_HFF */
+// #endif
 
   ins_ned_to_state();
 
