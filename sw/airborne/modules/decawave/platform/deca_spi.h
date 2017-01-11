@@ -22,6 +22,8 @@ extern "C" {
 
 #define DECA_MAX_SPI_HEADER_LENGTH      (3)                     // max number of bytes in header (for formating & sizing)
 
+int initspi(void)
+
 /*! ------------------------------------------------------------------------------------------------------------------
  * Function: openspi()
  *

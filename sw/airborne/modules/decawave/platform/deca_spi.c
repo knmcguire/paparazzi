@@ -56,26 +56,49 @@ int closespi(void)
 #pragma GCC optimize ("O3")
 #include "mcu_periph/spi.h"
 
+struct spi_transaction decawave_spi_link_transaction;
+struct uint8_t decawave_spi_link_data[255];
+static volatile bool decawave_spi_link_ready = true;
+
+static void decawave_spi_link_trans_cb(struct spi_transaction *trans);
+
+void initspi(void)
+{
+
+	  high_speed_logger_spi_link_data.id = 0;
+
+decawave_spi_link_transaction.select        = SPISelectUnselect;
+ decawave_spi_link_transaction.cpol          = SPICpolIdleHigh; //find out
+ decawave_spi_link_transaction.cpha          = SPICphaEdge2;    //find out
+ decawave_spi_link_transaction.dss           = SPIDss8bit;
+ decawave_spi_link_transaction.bitorder      = SPIMSBFirst;
+ decawave_spi_link_transaction.cdiv          = SPIDiv64;
+ decawave_spi_link_transaction.slave_idx     = SPI_SLAVE0;//DECAWAVE_SPI_LINK_SLAVE_NUMBER;
+ decawave_spi_link_transaction.output_length = 255;
+ decawave_spi_link_transaction.output_buf    = (uint8_t *) &decawave_spi_link_data;
+ decawave_spi_link_transaction.input_length  = 0;
+ decawave_spi_link_transaction.input_buf     = NULL;
+ decawave_spi_link_transaction.after_cb      = decawave_spi_link_trans_cb;
+
+ int i=0;
+}
+
+static void decawave_spi_link_trans_cb(struct spi_transaction *trans)
+{
+	decawave_spi_link_ready =  true;
+}
+
+
 int writetospi(uint16 headerLength, const uint8 *headerBuffer, uint32 bodylength, const uint8 *bodyBuffer)
 {
 
-	struct spi_transaction decawave_spi_link_transaction;
 
 	uint8_t header_body_array[255];
-	//copy header and buffer in one
 
-	 decawave_spi_link_transaction.select        = SPISelectUnselect;
-	  decawave_spi_link_transaction.cpol          = SPICpolIdleHigh; //find out
-	  decawave_spi_link_transaction.cpha          = SPICphaEdge2;    //find out
-	  decawave_spi_link_transaction.dss           = SPIDss8bit;
-	  decawave_spi_link_transaction.bitorder      = SPIMSBFirst;
-	  decawave_spi_link_transaction.cdiv          = SPIDiv64;
-	  decawave_spi_link_transaction.slave_idx     = SPI_SLAVE0;//DECAWAVE_SPI_LINK_SLAVE_NUMBER;
-	  decawave_spi_link_transaction.output_length = headerLength + bodylength;
-	  decawave_spi_link_transaction.output_buf    = (uint8_t *) &decawave_spi_link_data;
-	  decawave_spi_link_transaction.input_length  = 0;
-	  decawave_spi_link_transaction.input_buf     = NULL;
-	  decawave_spi_link_transaction.after_cb      = decawave_spi_link_trans_cb;	int i=0;
+	memcpy(header_body_array, headerBuffer, headerLength * sizeof(*uint8_t));
+	memcpy(header_body_array + headerLength, bodyBuffer, bodylength * sizeof(*uint8_t));
+
+	//copy header and buffer in one
 
     decaIrqStatus_t  stat ;
 

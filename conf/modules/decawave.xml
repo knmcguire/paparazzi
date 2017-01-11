@@ -17,6 +17,19 @@
     <file name="decawave.c"/>
     <file name="deca_device.c" dir="modules/decawave/decadriver"/>
     <file name="deca_params_init.c" dir="modules/decawave/decadriver"/>
+
+  <configure name="HS_LOG_SPI_DEV" default="spi1" case="upper|lower"/>
+    <configure name="HS_LOG_SPI_SLAVE_IDX" default="spi_slave1" case="upper|lower"/>
+    <raw>
+      include $(CFG_SHARED)/spi_master.makefile
+    </raw>
+
+    <define name="USE_$(HS_LOG_SPI_DEV_UPPER)" value="1" />
+    <define name="USE_$(HS_LOG_SPI_SLAVE_IDX_UPPER)" value="1" />
+    <define name="HIGH_SPEED_LOGGER_SPI_LINK_DEVICE" value="$(HS_LOG_SPI_DEV_LOWER)" />
+    <define name="HIGH_SPEED_LOGGER_SPI_LINK_SLAVE_NUMBER" value="$(HS_LOG_SPI_SLAVE_IDX_UPPER)" />
+
+    <file name="deca_spi.c" dir="modules/decawave/platform"/>
   </makefile>
 </module>
 
