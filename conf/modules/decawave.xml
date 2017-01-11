@@ -10,6 +10,9 @@
 
   <init fun="decawave_init()"/>
   <periodic fun="decawave_run()" freq="512" autorun="TRUE"/>
+  <event fun="decaware_event_init_check()" />
+  <event fun="decaware_event_transmit_succes()" />
+
   <makefile>
     <file name="decawave.c"/>
     <file name="deca_device.c" dir="modules/decawave/decadriver"/>
