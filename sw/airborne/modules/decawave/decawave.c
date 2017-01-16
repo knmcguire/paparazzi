@@ -24,53 +24,52 @@
  */
 
 #include "modules/decawave/decawave.h"
+/*
 #include "modules/decawave/decadriver/deca_device_api.h"
 #include "modules/decawave/decadriver/deca_regs.h"
 #include "platform/sleep.h"
  #include "platform/lcd.h"
 #include "platform/port.h"
+*/
 #include <sys/time.h>
 #include "mcu_periph/spi.h"
+#include <stdio.h>
+#include <pthread.h>
+#include "state.h"
+#include <string.h>
+#include <stdlib.h>
+#include "inttypes.h"
+
+#include "modules/decawave/libDW1000/dw1000.h"
+#include "modules/decawave/libDW1000/libdw1000.h"
+#include "modules/decawave/libDW1000/libdw1000Spi.h"
+#include "modules/decawave/libDW1000/libdw1000Types.h"
+
+static dwDevice_t dwm_device;
+static dwDevice_t *dwm = &dwm_device;
+
+static dwOps_t dwOps;
+//static InterruptIn _irq = InterruptIn(PA_1);
 
 
-/* Example application name and version to display on LCD screen. */
-#define APP_NAME "SIMPLE TX v1.2"
-
-/* Default communication configuration. We use here EVK1000's default mode (mode 3). */
-static dwt_config_t config = {
-    2,               /* Channel number. */
-    DWT_PRF_64M,     /* Pulse repetition frequency. */
-    DWT_PLEN_1024,   /* Preamble length. Used in TX only. */
-    DWT_PAC32,       /* Preamble acquisition chunk size. Used in RX only. */
-    9,               /* TX preamble code. Used in TX only. */
-    9,               /* RX preamble code. Used in RX only. */
-    1,               /* 0 to use standard SFD, 1 to use non-standard SFD. */
-    DWT_BR_110K,     /* Data rate. */
-    DWT_PHRMODE_STD, /* PHY header mode. */
-    (1025 + 64 - 32) /* SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. */
-};
-
-/* The frame sent in this example is an 802.15.4e standard blink. It is a 12-byte frame composed of the following fields:
- *     - byte 0: frame type (0xC5 for a blink).
- *     - byte 1: sequence number, incremented for each new frame.
- *     - byte 2 -> 9: device ID, see NOTE 1 below.
- *     - byte 10/11: frame check-sum, automatically set by DW1000.  */
-static uint8 tx_msg[] = {0xC5, 0, 'D', 'E', 'C', 'A', 'W', 'A', 'V', 'E', 0, 0};
-/* Index to access to sequence number of the blink frame in the tx_msg array. */
-#define BLINK_FRAME_SN_IDX 1
-
-/* Inter-frame delay period, in milliseconds. */
-#define TX_DELAY_MS 1000
-
-/**
- * Application entry point.
- */
+#define ANTENNA_OFFSET 154.3
+#define ANTENNA_DELAY  (ANTENNA_OFFSET*499.2e6*128)/299792458.0 // In radio tick
 
 bool initialized = false;
 bool transmit = false;
 bool transmit_succes = false;
+static volatile bool isInit = false;
 
-void decaware_event_init_check()
+struct spi_transaction decawave_spi_link_transaction;
+uint8_t decawave_spi_link_data[255];
+uint8_t decawave_spi_link_data_input[255];
+
+static volatile bool decawave_spi_link_ready = true;
+
+static void decawave_spi_link_trans_cb(struct spi_transaction *trans);
+
+
+/*void decaware_event_init_check()
 {
 	// check if init worked
 if(initialized == false)
@@ -95,84 +94,110 @@ if(transmit == true)
 		}
 	}
 
-}
+}*/
 
-void decaware_event_init()
+static void spiWrite(dwDevice_t* dev, const void *header, size_t headerLength,
+                     const void* data, size_t dataLength)
 {
-	// check if init worked
-if(initialized == false)
-	{
-	if (dwt_initialise(DWT_LOADNONE) != DWT_ERROR)
-		{
-			initialized = true;
-		}
-	}
+
+	/*
+    //xSemaphoreTake(spiSemaphore, portMAX_DELAY);
+    _spiMutex.lock();
+    select();
+    memcpy(spiBuffer, header, headerLength);
+    spiTransfer(spiBuffer, headerLength);
+    memcpy(spiBuffer, data, dataLength);
+    spiTransfer(spiBuffer, dataLength);
+    deselect();
+    _spiMutex.unlock();
+    //xSemaphoreGive(spiSemaphore);*/
+
+	memcpy(	decawave_spi_link_transaction.output_buf, header, headerLength * sizeof(uint8_t));
+	memcpy(	decawave_spi_link_transaction.output_buf + headerLength, data, dataLength * sizeof(uint8_t));
+
+	//copy header and buffer in one
+
+    spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &decawave_spi_link_transaction);
+}
+
+
+static void spiRead(dwDevice_t* dev, const void *header, size_t headerLength,
+                    void* data, size_t dataLength)
+{
+    //xSemaphoreTake(spiSemaphore, portMAX_DELAY);
+   /* _spiMutex.lock();
+    select();
+    memcpy(spiBuffer, header, headerLength);
+    spiTransfer(spiBuffer, headerLength);
+    spiTransfer((uint8_t*)data, dataLength, true);
+    deselect();
+    _spiMutex.unlock();*/
+    //xSemaphoreGive(spiSemaphore);
+
 
 }
+
+void stopTRX()
+{
+    uint8_t bla = 0x40;
+    dwSpiWrite(dwm, SYS_CTRL, 0, &bla, 1);                       // disable tranceiver go back to idle mode
+}
+
 
 void decawave_init() {
-	 /* Start with board specific hardware init. */
-	    peripherals_init();
 
-	    /* Display application name on LCD. */
-	    //lcd_display_str(APP_NAME);
+decawave_spi_link_transaction.select        = SPISelectUnselect;
+decawave_spi_link_transaction.cpol          = SPICpolIdleHigh; //find out
+decawave_spi_link_transaction.cpha          = SPICphaEdge2;    //find out
+decawave_spi_link_transaction.dss           = SPIDss8bit;
+decawave_spi_link_transaction.bitorder      = SPIMSBFirst;
+decawave_spi_link_transaction.cdiv          = SPIDiv64;
 
-	    /* Reset and initialise DW1000. See NOTE 2 below.
-	     * For initialisation, DW1000 clocks must be temporarily set to crystal speed. After initialisation SPI rate can be increased for optimum
-	     * performance. */
-	    reset_DW1000(); /* Target specific drive of RSTn line into DW1000 low for a period. */
+decawave_spi_link_transaction.slave_idx     = SPI_SLAVE0;//DECAWAVE_SPI_LINK_SLAVE_NUMBER;
+decawave_spi_link_transaction.output_length = 255;
+decawave_spi_link_transaction.output_buf    = (uint8_t *) &decawave_spi_link_data;
+decawave_spi_link_transaction.input_length  = 255;
+decawave_spi_link_transaction.input_buf     = (uint8_t *) &decawave_spi_link_data_input;
+decawave_spi_link_transaction.after_cb      = decawave_spi_link_trans_cb;
 
-	    // SPI set rate low (how to do this???)
-	    spi_set_rate_low();
-	    // made an event function for this
-/*	    if (dwt_initialise(DWT_LOADNONE) == DWT_ERROR)
-	    {
-	        //lcd_display_str("INIT FAILED");
-	        while (1)
-	        { };
-	    }*/
-	    // SPI set rate high (how to do this???)
+   dwInit(dwm, &dwOps);
 
-	    spi_set_rate_high();
+  //  deselect();
+ //   _spi.format(8.0);
+   // _spi.frequency(FAST_SPI);
+  //  dwSoftReset(dwm);
+   //  stopTRX();
 
-	    /* Configure DW1000. See NOTE 3 below. */
-	    dwt_configure(&config);
+
+    // Initialize the driver
+    // Init libdw
+
+
+
+
+  /* int result = dwConfigure(dwm);
+    if (result != 0) {
+        isInit = false;
+        //DEBUG_PRINT("Failed to configure DW1000!\r\n");
+        return;
+    } else {
+        //DEBUG_PRINT("Worked!\r\n");
+    }*/
+
+//    isInit = true;
+
 }
+
+#include "subsystems/datalink/telemetry.h"
+
 void decawave_run() {
 
-    /* Write frame data to DW1000 and prepare transmission. See NOTE 4 below.*/
-    dwt_writetxdata(sizeof(tx_msg), tx_msg, 0); /* Zero offset in TX buffer. */
-    dwt_writetxfctrl(sizeof(tx_msg), 0, 0); /* Zero offset in TX buffer, no ranging. */
-
-    /* Start transmission. */
-    if (transmit_succes == true)
-    {
-    dwt_starttx(DWT_START_TX_IMMEDIATE);
-    transmit = true;
-    }
-
-    /* Poll DW1000 until TX frame sent event set. See NOTE 5 below.
-     * STATUS register is 5 bytes long but, as the event we are looking at is in the first byte of the register, we can use this simplest API
-     * function to access it.*/
-    // DO NOT USE A WHILE LOOP, NO FLIGHT!!
-
-    if (transmit_succes ==  true)
-    {
-    	  /* Clear TX frame sent event. */
-    dwt_write32bitreg(SYS_STATUS_ID, SYS_STATUS_TXFRS);
-    transmit_succes = false;
-    transmit = false;
-    }
-
-    /* Execute a delay between transmissions. */
-   // sleep_ms(TX_DELAY_MS);
-//    sys_time_msleep(TX_DELAY_MS);
-    // periodic function will already handle this.
-    usleep(TX_DELAY_MS * 1000);
+	DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
 
 
-    /* Increment the blink frame sequence number (modulo 256). */
-    tx_msg[BLINK_FRAME_SN_IDX]++;
 }
 
-
+static void decawave_spi_link_trans_cb(struct spi_transaction *trans)
+{
+	decawave_spi_link_ready =  true;
+}

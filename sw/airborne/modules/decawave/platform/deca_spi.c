@@ -100,7 +100,11 @@ int writetospi(uint16 headerLength, const uint8 *headerBuffer, uint32 bodylength
 
 	//copy header and buffer in one
 
-    decaIrqStatus_t  stat ;
+    spi_submit(&(HIGH_SPEED_LOGGER_SPI_LINK_DEVICE), &decawave_spi_link_transaction);
+
+
+    // old code
+   /* decaIrqStatus_t  stat ;
 
     stat = decamutexon() ;
 
@@ -127,7 +131,7 @@ int writetospi(uint16 headerLength, const uint8 *headerBuffer, uint32 bodylength
     SPIx_CS_GPIO->BSRR = SPIx_CS;
 
     decamutexoff(stat) ;
-
+*/
     return 0;
 } // end writetospi()
 
