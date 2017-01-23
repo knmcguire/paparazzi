@@ -153,7 +153,7 @@ decawave_spi_link_transaction.dss           = SPIDss8bit;
 decawave_spi_link_transaction.bitorder      = SPIMSBFirst;
 decawave_spi_link_transaction.cdiv          = SPIDiv64;
 
-decawave_spi_link_transaction.slave_idx     = SPI_SLAVE0;//DECAWAVE_SPI_LINK_SLAVE_NUMBER;
+decawave_spi_link_transaction.slave_idx     = SPI_SLAVE1;//DECAWAVE_SPI_LINK_SLAVE_NUMBER;
 decawave_spi_link_transaction.output_length = 255;
 decawave_spi_link_transaction.output_buf    = (uint8_t *) &decawave_spi_link_data;
 decawave_spi_link_transaction.input_length  = 255;
@@ -161,7 +161,7 @@ decawave_spi_link_transaction.input_buf     = (uint8_t *) &decawave_spi_link_dat
 decawave_spi_link_transaction.after_cb      = decawave_spi_link_trans_cb;
 
    dwInit(dwm, &dwOps);
-
+  // initialized= dwConfigure(dwm);
   //  deselect();
  //   _spi.format(8.0);
    // _spi.frequency(FAST_SPI);
@@ -191,7 +191,7 @@ decawave_spi_link_transaction.after_cb      = decawave_spi_link_trans_cb;
 #include "subsystems/datalink/telemetry.h"
 
 void decawave_run() {
-
+if(initialized==true)
 	DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
 
 
