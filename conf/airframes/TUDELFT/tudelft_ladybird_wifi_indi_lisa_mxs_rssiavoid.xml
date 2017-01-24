@@ -256,6 +256,9 @@
     <module name="traffic_info.xml"/>
     <module name="rssi.xml"/>
     <module name="relativeavoidancefilter.xml"/>
+    <!-- <module name="bluegiga_dl.xml"/> -->
+      <!-- <configure name="BLUEGIGA_DL_PORT" value="uart3"/> -->
+    <!-- </module> -->
 <!--     <module name="flight_plan_guided"/>  -->
  </modules>
 
@@ -289,6 +292,7 @@
       <!-- Setting the PWM interval to 36KHz -->
       <define name="SERVO_HZ" value="36000"/>
     </module>
+    <!-- <module name="telemetry_bluegiga.xml"/> -->
 
     <module name="telemetry" type="transparent">
       <configure name="MODEM_PORT" value="UART1"/>

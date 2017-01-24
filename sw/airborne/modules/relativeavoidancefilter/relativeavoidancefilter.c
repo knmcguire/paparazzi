@@ -27,6 +27,11 @@
 #include "subsystems/datalink/telemetry.h"
 #include "modules/multi/traffic_info.h"
 #include "modules/stdma/stdma.h"
+#include "subsystems/datalink/bluegiga.h"
+
+#include "pprzlink/pprz_transport.h"
+#include "subsystems/datalink/datalink.h"
+#include "subsystems/datalink/downlink.h"
 
 #define CRSSEARCH 15.0 		// Search grid for crs_des
 #define NUAVS 5				// Maximum expected number of drones
@@ -51,9 +56,13 @@ float RSSIarray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
 float magprev;				// Previous magnitude from 0,0 (for simulated wall detection)
 float pxother, pyother;
 
+float spd,crs;
+
 float ccvec[NUAVS-1][4];
 float x_est[NUAVS-1][MAF_SIZE_POS], y_est[NUAVS-1][MAF_SIZE_POS];
 float vx_est[NUAVS-1][MAF_SIZE_VEL], vy_est[NUAVS-1][MAF_SIZE_VEL];
+
+float trackedVx, trackedVy;
 
 static abi_event rssi_ev;
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
@@ -115,13 +124,12 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		keepbounded(&ownVx,-2.0,2.0);
 		keepbounded(&ownVy,-2.0,2.0);
 
-		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
-		{
+		// if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
+		// {
 			// firsttime == true;
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
 
-			float trackedVx, trackedVy;
 			// Get the aircraft info for that ID
 			polar2cart(acInfoGetGspeed(ac_id), acInfoGetCourse(ac_id), &trackedVx, &trackedVy); // get x and y velocities (m/s)
 			pxother = acInfoGetPositionEnu_f(ac_id)->x;
@@ -154,18 +162,18 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			ccvec[i][1] = movingaveragefilter(y_est[i],  MAF_SIZE_POS, ekf[i].X[1]);
 			ccvec[i][2] = movingaveragefilter(vx_est[i], MAF_SIZE_VEL, ekf[i].X[4]);
 			ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
-		}
+		// }
 		// else if (firsttime == false) { // Initial estimate is towards the initial direction of flight (filter of other drone!)
-		else
-		{
-			ekf[i].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
-			ekf[i].X[1] = 1.0;
-			ekf[i].X[2] = 0.0;
-			ekf[i].X[3] = 0.0;
-			ekf[i].X[4] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero
-			ekf[i].X[5] = 0.0;// -stateGetPositionNed_f()->y;
-			ekf[i].X[6] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero					
-		}
+		// else
+		// {
+		// 	ekf[i].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
+		// 	ekf[i].X[1] = 1.0;
+		// 	ekf[i].X[2] = 0.0;
+		// 	ekf[i].X[3] = 0.0;
+		// 	ekf[i].X[4] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero
+		// 	ekf[i].X[5] = 0.0;// -stateGetPositionNed_f()->y;
+		// 	ekf[i].X[6] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero					
+		// }
 		// Update latest time
 		now_ts[i] = get_sys_time_usec();
 
@@ -211,11 +219,9 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
 		&ekf[i].X[6],  				 // Height separation
-		&vx_des, &vy_des);		     // Commanded velocities
+		&trackedVx, &trackedVy);	 // Commanded velocities
 
 	float temp = 0;
-	pprz_msg_send_GPS_ERROR(trans, dev, AC_ID,
-		&pxother,&pyother,&temp,&temp,&temp,&temp);
 };
 
 void relativeavoidancefilter_init(void)
@@ -238,14 +244,12 @@ void relativeavoidancefilter_init(void)
 
 	// Subscribe to the ABI RSSI messages
 	AbiBindMsgRSSI(ABI_BROADCAST, &rssi_ev, bluetoothmsg_cb);
-	AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
+	// AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
 	// AbiBindMsgVELOCITY_ESTIMATE(ABI_BROADCAST, &vel_est_ev, vel_est_cb);
 	
 	// Send out the filter data
 	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_RAFILTERDATA, send_rafilterdata);
-	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_GPS_ERROR, send_rafilterdata);
 };
-
 
 void relativeavoidancefilter_periodic(void)
 {	
@@ -256,10 +260,11 @@ void relativeavoidancefilter_periodic(void)
 		Sending speed directly between drones
 	*********************************************/
 	// Convert Course to the proper format (NED)
-	float spd, crs;
-	cart2polar(-stateGetSpeedEnu_f()->y, -stateGetSpeedEnu_f()->x, &spd, &crs); // Get the total speed and course
+	// float spd, crs;
+	cart2polar(stateGetSpeedEnu_f()->y, stateGetSpeedEnu_f()->x, &spd, &crs); // Get the total speed and course
 	wrapTo2Pi(&crs); 					    								  // Wrap to 2 Pi since the sent result is unsigned
-
+	spd = 1.0;
+	crs = 0.0;
 	int32_t course = (int32_t)(crs*(1e7)); // Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
 	uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(course) / 1e7) / 2)) & 0x7FF) <<
 	                        21; 									  // bits 31-21 course (where the magnitude is pointed at)
