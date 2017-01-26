@@ -54,9 +54,6 @@ float vx_des, vy_des;		// Desired velocities in NED frame
 float vx_des_b, vy_des_b;		// Desired velocities in NED frame
 float RSSIarray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
 float magprev;				// Previous magnitude from 0,0 (for simulated wall detection)
-float pxother, pyother;
-
-float spd,crs;
 
 float ccvec[NUAVS-1][4];
 float x_est[NUAVS-1][MAF_SIZE_POS], y_est[NUAVS-1][MAF_SIZE_POS];
@@ -124,17 +121,15 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		keepbounded(&ownVx,-2.0,2.0);
 		keepbounded(&ownVy,-2.0,2.0);
 
-		// if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
-		// {
+		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
+		{
 			// firsttime == true;
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
 
 			// Get the aircraft info for that ID
 			polar2cart(acInfoGetGspeed(ac_id), acInfoGetCourse(ac_id), &trackedVx, &trackedVy); // get x and y velocities (m/s)
-			pxother = acInfoGetPositionEnu_f(ac_id)->x;
-			pyother = acInfoGetPositionEnu_f(ac_id)->y;
-			
+
 			keepbounded(&trackedVx,-2.0,2.0);
 			keepbounded(&trackedVy,-2.0,2.0);
 
@@ -162,18 +157,17 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			ccvec[i][1] = movingaveragefilter(y_est[i],  MAF_SIZE_POS, ekf[i].X[1]);
 			ccvec[i][2] = movingaveragefilter(vx_est[i], MAF_SIZE_VEL, ekf[i].X[4]);
 			ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
-		// }
-		// else if (firsttime == false) { // Initial estimate is towards the initial direction of flight (filter of other drone!)
-		// else
-		// {
-		// 	ekf[i].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
-		// 	ekf[i].X[1] = 1.0;
-		// 	ekf[i].X[2] = 0.0;
-		// 	ekf[i].X[3] = 0.0;
-		// 	ekf[i].X[4] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero
-		// 	ekf[i].X[5] = 0.0;// -stateGetPositionNed_f()->y;
-		// 	ekf[i].X[6] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero					
-		// }
+		}
+		else
+		{
+			ekf[i].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
+			ekf[i].X[1] = 1.0;
+			ekf[i].X[2] = 0.0;
+			ekf[i].X[3] = 0.0;
+			ekf[i].X[4] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero
+			ekf[i].X[5] = 0.0;// -stateGetPositionNed_f()->y;
+			ekf[i].X[6] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero					
+		}
 		// Update latest time
 		now_ts[i] = get_sys_time_usec();
 
@@ -260,11 +254,10 @@ void relativeavoidancefilter_periodic(void)
 		Sending speed directly between drones
 	*********************************************/
 	// Convert Course to the proper format (NED)
-	// float spd, crs;
+	float spd, crs;
 	cart2polar(stateGetSpeedEnu_f()->y, stateGetSpeedEnu_f()->x, &spd, &crs); // Get the total speed and course
-	wrapTo2Pi(&crs); 					    								  // Wrap to 2 Pi since the sent result is unsigned
-	spd = 1.0;
-	crs = 0.0;
+	wrapTo2Pi(&crs); 
+
 	int32_t course = (int32_t)(crs*(1e7)); // Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
 	uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(course) / 1e7) / 2)) & 0x7FF) <<
 	                        21; 									  // bits 31-21 course (where the magnitude is pointed at)
