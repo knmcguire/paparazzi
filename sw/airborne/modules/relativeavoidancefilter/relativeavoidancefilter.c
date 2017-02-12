@@ -54,6 +54,7 @@ float vx_des, vy_des;		// Desired velocities in NED frame
 float vx_des_b, vy_des_b;		// Desired velocities in NED frame
 float RSSIarray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
 float magprev;				// Previous magnitude from 0,0 (for simulated wall detection)
+float z_des;
 
 float ccvec[NUAVS-1][4];
 float x_est[NUAVS-1][MAF_SIZE_POS], y_est[NUAVS-1][MAF_SIZE_POS];
@@ -140,7 +141,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			Y[2] = ownVy;
 			Y[3] = trackedVx;  // Velocity tracked from other drone (already in Earth NED frame!)
 			Y[4] = trackedVy;
-			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z;
+			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z + 45.11;
 			
 			// Run the steps of the EKF
 			ekf_filter_predict(&ekf[i], &model[i]);
@@ -205,7 +206,7 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	uint8_t id = (uint8_t)IDarray[i];
 
 	pprz_msg_send_RAFILTERDATA(trans, dev, AC_ID,
-		&id,			     // ID or filtered aircraft number
+		&id,			     		 // ID or filtered aircraft number
 		&RSSIarray[i], 		    	 // Received ID and RSSI
 		&srcstrength[i],		     // Source strength
 		&px, &py, &pz, 				 // &gps_pos_cm_ned_i.z    //
@@ -213,7 +214,7 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
 		&ekf[i].X[6],  				 // Height separation
-		&trackedVx, &trackedVy);	 // Commanded velocities
+		&vx_des, &vy_des);	 // Commanded velocities
 
 	float temp = 0;
 };
@@ -238,7 +239,7 @@ void relativeavoidancefilter_init(void)
 
 	// Subscribe to the ABI RSSI messages
 	AbiBindMsgRSSI(ABI_BROADCAST, &rssi_ev, bluetoothmsg_cb);
-	// AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
+	AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
 	// AbiBindMsgVELOCITY_ESTIMATE(ABI_BROADCAST, &vel_est_ev, vel_est_cb);
 	
 	// Send out the filter data
@@ -337,7 +338,14 @@ void relativeavoidancefilter_periodic(void)
 
 		guidance_h_set_guided_vel(vx_des,vy_des);
 		
-		guidance_v_set_guided_z(-1.5);
+		// Make them fly at different heights just for ultra safety
+		if (AC_ID == 15)
+			z_des = 1.30;
+		else if (AC_ID == 16)
+			z_des = 1.00;
+
+		guidance_v_set_guided_z(-z_des);
+
 		// guidance_h_set_guided_heading(0.0); % not reccommended if without a good heading estimate
 
 	}
