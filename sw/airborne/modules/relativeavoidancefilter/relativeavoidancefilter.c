@@ -345,15 +345,17 @@ void relativeavoidancefilter_periodic(void)
 		// guidance_h_set_guided_body_vel(vx_des, vy_des);
 
 		// implement memory
-		if (!wall_imminent || ((get_sys_time_usec()-t_w1) > 0.0) ){
+		// if (!wall_imminent || ((get_sys_time_usec()-t_w1) > 0.0) ){
+		// if ( ((get_sys_time_usec()-t_w1) > 0.0) ){
 			array_make_zeros_bool(36, cc);  // Null assumption
 			t_w1 = get_sys_time_usec();
 			wall_imminent = false;
-		}
-		else {
-			array_copy_bool(cc,cc_wall,36);
-		}
-
+		// }
+		// else {
+		// 	array_copy_bool(cc,cc_wall,36);
+		// }
+		// wall_imminent = false;
+		
 		float b_wall,wallx,wally,temp;
 		// If outside of the arena bounds move back inside, or otherwise try and keep your heading at the nominal velocity
 		// Recalculate wall as an issue
