@@ -60,6 +60,7 @@ bool firsttime;
 bool wall_imminent;
 bool cc[36];
 bool cc_wall[36];
+bool EKF_turn_trigger;
 float x_est[NUAVS-1][MAF_SIZE_POS], y_est[NUAVS-1][MAF_SIZE_POS];
 // float vx_est[NUAVS-1][MAF_SIZE_VEL], vy_est[NUAVS-1][MAF_SIZE_VEL];
 
@@ -373,7 +374,7 @@ void relativeavoidancefilter_periodic(void)
 		}
 
 		// array_print_bool(36,cc);
-		collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
+		EKF_turn_trigger = collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
 
 		guidance_h_set_guided_vel(vx_des,vy_des);
 		
