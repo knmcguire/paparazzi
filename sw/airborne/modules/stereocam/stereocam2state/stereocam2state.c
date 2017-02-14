@@ -22,59 +22,35 @@
 #ifndef STEREOCAM2STATE_RECEIVED_DATA_TYPE
 #define STEREOCAM2STATE_RECEIVED_DATA_TYPE 0
 #endif
+PRINT_CONFIG_VAR(STEREOCAM2STATE_RECEIVED_DATA_TYPE)
 
-#ifndef STEREOCAM2STATE_CAM_FORWARD
-#define STEREOCAM2STATE_CAM_FORWARD 1
+#if STEREOCAM2STATE_RECEIVED_DATA_TYPE == 0
+#ifndef STEREOCAM2STATE_EDGEFLOW_PIXELWISE
+#define STEREOCAM2STATE_EDGEFLOW_PIXELWISE FALSE
+PRINT_CONFIG_VAR(STEREOCAM2STATE_EDGEFLOW_PIXELWISE)
 #endif
-PRINT_CONFIG_VAR(STEREOCAM2STATE_CAM_FORWARD)
-
-#include "subsystems/datalink/telemetry.h"
-
-#include "modules/computer_vision/lib/filters/kalman_filter_vision.h"
-
-static abi_event gps_ev;
-struct NedCoor_f opti_vel;
-struct FloatVect3 velocity_rot_gps;
+uint8_t stereocam_medianfilter_on = 1;
+#endif
 
 #include "filters/median_filter.h"
-#include "filters/low_pass_filter.h"
+struct MedianFilterInt medianfilter_x, medianfilter_y, medianfilter_z;
 
-float distance_stereo = 2.0f;
-
-
-struct MedianFilterInt medianfilter_x, medianfilter_y, medianfilter_dist;
-
-
-
-#include "subsystems/radio_control.h"
-
-
-static void gps_cb(uint8_t sender_id __attribute__((unused)),
-                   uint32_t stamp __attribute__((unused)),
-                   struct GpsState *gps_s)
-{
-  opti_vel.x = (float)(gps_s->ecef_vel.x) / 100;
-  opti_vel.y = (float)(gps_s->ecef_vel.y) / 100;
-  opti_vel.z = (float)(gps_s->ecef_vel.z) / 100;
-}
-
+#include "subsystems/datalink/telemetry.h"
 
 void stereocam_to_state(void);
 
 void stereo_to_state_init(void)
 {
-  AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
 
   init_median_filter(&medianfilter_x);
   init_median_filter(&medianfilter_y);
-  init_median_filter(&medianfilter_dist);
-
+  init_median_filter(&medianfilter_z);
 }
 
 void stereo_to_state_periodic(void)
 {
   if (stereocam_data.fresh) {
-	  stereocam_to_state();
+    stereocam_to_state();
     stereocam_data.fresh = 0;
   }
 }
@@ -83,10 +59,11 @@ void stereocam_to_state(void)
 {
   int16_t RES = 100;
 
-  // Get info from stereocam data
+  // Sort the info from stereocam data from UART
+
   // 0 = stereoboard's #define SEND_EDGEFLOW
 #if STEREOCAM2STATE_RECEIVED_DATA_TYPE == 0
-  // opticflow and divergence (unscaled with depth
+  // opticflow and divergence (unscaled with depth)
   int16_t div_x = (int16_t)stereocam_data.data[0] << 8;
   div_x |= (int16_t)stereocam_data.data[1];
   int16_t flow_x = (int16_t)stereocam_data.data[2] << 8;
@@ -96,8 +73,8 @@ void stereocam_to_state(void)
   int16_t flow_y = (int16_t)stereocam_data.data[6] << 8;
   flow_y |= (int16_t)stereocam_data.data[7];
 
+// uint8_t agl = stereocam_data.data[8]; // in cm //TODO: use agl for in a guided obstacle avoidance.
   float fps = (float)stereocam_data.data[9];
-  int8_t agl = stereocam_data.data[8]; // in cm
 
   // velocity global
   int16_t vel_x_global_int = (int16_t)stereocam_data.data[10] << 8;
@@ -113,73 +90,57 @@ void stereocam_to_state(void)
   int16_t vel_z_pixelwise_int = (int16_t)stereocam_data.data[18] << 8;
   vel_z_pixelwise_int |= (int16_t)stereocam_data.data[19];
 
-  // Velocity (global pixelwise) in camera coordinates
-  struct Int16Vect3 vel_pixelwise;
-  vel_pixelwise.x = vel_x_pixelwise_int;
-  vel_pixelwise.z = vel_z_pixelwise_int;
+// Select what type of velocity estimate fom edgeflow is wanted
+#if STEREOCAM2STATE_EDGEFLOW_PIXELWISE == TRUE
+  struct FloatVect3 camera_frame_vel;
+  camera_frame_vel.x = (float)vel_x_pixelwise_int / RES;
+  camera_frame_vel.y = (float)vel_y_global_int / RES;
+  camera_frame_vel.z = (float)vel_z_pixelwise_int / RES;
 
-  struct Int16Vect3 vel_global;
-  vel_global.x = vel_x_global_int;
-  vel_global.y = vel_y_global_int;
-  vel_global.z = vel_z_global_int;
-
-  // Derotate velocity and transform from frame to body coordinates
-  // TODO: send resolution directly from stereocam
-  float vel_body_x = 0;
-  float vel_body_y = 0;
-
-#if STEREOCAM2STATE_CAM_FORWARD == 1
-  vel_body_x = (float)vel_pixelwise.z / RES;
-  vel_body_y = -(float)vel_pixelwise.x / RES;
 #else
-  vel_body_x = -(float)vel_global.y / RES;
-  vel_body_y = (float)vel_global.x / RES;
+  struct FloatVect3 camera_frame_vel;
+  camera_frame_vel.x = (float)vel_x_global_int / RES;
+  camera_frame_vel.y = (float)vel_y_global_int / RES;
+  camera_frame_vel.z = (float)vel_z_global_int / RES;
+
 #endif
 
-//optitrack data
-/*
-  struct FloatVect3 velocity_rot_gps;
-  struct Int32Vect3 velocity_rot_gps_int;
-  float_rmat_vmult(&velocity_rot_gps , stateGetNedToBodyRMat_f(), (struct FloatVect3 *)&opti_vel);
-*/
-
-  //TODO: give velocity body in z direction?
-
-  // Median filter and 2nd order butterworth filter
-  float vel_body_x_median_filter = (float)update_median_filter(&medianfilter_x, (int32_t)(vel_body_x * 100)) / 100;
-  float vel_body_y_median_filter = (float)update_median_filter(&medianfilter_y, (int32_t)(vel_body_y * 100)) / 100;
-
-  distance_stereo = (float)update_median_filter(&medianfilter_dist, (int32_t)(agl)) / 10; ;
-
+//Rotate velocity back to quad's frame
+  struct FloatVect3 quad_body_vel;
+  float_rmat_transp_vmult(&quad_body_vel, &body_to_stereocam, &camera_frame_vel);
 
   //Send velocity estimate to state
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
   uint32_t now_ts = get_sys_time_usec();
 
+  float vel_body_x_processed = quad_body_vel.x;
+  float vel_body_y_processed = quad_body_vel.y;
+  float vel_body_z_processed = quad_body_vel.z;
+
+  if (stereocam_medianfilter_on == 1) {
+    // Use a slight median filter to filter out the large outliers before sending it to state
+    // TODO: if a float median filter exist, replace this version
+    vel_body_x_processed = (float)update_median_filter(&medianfilter_x, (int32_t)(quad_body_vel.x * 100)) / 100;
+    vel_body_y_processed = (float)update_median_filter(&medianfilter_y, (int32_t)(quad_body_vel.y * 100)) / 100;
+    vel_body_z_processed = (float)update_median_filter(&medianfilter_z, (int32_t)(quad_body_vel.z * 100)) / 100;
+  }
+
+  //Send velocities to state
   AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
-                              vel_body_x_median_filter,
-                              vel_body_y_median_filter,
-                              0.0f,
+                              vel_body_x_processed,
+                              vel_body_y_processed,
+                              vel_body_z_processed,
                               0.3f
                              );
 
-  /*
-    AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
-                                vel_body_x,
-                                vel_body_y,
-                                0.0f,
-                                0.3f
-                               );
-  */
-
   // Reusing the OPTIC_FLOW_EST telemetry messages, with some values replaced by 0
-
   uint16_t dummy_uint16 = 0;
   int16_t dummy_int16 = 0;
   float dummy_float = 0;
 
-  // DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y, &dummy_int16, &dummy_int16,
-		  // &vel_body_x_median_filter, &vel_body_y_median_filter,&dummy_float, &dummy_float, &dummy_float);
+  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y,
+                               &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
+                               &dummy_float, &dummy_float, &dummy_float);
 
 #endif
 
