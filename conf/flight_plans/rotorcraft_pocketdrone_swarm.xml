@@ -54,6 +54,7 @@
 
    <block name="EKF Forward">
      <call fun="MoveForward(0.3)"/>
+     <while cond="1"/>
      <exception cond="EKF_turn_trigger == 1" deroute="EKF Wait"/> <!-- If obstacle is within 1 meter, go to hover -->
    </block>
 
