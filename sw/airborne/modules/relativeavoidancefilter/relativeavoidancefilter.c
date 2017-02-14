@@ -48,18 +48,22 @@ int IDarray[NUAVS-1]; 		// Array of IDs of other MAVs
 int8_t srcstrength[NUAVS-1];// Source strength
 uint32_t now_ts[NUAVS-1]; 	// Time of last received message from each MAV
 
+float ccvec[NUAVS-1][4];
 int nf; 					// Number of filters registered
-float crs_des, v_des; 		// crs_des = desired course w.r.t. north, v_des = magnitude of velocity
+float EKF_desired_angle, v_des; 		// crs_des = desired course w.r.t. north, v_des = magnitude of velocity
 float vx_des, vy_des;		// Desired velocities in NED frame
 float vx_des_b, vy_des_b;		// Desired velocities in NED frame
 float RSSIarray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
 float magprev;				// Previous magnitude from 0,0 (for simulated wall detection)
 float z_des;
-
-float ccvec[NUAVS-1][4];
+bool firsttime;
+bool wall_imminent;
+bool cc[36];
+bool cc_wall[36];
 float x_est[NUAVS-1][MAF_SIZE_POS], y_est[NUAVS-1][MAF_SIZE_POS];
-float vx_est[NUAVS-1][MAF_SIZE_VEL], vy_est[NUAVS-1][MAF_SIZE_VEL];
+// float vx_est[NUAVS-1][MAF_SIZE_VEL], vy_est[NUAVS-1][MAF_SIZE_VEL];
 
+float t_w1;
 float trackedVx, trackedVy;
 
 static abi_event rssi_ev;
@@ -83,7 +87,6 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 	uint8_t ac_id, int8_t source_strength, int8_t rssi)
 { 
 	int i= -1; // Initialize index (null assumption, no drone is present)
-	bool firsttime;
 	// If it's a new ID we start a new EKF for it
 	// TODO: aircraft ID are now hard coded here, make it more general (set in airframe file?)
 	// The hardcoding was done to make sure that no other bluetooth devices or drone accidentally interfere with testing
@@ -122,9 +125,9 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		keepbounded(&ownVx,-2.0,2.0);
 		keepbounded(&ownVy,-2.0,2.0);
 
-		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) // only in guided mode (flight) (take off in NAV)
+		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED || firsttime == false) // only in guided mode (flight) (take off in NAV)
 		{
-			// firsttime == true;
+			firsttime = true;
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
 
@@ -156,8 +159,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			// Moving average filter to state (MAF_SIZE of 1, average with direct last measurment)
 			ccvec[i][0] = movingaveragefilter(x_est[i],  MAF_SIZE_POS, ekf[i].X[0]);
 			ccvec[i][1] = movingaveragefilter(y_est[i],  MAF_SIZE_POS, ekf[i].X[1]);
-			ccvec[i][2] = movingaveragefilter(vx_est[i], MAF_SIZE_VEL, ekf[i].X[4]);
-			ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
+			// ccvec[i][2] = movingaveragefilter(vx_est[i], MAF_SIZE_VEL, ekf[i].X[4]);
+			// ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
 		}
 		else
 		{
@@ -226,15 +229,17 @@ void relativeavoidancefilter_init(void)
 	
 	alternate = 0;			// Logging variable
 	nf 		  = 0; 		   	// Number of active filters
-	crs_des   = 0.0;	   	// Initialize
+	EKF_desired_angle   = 0.0;	   	// Initialize
 	v_des     = V_NOMINAL; 	// Initial desired velocity
 	magprev   = 3.0; 	   	// Just a random high value
+	firsttime = false;
+	wall_imminent = false;     // Null assumption
 
 	for (int i = 0; i < NUAVS-1; i++) {
 		fmat_make_zeroes( x_est[i],  1, MAF_SIZE_POS );
 		fmat_make_zeroes( y_est[i],  1, MAF_SIZE_POS );
-		fmat_make_zeroes( vx_est[i], 1, MAF_SIZE_POS );
-		fmat_make_zeroes( vy_est[i], 1, MAF_SIZE_POS );
+		// fmat_make_zeroes( vx_est[i], 1, MAF_SIZE_POS );
+		// fmat_make_zeroes( vy_est[i], 1, MAF_SIZE_POS );
 	}
 
 	// Subscribe to the ABI RSSI messages
@@ -280,7 +285,7 @@ void relativeavoidancefilter_periodic(void)
 		//switch height to RC controlled height (for pocket drone without IR sensor!)
 	    // guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
 
-		float cc[nf][6];
+		// float cc[nf][6];
 
 		// Pos in X and Y just for arena border detection!
 		// float posx = stateGetPositionEnu_f()->y;
@@ -288,45 +293,45 @@ void relativeavoidancefilter_periodic(void)
 		float posx = (float)gps_pos_cm_ned_i.x/100.0;
 		float posy = (float)gps_pos_cm_ned_i.y/100.0;
 
-		bool collision_imminent = false; // Null assumption
-		bool wall_imminent 		= false; // Null assumption
+		// bool collision_imminent = false; // Null assumption
+		// bool wall_imminent 		= false; // Null assumption
 
-		// Wall detection
-		if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
-			wall_imminent = true;
-		}
-		magprev = sqrt(pow(posx,2) + pow(posy,2));
+		// // Wall detection
+		// if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
+		// 	wall_imminent = true;
+		// }
+		// magprev = sqrt(pow(posx,2) + pow(posy,2));
 
-		// If approaching wall, then change direction to avoid wall
-		if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wall_imminent ) {
-		// if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5)))) {
-			//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
-			cart2polar(-posx,-posy, &v_des, &crs_des);
-			v_des = V_NOMINAL;
-		}
-		// Otherwise worry about other drones
-		else {
-			polar2cart(v_des, crs_des, &vx_des, &vy_des); // vx_des & vy_des = desired velocity
-			uint8_t i;
-			for ( i = 0; i < nf; i++ ) { // nf is amount of filters running
-				float dist = sqrt(pow(ekf[i].X[0],2) + pow(ekf[i].X[1],2));
-				float eps = 1.0*ASIDE*tan(1.7/2) - MAVSIZE - ASIDE;
+		// // If approaching wall, then change direction to avoid wall
+		// if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wall_imminent ) {
+		// // if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5)))) {
+		// 	//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
+		// 	cart2polar(-posx,-posy, &v_des, &crs_des);
+		// 	v_des = V_NOMINAL;
+		// }
+		// // Otherwise worry about other drones
+		// else {
+		// 	polar2cart(v_des, crs_des, &vx_des, &vy_des); // vx_des & vy_des = desired velocity
+		// 	uint8_t i;
+		// 	for ( i = 0; i < nf; i++ ) { // nf is amount of filters running
+		// 		float dist = sqrt(pow(ekf[i].X[0],2) + pow(ekf[i].X[1],2));
+		// 		float eps = 1.0*ASIDE*tan(1.7/2) - MAVSIZE - ASIDE;
 				
-				// cc[i] = collisioncone with respect to other robot i
-				collisioncone_update(cc[i], ccvec[i][0], ccvec[i][1], ccvec[i][2], ccvec[i][3], dist+MAVSIZE+eps);	// x y xdot_0 ydot_0 (characteristics collision cones)
+		// 		// cc[i] = collisioncone with respect to other robot i
+		// 		collisioncone_update(cc[i], ccvec[i][0], ccvec[i][1], ccvec[i][2], ccvec[i][3], dist+MAVSIZE+eps);	// x y xdot_0 ydot_0 (characteristics collision cones)
 				
-				if ( collisioncone_checkdanger( cc[i], vx_des, vy_des )) {
-					collision_imminent = true; 		// We could be colliding!
-				}
-			}
+		// 		if ( collisioncone_checkdanger( cc[i], vx_des, vy_des )) {
+		// 			collision_imminent = true; 		// We could be colliding!
+		// 		}
+		// 	}
 	
-			if (collision_imminent) { // If the desired velocity doesn't work, then let's find the next best thing according to VO
-				v_des = V_NOMINAL;
-				collisioncone_findnewcmd(cc, &v_des, &crs_des, CRSSEARCH, nf); // Go clockwise until save direction in found
-			}
-		}
+		// 	if (collision_imminent) { // If the desired velocity doesn't work, then let's find the next best thing according to VO
+		// 		v_des = V_NOMINAL;
+		// 		collisioncone_findnewcmd(cc, &v_des, &crs_des, CRSSEARCH, nf); // Go clockwise until save direction in found
+		// 	}
+		// }
 
-		polar2cart(v_des, crs_des, &vx_des, &vy_des);  		// new desired speed in North (x) and East(y)
+		// polar2cart(v_des, crs_des, &vx_des, &vy_des);  		// new desired speed in North (x) and East(y)
 		
 		/* Optitrack Guided commands */
 		// autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);  	//send to guided mode -- use this if flying with optitrack
@@ -335,6 +340,40 @@ void relativeavoidancefilter_periodic(void)
 		// vx_des_b = vx_des*cos(-stateGetNedToBodyEulers_f()->psi) - vy_des*sin(-stateGetNedToBodyEulers_f()->psi);
 		// vy_des_b = vx_des*sin(-stateGetNedToBodyEulers_f()->psi) + vy_des*cos(-stateGetNedToBodyEulers_f()->psi);
 		// guidance_h_set_guided_body_vel(vx_des, vy_des);
+
+		// implement memory
+		if (!wall_imminent || ((get_sys_time_usec()-t_w1) > 0.0) ){
+			array_make_zeros_bool(36, cc);  // Null assumption
+			t_w1 = get_sys_time_usec();
+			wall_imminent = false;
+		}
+		else {
+			array_copy_bool(cc,cc_wall,36);
+		}
+
+		float b_wall,wallx,wally,temp;
+		// If outside of the arena bounds move back inside, or otherwise try and keep your heading at the nominal velocity
+		// Recalculate wall as an issue
+		
+		if ( !wall_imminent && 
+			( (abs(posx) > ASIDE-0.5) || (abs(posy) > ASIDE-0.5) ) )  {
+			// for real implementation, this should be rotated from body to global, it should just be bearing+ownPsi
+			cart2polar(posx, posy, &temp, &b_wall);
+			polar2cart(1.0, b_wall, &wallx, &wally);
+			collisioncone_update_bool(cc, wallx, wally, 100.0);
+			array_copy_bool(cc_wall,cc,36);
+			wall_imminent = true;
+		}
+
+		// Fill it up with the drone data
+		for (int i = 0; i < nf; i++) {
+			float dist = sqrt ( pow(ekf[i].X[0],2)  +  pow(ekf[i].X[1],2) );
+			float eps = 1.0*ASIDE*tan(1.7/2) - MAVSIZE - ASIDE;
+			collisioncone_update_bool(cc, ccvec[i][0], ccvec[i][1], dist+MAVSIZE+eps);
+		}
+
+		// array_print_bool(36,cc);
+		collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
 
 		guidance_h_set_guided_vel(vx_des,vy_des);
 		
