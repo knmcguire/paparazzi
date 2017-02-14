@@ -22,8 +22,8 @@
   </sectors>
   
   <exceptions>
-    <!--exception cond="datalink_time > 5" deroute="Land here"/-->
-    <exception cond="radio_control.status == RC_REALLY_LOST" deroute="land here"/>
+    <exception cond="datalink_time > 5" deroute="landed"/>
+    <exception cond="radio_control.status == RC_REALLY_LOST" deroute="landed"/>
     <exception cond="autopilot_mode == AP_MODE_ATTITUDE_DIRECT" deroute="CL Start"/>
     <!--exception cond="stateGetPositionEnu_f()->z > 8." deroute="Land here"/-->
   </exceptions>
@@ -40,14 +40,36 @@
 
 
 
-<!--CLOSED LOOP EXPERIMENT-->
+<!--EKF turning closed loop-->
 
  <!--start block: hover for 2 sec -->
     <block name="CL Start">
-        <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
+        <!--call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/-->
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
-        <call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/>
+        <!--call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/-->
     </block>
+
+   <block name="EKF Forward">
+     <call fun="MoveForward(0.3)"/>
+     <exception cond="EKF_turn_trigger = 1" deroute="EKF Turn"/> <!-- If obstacle is within 1 meter, go to hover -->
+   </block>
+
+   <block name="EKF Turn">
+        <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
+        <set var="wanted_heading" value="stateGetNedToBodyEulers_f()->psi + RadOfDeg(EKF_desired_angle)"/>
+        <call fun="RotateToHeading_ATT(wanted_heading, RadOfDeg(0.0f),RadOfDeg(0.0f))"/>
+        <!--while cond="WaitforHeadingCondition(wanted_heading)"/>
+        <call fun="ResetAngles_ATT(wanted_heading)"/-->
+        <call fun="reset_counter()"/>
+        <call fun="wait_counter(25)"/>
+        <call fun="change_h_mode(GUIDANCE_H_MODE_GUIDED)"/>
+        <deroute block="EKF Forward"/>
+   </block>
+
+
+
+<!--JOURNAL TESTING closed loop flight/-->
+
     <block name="CL Hover">
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
         <call fun="avoid_wall(0.0)"/>
@@ -83,14 +105,6 @@
 
 
 
-
-
-    <block name="land here" strip_button="Land Here" strip_icon="land-right.png">
-      <call fun="NavSetWaypointHere(WP_TD)"/>
-    </block>
-    <block name="land">
-      <go wp="TD"/>
-    </block>
     <block name="landed">
       <call fun="NavKillThrottle()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/>
