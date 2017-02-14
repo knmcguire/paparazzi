@@ -37,6 +37,8 @@ struct MedianFilterInt medianfilter_x, medianfilter_y, medianfilter_z;
 
 #include "subsystems/datalink/telemetry.h"
 
+float distance_stereo=1500;
+
 void stereocam_to_state(void);
 
 void stereo_to_state_init(void)
@@ -73,7 +75,7 @@ void stereocam_to_state(void)
   int16_t flow_y = (int16_t)stereocam_data.data[6] << 8;
   flow_y |= (int16_t)stereocam_data.data[7];
 
-// uint8_t agl = stereocam_data.data[8]; // in cm //TODO: use agl for in a guided obstacle avoidance.
+  uint8_t agl = stereocam_data.data[8]; // in cm //TODO: use agl for in a guided obstacle avoidance.
   float fps = (float)stereocam_data.data[9];
 
   // velocity global
@@ -104,6 +106,8 @@ void stereocam_to_state(void)
   camera_frame_vel.z = (float)vel_z_global_int / RES;
 
 #endif
+
+  float distance_stereo = (float)agl/10;
 
 //Rotate velocity back to quad's frame
   struct FloatVect3 quad_body_vel;

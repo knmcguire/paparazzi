@@ -263,7 +263,7 @@
     <!-- <module name="bluegiga_dl.xml"/> -->
       <!-- <configure name="BLUEGIGA_DL_PORT" value="uart3"/> -->
     <!-- </module> -->
-<!--     <module name="flight_plan_guided"/>  -->
+    <module name="flight_plan_guided"/>  
  </modules>
 
   <firmware name="rotorcraft">

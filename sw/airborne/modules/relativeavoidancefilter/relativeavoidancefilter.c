@@ -235,6 +235,7 @@ void relativeavoidancefilter_init(void)
 	magprev   = 3.0; 	   	// Just a random high value
 	firsttime = false;
 	wall_imminent = false;     // Null assumption
+	EKF_turn_trigger = false; // Null assumption
 
 	for (int i = 0; i < NUAVS-1; i++) {
 		fmat_make_zeroes( x_est[i],  1, MAF_SIZE_POS );

@@ -3,6 +3,9 @@
 <flight_plan alt="1.0" ground_alt="0" lat0="51.990634" lon0="4.376789" max_dist_from_home="20" name="Rotorcraft Optitrack (Delft)" security_height="0.3">
   <header>
 #include "autopilot.h"
+    #include "modules/flight_plan_guided/flight_plan_guided.h"
+    #include "subsystems/datalink/datalink.h"
+#include "subsystems/radio_control.h"
 </header>
   <waypoints>
     <waypoint name="HOME" x="0.0" y="0.0"/>
@@ -51,7 +54,11 @@
 
    <block name="EKF Forward">
      <call fun="MoveForward(0.3)"/>
-     <exception cond="EKF_turn_trigger = 1" deroute="EKF Turn"/> <!-- If obstacle is within 1 meter, go to hover -->
+     <exception cond="EKF_turn_trigger == 1" deroute="EKF Wait"/> <!-- If obstacle is within 1 meter, go to hover -->
+   </block>
+
+   <block name="EKF Wait">
+        <call fun="wait_counter(25)"/>
    </block>
 
    <block name="EKF Turn">
