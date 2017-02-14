@@ -113,9 +113,13 @@ void stereocam_to_state(void)
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
   uint32_t now_ts = get_sys_time_usec();
 
-  float vel_body_x_processed = quad_body_vel.x;
+/*  float vel_body_x_processed = quad_body_vel.x;
   float vel_body_y_processed = quad_body_vel.y;
-  float vel_body_z_processed = quad_body_vel.z;
+  float vel_body_z_processed = quad_body_vel.z;*/
+
+  float vel_body_x_processed = (float)vel_z_pixelwise_int / RES;
+  float vel_body_y_processed = -(float)vel_x_pixelwise_int / RES;
+  float vel_body_z_processed = 0;
 
   if (stereocam_medianfilter_on == 1) {
     // Use a slight median filter to filter out the large outliers before sending it to state
@@ -124,6 +128,8 @@ void stereocam_to_state(void)
     vel_body_y_processed = (float)update_median_filter(&medianfilter_y, (int32_t)(quad_body_vel.y * 100)) / 100;
     vel_body_z_processed = (float)update_median_filter(&medianfilter_z, (int32_t)(quad_body_vel.z * 100)) / 100;
   }
+
+
 
   //Send velocities to state
   AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
