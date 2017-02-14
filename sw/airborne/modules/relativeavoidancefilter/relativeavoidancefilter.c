@@ -369,7 +369,7 @@ void relativeavoidancefilter_periodic(void)
 		// Fill it up with the drone data
 		for (int i = 0; i < nf; i++) {
 			float dist = sqrt ( pow(ekf[i].X[0],2)  +  pow(ekf[i].X[1],2) );
-			float eps = 1.0*ASIDE*tan(1.7/2) - MAVSIZE - ASIDE;
+			float eps = 1.0*ASIDE*tan(1.7/2.0) - MAVSIZE - ASIDE;
 			collisioncone_update_bool(cc, ccvec[i][0], ccvec[i][1], dist+MAVSIZE+eps);
 		}
 
