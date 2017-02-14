@@ -153,8 +153,8 @@ bool collisioncone_findnewdir_bool( bool *cc, float *psi_des)
 	}
 
 	if ((temp - *psi_des) < 0.01) // check equal but with rounding
-		return true;
-	else
 		return false;
+	else
+		return true;
 
 };
