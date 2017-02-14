@@ -378,15 +378,15 @@ void relativeavoidancefilter_periodic(void)
 		// array_print_bool(36,cc);
 		EKF_turn_trigger = collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
 
-		guidance_h_set_guided_vel(vx_des,vy_des);
+		// guidance_h_set_guided_vel(vx_des,vy_des);
 		
-		// Make them fly at different heights just for ultra safety
-		if (AC_ID == 15)
-			z_des = 1.30;
-		else if (AC_ID == 16)
-			z_des = 1.00;
+		// // Make them fly at different heights just for ultra safety
+		// if (AC_ID == 15)
+		// 	z_des = 1.30;
+		// else if (AC_ID == 16)
+		// 	z_des = 1.00;
 
-		guidance_v_set_guided_z(-z_des);
+		// guidance_v_set_guided_z(-z_des);
 
 		// guidance_h_set_guided_heading(0.0); % not reccommended if without a good heading estimate
 
