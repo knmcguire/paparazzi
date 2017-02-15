@@ -117,13 +117,13 @@ void stereocam_to_state(void)
   //TODO:: Make variance dependable on line fit error, after new horizontal filter is made
   uint32_t now_ts = get_sys_time_usec();
 
-/*  float vel_body_x_processed = quad_body_vel.x;
-  float vel_body_y_processed = quad_body_vel.y;
-  float vel_body_z_processed = quad_body_vel.z;*/
+  float vel_body_x_processed=0;// = quad_body_vel.x;
+  float vel_body_y_processed = 0;// quad_body_vel.y;
+  float vel_body_z_processed = 0;//quad_body_vel.z;
 
-  float vel_body_x_processed = (float)vel_z_pixelwise_int / RES;
-  float vel_body_y_processed = -(float)vel_x_pixelwise_int / RES;
-  float vel_body_z_processed = 0;
+   quad_body_vel.x = (float)vel_z_pixelwise_int / RES;
+   quad_body_vel.y = -(float)vel_x_pixelwise_int / RES;
+   quad_body_vel.z = 0;
 
   if (stereocam_medianfilter_on == 1) {
     // Use a slight median filter to filter out the large outliers before sending it to state
@@ -148,9 +148,9 @@ void stereocam_to_state(void)
   int16_t dummy_int16 = 0;
   float dummy_float = 0;
 
-/*  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y,
+  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y,
                                &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
-                               &dummy_float, &dummy_float, &dummy_float);*/
+                               &dummy_float, &dummy_float, &dummy_float);
 
 #endif
 

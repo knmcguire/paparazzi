@@ -235,7 +235,7 @@ bool avoid_wall(float vel_body_x_command)
 
   if (autopilot_mode == AP_MODE_GUIDED) {
 
-    stereo_force_field(&vel_body_x_command, distance_stereo, 0.80f, 1.2, 5.0f , 0.0f, 0.3f);
+    stereo_force_field(&vel_body_x_command, distance_stereo, 0.80f, 1.2, 5.0f , 0.0f, -0.3f);
     MoveForward(vel_body_x_command);
   }
   return true;
@@ -322,5 +322,11 @@ bool wait_counter(int32_t end_counter)
 	  return true;
 
 
+}
+
+bool kill_mode()
+{
+	autopilot_set_mode(AP_MODE_KILL);
+	return true;
 }
 
