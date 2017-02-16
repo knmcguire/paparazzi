@@ -243,6 +243,10 @@
      <define name="STEREOCAM2STATE_EDGEFLOW_PIXELWISE" value="TRUE"/>
 	 </module>
    <module name="flight_plan_guided"/>
+   <module name="mag_pitot_uart.xml">
+       <configure name="MAG_PITOT_BAUD" value="38400"/>
+       <configure name="MAG_PITOT_PORT" value="UART3"/>
+   </module>
  </modules>
 
   <firmware name="rotorcraft">

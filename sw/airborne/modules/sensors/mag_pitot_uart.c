@@ -32,6 +32,7 @@
 #include "subsystems/abi.h"
 #include "subsystems/imu.h"
 #include "state.h"
+#include "subsystems/datalink/telemetry.h"
 
 /* Main magneto structure */
 static struct mag_pitot_t mag_pitot = {
@@ -40,6 +41,7 @@ static struct mag_pitot_t mag_pitot = {
 };
 static uint8_t mp_msg_buf[128]  __attribute__((aligned));   ///< The message buffer for the Magneto and pitot
 
+static uint8_t tel_buf[4] = {0 , 0 , 0 , 0 };
 
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
@@ -110,6 +112,17 @@ static inline void mag_pitot_parse_msg(void)
     float pitot_ias = DL_IMCU_REMOTE_AIRSPEED_pitot_IAS(mp_msg_buf);
     AbiSendMsgAIRSPEED(IMU_MAG_PITOT_ID, pitot_ias);
     break;
+  }
+
+  case DL_IMCU_REMOTE_GROUND: {
+	  uint8_t id = DL_IMCU_REMOTE_GROUND_id(mp_msg_buf);
+	  uint16_t range = DL_IMCU_REMOTE_GROUND_range(mp_msg_buf);
+	  tel_buf[id] = (uint8_t)(range/10);
+      uint8_t length = 4;
+
+      DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &length, &(length), length,
+    		  tel_buf);
+      break;
   }
 
     default:
