@@ -134,8 +134,8 @@ void stereocam_to_state(void)
   float vel_body_y = 0;
 
 #if STEREOCAM2STATE_CAM_FORWARD == 1
-  vel_body_x = - (float)vel_pixelwise.z / RES;
-  vel_body_y = (float)vel_pixelwise.x / RES;
+  vel_body_x =  (float)vel_pixelwise.z / RES;
+  vel_body_y = - (float)vel_pixelwise.x / RES;
 #else
   vel_body_x = - (float)vel_global.x / RES;
   vel_body_y = (float)vel_global.y / RES;
@@ -147,6 +147,11 @@ void stereocam_to_state(void)
   float_rmat_vmult(&velocity_rot_gps , stateGetNedToBodyRMat_f(), (struct FloatVect3 *)&opti_vel);
 
   //TODO: give velocity body in z direction?
+
+  if(fabs(vel_body_x)>1.0)
+  {
+	  vel_body_x = 0;
+  }
 
   // Median filter and 2nd order butterworth filter
   float vel_body_x_median_filter = (float)update_median_filter(&medianfilter_x, (int32_t)(vel_body_x * 100)) / 100;
