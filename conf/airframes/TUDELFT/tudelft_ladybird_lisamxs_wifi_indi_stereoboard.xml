@@ -242,6 +242,7 @@
      <define name="STEREOCAM2STATE_RECEIVED_DATA_TYPE" value="0"/>
      <define name="STEREOCAM2STATE_EDGEFLOW_PIXELWISE" value="TRUE"/>
 	 </module>
+   <module name="flight_plan_guided"/>
  </modules>
 
   <firmware name="rotorcraft">
@@ -276,7 +277,7 @@
     </module>
 
     <module name="telemetry" type="transparent">
-      <configure name="MODEM_PORT" value="UART1"/>
+      <configure name="MODEM_PORT" value="UART3"/>
       <configure name="MODEM_BAUD" value="B115200"/>
     </module>
 
@@ -288,8 +289,7 @@
     </module>
 
     <!--module name="stabilization" type="int_quat"/-->
-    <module name="stabilization" type="indi_simple"/>
-    <module name="stabilization" type="rate_indi"/>
+    <module name="stabilization" type="indi"/>
     <module name="ahrs" type="int_cmpl_quat"/>
     <module name="ins"/>
     <configure name="USE_MAGNETOMETER" value="FALSE"/>

@@ -33,11 +33,11 @@ uint8_t stereocam_medianfilter_on = 1;
 #endif
 
 #include "filters/median_filter.h"
-struct MedianFilterInt medianfilter_x, medianfilter_y, medianfilter_z;
+struct MedianFilterInt medianfilter_x, medianfilter_y, medianfilter_z, medianfilter_agl;
 
 #include "subsystems/datalink/telemetry.h"
 
-float distance_stereo=1500;
+float distance_stereo=2.0f;
 
 void stereocam_to_state(void);
 
@@ -47,6 +47,8 @@ void stereo_to_state_init(void)
   init_median_filter(&medianfilter_x);
   init_median_filter(&medianfilter_y);
   init_median_filter(&medianfilter_z);
+  init_median_filter(&medianfilter_agl);
+
 }
 
 void stereo_to_state_periodic(void)
@@ -107,7 +109,6 @@ void stereocam_to_state(void)
 
 #endif
 
-  float distance_stereo = (float)agl/10;
 
 //Rotate velocity back to quad's frame
   struct FloatVect3 quad_body_vel;
@@ -124,6 +125,9 @@ void stereocam_to_state(void)
    quad_body_vel.x = (float)vel_z_pixelwise_int / RES;
    quad_body_vel.y = -(float)vel_x_pixelwise_int / RES;
    quad_body_vel.z = 0;
+   float filtered_agl = 0;
+   if ( fabs(quad_body_vel.x)>1)
+	   quad_body_vel.x = 0;
 
   if (stereocam_medianfilter_on == 1) {
     // Use a slight median filter to filter out the large outliers before sending it to state
@@ -131,9 +135,11 @@ void stereocam_to_state(void)
     vel_body_x_processed = (float)update_median_filter(&medianfilter_x, (int32_t)(quad_body_vel.x * 100)) / 100;
     vel_body_y_processed = (float)update_median_filter(&medianfilter_y, (int32_t)(quad_body_vel.y * 100)) / 100;
     vel_body_z_processed = (float)update_median_filter(&medianfilter_z, (int32_t)(quad_body_vel.z * 100)) / 100;
+    filtered_agl = (float)update_median_filter(&medianfilter_agl, (int32_t)(agl * 10)) / 100;
+
   }
 
-
+  distance_stereo = filtered_agl;
 
   //Send velocities to state
   AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
@@ -150,7 +156,7 @@ void stereocam_to_state(void)
 
   DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y,
                                &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
-                               &dummy_float, &dummy_float, &dummy_float);
+                               &distance_stereo, &dummy_float, &dummy_float);
 
 #endif
 
