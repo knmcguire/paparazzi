@@ -245,7 +245,7 @@
    <module name="flight_plan_guided"/>
    <module name="mag_pitot_uart.xml">
        <configure name="MAG_PITOT_BAUD" value="38400"/>
-       <configure name="MAG_PITOT_PORT" value="UART3"/>
+       <configure name="MAG_PITOT_PORT" value="UART1"/>
    </module>
  </modules>
 
