@@ -345,10 +345,10 @@ bool avoid_wall_and_sides(float vel_body_x_command)
 
 	float vel_body_y_command = 0.0f;
 
-    stereo_force_field(&vel_body_x_command, distance_stereo, 1.0f, 1.3, 1.8f , 0.0f, -0.2f);
-    range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, 600, 1000, 9000 , 0.0f, -0.2f);
+    stereo_force_field(&vel_body_x_command, distance_stereo, 0.8f, 1.2, 5.0f , 0.0f, -0.2f);
+    range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, 600, 1000, 9000 , 0.0f, 0.2f);
 
-    guidance_h_set_guided_vel(vel_body_x_command, vel_body_y_command);
+    guidance_h_set_guided_body_vel(vel_body_x_command, vel_body_y_command);
   }
   return true;
 

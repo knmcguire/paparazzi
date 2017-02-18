@@ -60,29 +60,27 @@
 
         <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
-        <!--call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/-->
+        <call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/>
 		</block>
-		<block name="CL forcefield"> 
-        <call fun="avoid_wall_and_sides(-0.00)"/>
+		<!--block name="CL forcefield"> 
+        <call fun="avoid_wall_and_sides(-0.01)"/>
 
-        <!--call fun="guidance_h_set_guided_vel(-0.3, 0.3)"/-->
-
-        <while cond="1"/> <!-- If obstacle is within 1 meter, go to hover -->
-    </block>
+        <while cond="1"/> 
+    </block-->
 		<block name="CL Hover">
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
-		    <call fun="avoid_wall(-0.01)"/>
+		    <call fun="avoid_wall_and_sides(-0.01)"/>
         <exception cond="stage_time>2" deroute="CL Go Forward with forcefield"/>
 		</block>
 <!--go forward, with a forcefield to prevent collissons -->
 		<block name="CL Go Forward with forcefield"> 
-        <call fun="avoid_wall(-0.15)"/>
+        <call fun="avoid_wall_and_sides(-0.15)"/>
         <exception cond="1.2 > distance_stereo" deroute="CL Hover with forcefield"/> <!-- If obstacle is within 1 meter, go to hover -->
     </block>
 <!--Hover with a forcefield to prevent collissons -->
 		<block name="CL Hover with forcefield">
-        <call fun="avoid_wall(-0.05)"/>
-        <exception cond="stage_time>1&&distance_stereo>0.8" deroute="CL Turn 60 deg"/> <!-- If 2 seconds are passed, go turn -->
+        <call fun="avoid_wall_and_sides(-0.05)"/>
+        <exception cond="stage_time>1" deroute="CL Turn 60 deg"/> <!-- If 2 seconds are passed, go turn -->
     </block>
 <!-- turn 60 deg from current heading -->
     <block name = "CL Turn 60 deg"> 
@@ -97,7 +95,7 @@
  		</block>
  <!--check for obstacle -->
     <block name = "CL Hover and Check obstacle"> 
-        <call fun="avoid_wall(-0.05)"/>
+        <call fun="avoid_wall_and_sides(-0.05)"/>
         <exception cond="1.2 > distance_stereo" deroute="CL Hover with forcefield"/>  <!-- if still obstacle, go to hover->turn again -->
         <exception cond="stage_time>0.5" deroute="CL Go Forward with forcefield"/>			<!-- No obstacle, go forward -->
  		</block>

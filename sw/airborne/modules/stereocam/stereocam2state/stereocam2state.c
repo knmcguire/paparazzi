@@ -153,10 +153,10 @@ void stereocam_to_state(void)
   uint16_t dummy_uint16 = 0;
   int16_t dummy_int16 = 0;
   float dummy_float = 0;
-
+/*
   DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y,
                                &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
-                               &distance_stereo, &dummy_float, &dummy_float);
+                               &distance_stereo, &dummy_float, &dummy_float);*/
 
 #endif
 
