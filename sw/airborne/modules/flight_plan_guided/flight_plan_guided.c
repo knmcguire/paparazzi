@@ -88,8 +88,8 @@ static void range_sensors_cb(uint8_t sender_id,
     uint16_t tel_buf[4] = {0,range_right, 0 , range_left};
      uint8_t length = 4;
 
-    DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &length, &(length), length,
-  		  tel_buf);
+   /* DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &length, &(length), length,
+  		  tel_buf);*/
 }
 
 void flight_plan_guided_init(void)
@@ -345,8 +345,8 @@ bool avoid_wall_and_sides(float vel_body_x_command)
 
 	float vel_body_y_command = 0.0f;
 
-    stereo_force_field(&vel_body_x_command, distance_stereo, 1.0f, 1.3, 16.0f , 0.0f, -0.2f);
-    range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, 800, 1200, 9000 , 0.0f, -0.2f);
+    stereo_force_field(&vel_body_x_command, distance_stereo, 1.0f, 1.3, 1.8f , 0.0f, -0.2f);
+    range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, 600, 1000, 9000 , 0.0f, -0.2f);
 
     guidance_h_set_guided_vel(vel_body_x_command, vel_body_y_command);
   }

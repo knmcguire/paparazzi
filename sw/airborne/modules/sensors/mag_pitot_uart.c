@@ -119,11 +119,14 @@ static inline void mag_pitot_parse_msg(void)
 	  uint16_t range = DL_IMCU_REMOTE_GROUND_range(mp_msg_buf);
 	  tel_buf[id] = range;
       uint8_t length = 4;
-
+      float agl = (float)tel_buf[2] / 1000;
       uint16_t dummy_range = 0;
       AbiSendMsgRANGE_SENSORS(IMU_MAG_PITOT_ID,dummy_range, tel_buf[1],dummy_range, tel_buf[3]);
-     /* DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &length, &(length), length,
-    		  tel_buf);*/
+
+      if(id==2&&agl<=2.0f)
+      AbiSendMsgAGL(IMU_MAG_PITOT_ID, agl);
+      DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &length, &(length), length,
+    		  tel_buf);
       break;
   }
 

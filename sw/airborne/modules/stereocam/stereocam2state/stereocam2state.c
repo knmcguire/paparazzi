@@ -124,7 +124,7 @@ void stereocam_to_state(void)
 
    quad_body_vel.x = (float)vel_z_pixelwise_int / RES;
    quad_body_vel.y = -(float)vel_x_pixelwise_int / RES;
-   quad_body_vel.z = 0;
+   quad_body_vel.z = (float)vel_y_global_int / RES;
    float filtered_agl = 0;
    if ( fabs(quad_body_vel.x)>1)
 	   quad_body_vel.x = 0;

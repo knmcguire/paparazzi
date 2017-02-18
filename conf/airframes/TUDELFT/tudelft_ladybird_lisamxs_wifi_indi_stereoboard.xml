@@ -184,6 +184,7 @@
   <section name="INS" prefix="INS_">
      <!--define name="INT_GPS_ID" value="ABI_DISABLE"/-->
      <define name="USE_GPS_ALT" value="true"/>
+     <define name="SONAR_UPDATE_ON_AGL" value="true"/>
   </section>
 
  <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
@@ -245,7 +246,7 @@
    <module name="flight_plan_guided"/>
    <module name="mag_pitot_uart.xml">
        <configure name="MAG_PITOT_BAUD" value="38400"/>
-       <configure name="MAG_PITOT_PORT" value="UART1"/>
+       <configure name="MAG_PITOT_PORT" value="UART4"/>
    </module>
  </modules>
 
@@ -268,6 +269,8 @@
       <module name="radio_control" type="ppm"/>
     </target>
 
+    <define name="USE_BARO_BOARD" value="TRUE"/>
+    <define name="USE_SONAR" value="TRUE"/>
     <module name="motor_mixing"/>
     <module name="actuators" type="pwm">
       <!-- This airframe is using the servo PWM outputs directly to drive mosfets, which in turn directly drive brushed motors.
@@ -281,7 +284,7 @@
     </module>
 
     <module name="telemetry" type="transparent">
-      <configure name="MODEM_PORT" value="UART3"/>
+      <configure name="MODEM_PORT" value="UART1"/>
       <configure name="MODEM_BAUD" value="B115200"/>
     </module>
 
@@ -295,7 +298,7 @@
     <!--module name="stabilization" type="int_quat"/-->
     <module name="stabilization" type="indi"/>
     <module name="ahrs" type="int_cmpl_quat"/>
-    <module name="ins"/>
+    <module name="ins" type="extended"/>
     <configure name="USE_MAGNETOMETER" value="FALSE"/>
     <module name="air_data">
       <define name="AIR_DATA_CALC_AMSL_BARO" value="TRUE"/>

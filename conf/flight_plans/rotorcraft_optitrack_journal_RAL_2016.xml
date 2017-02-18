@@ -60,10 +60,10 @@
 
         <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
-        <call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/>
+        <!--call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/-->
 		</block>
 		<block name="CL forcefield"> 
-        <call fun="avoid_wall_and_sides(-0.05)"/>
+        <call fun="avoid_wall_and_sides(-0.00)"/>
 
         <!--call fun="guidance_h_set_guided_vel(-0.3, 0.3)"/-->
 
@@ -71,7 +71,7 @@
     </block>
 		<block name="CL Hover">
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
-		    <call fun="avoid_wall(-0.0)"/>
+		    <call fun="avoid_wall(-0.01)"/>
         <exception cond="stage_time>2" deroute="CL Go Forward with forcefield"/>
 		</block>
 <!--go forward, with a forcefield to prevent collissons -->
