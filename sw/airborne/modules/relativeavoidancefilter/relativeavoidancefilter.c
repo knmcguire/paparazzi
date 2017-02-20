@@ -51,14 +51,14 @@ uint32_t now_ts[NUAVS-1]; 	// Time of last received message from each MAV
 int nf; 					// Number of filters registered
 float EKF_desired_angle, v_des; 		// crs_des = desired course w.r.t. north, v_des = magnitude of velocity
 float vx_des, vy_des;		// Desired velocities in NED frame
-float vx_des_b, vy_des_b;		// Desired velocities in NED frame
+// float vx_des_b, vy_des_b;	// Desired velocities in NED frame
 float RSSIarray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
 float magprev;				// Previous magnitude from 0,0 (for simulated wall detection)
 float z_des;
 bool firsttime;
 bool wall_imminent;
 bool cc[36];
-bool cc_wall[36];
+// bool cc_wall[36];
 bool EKF_turn_trigger;
 float x_est[NUAVS-1][MAF_SIZE_POS], y_est[NUAVS-1][MAF_SIZE_POS];
 // float vx_est[NUAVS-1][MAF_SIZE_VEL], vy_est[NUAVS-1][MAF_SIZE_VEL];
@@ -159,10 +159,13 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z + 45.11;
 			
 			// Run the steps of the EKF
-			if (  sqrt( pow(Y[1]-Y[2],2) + pow(Y[3]-Y[4],2) )  > 0.1 )
+			if (  sqrt( pow(Y[1]-Y[3],2) + pow(Y[2]-Y[4],2) ) > 0.1 )
 			{
 				ekf_filter_predict(&ekf[i], &model[i]);
-				ekf_filter_update(&ekf[i], Y);
+				ekf_filter_update(&ekf[i], Y);		
+				// Update latest time
+				now_ts[i] = get_sys_time_usec();
+
 			}	
 			/*
 			 * Xvector: dotx_other and doty_other are expressed in own bodyframe
@@ -180,10 +183,11 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			ekf[i].X[4] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero
 			ekf[i].X[5] = 0.0;// -stateGetPositionNed_f()->y;
 			ekf[i].X[6] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero					
-		}
-		// Update latest time
-		now_ts[i] = get_sys_time_usec();
+		
+			// Update latest time
+			now_ts[i] = get_sys_time_usec();
 
+		}
 	}
 };
 
@@ -299,7 +303,7 @@ void relativeavoidancefilter_periodic(void)
 	    // guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
 
 		array_make_zeros_bool(36, cc);  // Null assumption
-		t_w1 = get_sys_time_usec();
+		// t_w1 = get_sys_time_usec();
 		wall_imminent = false;
 		
 		float b_wall, wallx, wally, temp;
@@ -307,10 +311,12 @@ void relativeavoidancefilter_periodic(void)
 		// Recalculate wall as an issue
 
 		// change this if statement to if (trigger from camera) !!
-		if ( stereo_obst_range < 1.2 )  {
-			float xobst, yobst; 
-			polar2cart(stereo_obst_range, stereo_obst_bearing+M_PI+stateGetNedToBodyEulers_f()->psi, &xobst, &yobst);
-			collisioncone_update_bool(cc, xobst, yobst, 2.0); // this is with respect to the earth frammmeee!
+
+		if ( stereo_distance < 1.0 )  {
+			float xobst, yobst;
+			polar2cart(stereo_distance, stereo_obst_bearing+stateGetNedToBodyEulers_f()->psi+M_PI, &xobst, &yobst);
+			// BodyToNED(xobst, yobst, stateGetNedToBodyEulers_f()->psi, &wallx, &wally); // Body to ENU
+			collisioncone_update_bool(cc,xobst, yobst, 2.0); // this is with respect to the earth frammmeee!
 		}
 
 		// Fill it up with the drone data 
