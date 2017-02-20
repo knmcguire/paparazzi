@@ -51,7 +51,7 @@
 		<block name="CL Start">
         <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
-        <!--call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/-->
+        <call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/>
 		</block>
 		<!--block name="CL forcefield"> 
         <call fun="avoid_wall_and_sides(-0.01)"/>
@@ -76,15 +76,17 @@
         <exception cond="stage_time>1" deroute="CL Turn"/> <!-- If 2 seconds are passed, go turn -->
     </block>
 
+
 <!-- turn 60 deg from current heading -->
     <block name = "CL Turn"> 
         <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
-        <set var="wanted_heading" value="turn_angle"/>
+        <!--set var="wanted_heading" value="stateGetNedToBodyEulers_f()->psi + RadOfDeg(60.0)"/-->
+        <set var="wanted_heading" value="turn_angle + RadOfDeg(180.0)"/>
 				<call fun="RotateToHeading_ATT(wanted_heading, RadOfDeg(0.0f),RadOfDeg(0.0f))"/>
 		    <!--while cond="WaitforHeadingCondition(wanted_heading)"/>
  				<call fun="ResetAngles_ATT(wanted_heading)"/-->
         <call fun="reset_counter()"/>
-        <call fun="wait_counter(25)"/>
+        <call fun="wait_counter(35)"/>
         <call fun="change_h_mode(GUIDANCE_H_MODE_GUIDED)"/>
  		</block>
 
