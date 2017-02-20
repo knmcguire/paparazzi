@@ -70,11 +70,11 @@ float trackedVx, trackedVy;
 static abi_event stereocam_obstacle_ev;
 static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
 static float stereo_distance;
-static float stereo_obst_heading;
+static float stereo_obst_bearing;
 void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
 {
 	stereo_distance = range;
-	stereo_obst_heading = heading;
+	stereo_obst_bearing = heading * M_PI/180;
 	//DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
 }
 
@@ -306,17 +306,17 @@ void relativeavoidancefilter_periodic(void)
 		t_w1 = get_sys_time_usec();
 		wall_imminent = false;
 		
-		float b_wall,wallx,wally,temp;
+		float b_wall, wallx, wally, temp;
 		// If outside of the arena bounds move back inside, or otherwise try and keep your heading at the nominal velocity
 		// Recalculate wall as an issue
-		
+
 		// change this if statement to if (trigger from camera) !!
-		if ( !wall_imminent )  {
-			BodyToNED(1.0, 0.0, stateGetNedToBodyEulers_f()->psi, &wallx, &wally); // Body to ENU
+		if ( stereo_distance < 1.0 )  {
+			float xobst, yobst; 
+			polar2cart(stereo_distance, stereo_obst_bearing+M_PI, &xobst, &yobst);
+			BodyToNED(xobst, yobst,  
+					  stateGetNedToBodyEulers_f()->psi, &wallx, &wally); // Body to ENU
 			collisioncone_update_bool(cc, wallx, wally, 2.0); // this is with respect to the earth frammmeee!
-			// array_copy_bool(cc_wall,cc,36);
-			// wall_imminent = true;
-					
 		}
 
 		// Fill it up with the drone data 
