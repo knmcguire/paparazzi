@@ -68,11 +68,11 @@ float trackedVx, trackedVy;
 
 static abi_event stereocam_obstacle_ev;
 static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
-static float stereo_distance;
+static float stereo_obst_range;
 static float stereo_obst_bearing;
 void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
 {
-	stereo_distance = range;
+	stereo_obst_range = range;
 	stereo_obst_bearing = heading * M_PI/180;
 	//DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
 }
@@ -311,6 +311,7 @@ void relativeavoidancefilter_periodic(void)
 		// Recalculate wall as an issue
 
 		// change this if statement to if (trigger from camera) !!
+
 		if ( stereo_distance < 1.0 )  {
 			float xobst, yobst;
 			polar2cart(stereo_distance, stereo_obst_bearing+stateGetNedToBodyEulers_f()->psi+M_PI, &xobst, &yobst);
@@ -347,7 +348,11 @@ void relativeavoidancefilter_periodic(void)
 
 		}
 
+		uint8_t length = 36;
+		   DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &length, &(length), length,
+		    		  cc);
 		// array_print_bool(36,cc);
+		   EKF_desired_angle= stateGetNedToBodyEulers_f()->psi + M_PI;
 		EKF_turn_trigger = collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
 
 		if(EKF_turn_trigger)

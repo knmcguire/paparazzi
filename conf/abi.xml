@@ -93,6 +93,8 @@
       <field name="right_range_sensor" type="int16_t" unit="mm"/>
       <field name="back_range_sensor" type="int16_t" unit="mm"/>
       <field name="left_range_sensor" type="int16_t" unit="mm"/>
+      <field name="bottom_range_sensor" type="int16_t" unit="mm"/>
+      <field name="top_range_sensor" type="int16_t" unit="mm"/>
     </message>
 
     <message name="AVOIDANCE_TURN_ANGLE" id="17">

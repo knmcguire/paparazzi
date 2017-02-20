@@ -65,10 +65,10 @@ float nom_flight_alt; // nominal flight altitude
 //abi for range sensors
 static abi_event range_sensors_ev;
 static void range_sensors_cb(uint8_t sender_id,
-int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left);
+        int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left,int16_t range_bottom, int16_t range_top);
 struct range_finders_ range_finders;
 static void range_sensors_cb(uint8_t sender_id,
-                             int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left)
+                             int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left,int16_t range_bottom, int16_t range_top)
 {
   static int32_t front_wall_detect_counter = 0;
   static const int32_t max_sensor_range = 2000;
@@ -78,6 +78,8 @@ static void range_sensors_cb(uint8_t sender_id,
     range_finders.right = range_right;
     range_finders.left = range_left;
     range_finders.back = range_back;
+    range_finders.top = range_top;
+    range_finders.bottom = range_bottom;
     uint16_t tel_buf[4] = {0,range_right, 0 , range_left};
      uint8_t length = 4;
 
@@ -88,7 +90,7 @@ static void range_sensors_cb(uint8_t sender_id,
 //abi for stereocam
 static abi_event stereocam_obstacle_ev;
 static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
-static float stereo_distance;
+float stereo_distance;
 void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
 {
 	stereo_distance = range;
@@ -97,7 +99,7 @@ void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
 
 static abi_event avoidance_turn_angle_ev;
 static void avoidance_turn_angle_cb(uint8_t sender_id, float angle);
-static float turn_angle;
+ float turn_angle;
 static void avoidance_turn_angle_cb(uint8_t sender_id, float angle)
 {
 	turn_angle = angle;
@@ -374,6 +376,15 @@ bool avoid_wall_and_sides(float vel_body_x_command)
 
     stereo_force_field(&vel_body_x_command, distance_stereo, 0.8f, 1.2, 5.0f , 0.0f, -0.2f);
     range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, 600, 1000, 9000 , 0.0f, 0.2f);
+
+
+/*
+    if(range_finders.top<2000)
+    {
+    float reset_height = stateGetPositionEnu_f()->z - (float)(range_finders.top - range_finders.bottom)/1000;
+    guidance_v_set_guided_z(reset_height);
+    }
+*/
 
     guidance_h_set_guided_body_vel(vel_body_x_command, vel_body_y_command);
   }

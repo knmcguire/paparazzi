@@ -33,6 +33,9 @@ struct range_finders_ {
   int16_t right;  // mm
   int16_t left;   // mm
   int16_t back;   // mm
+  int16_t bottom;   // mm
+  int16_t top;   // mm
+
 };
 
 extern float marker_err;
@@ -44,6 +47,10 @@ extern float nom_flight_alt; // nominal flight altitude
 extern struct range_finders_ range_finders;
 
 extern float wanted_heading;
+
+extern  float turn_angle;
+
+extern float stereo_distance;
 
 // Module functions
 void flight_plan_guided_init(void);
