@@ -67,6 +67,18 @@ float x_est[NUAVS-1][MAF_SIZE_POS], y_est[NUAVS-1][MAF_SIZE_POS];
 float t_w1;
 float trackedVx, trackedVy;
 
+static abi_event stereocam_obstacle_ev;
+static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
+static float stereo_distance;
+static float stereo_obst_heading;
+void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
+{
+	stereo_distance = range;
+	stereo_obst_heading = heading;
+	//DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
+}
+
+
 static abi_event rssi_ev;
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
 	uint8_t ac_id, int8_t source_strength, int8_t rssi);
@@ -248,6 +260,8 @@ void relativeavoidancefilter_init(void)
 	// Subscribe to the ABI RSSI messages
 	AbiBindMsgRSSI(ABI_BROADCAST, &rssi_ev, bluetoothmsg_cb);
 	AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
+	AbiBindMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, &stereocam_obstacle_ev, stereocam_obstacle_cb);
+
 	// AbiBindMsgVELOCITY_ESTIMATE(ABI_BROADCAST, &vel_est_ev, vel_est_cb);
 	
 	// Send out the filter data
@@ -379,6 +393,9 @@ void relativeavoidancefilter_periodic(void)
 
 		// array_print_bool(36,cc);
 		EKF_turn_trigger = collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
+
+		if(EKF_turn_trigger)
+			AbiSendMsgAVOIDANCE_TURN_ANGLE(ABI_BROADCAST, EKF_desired_angle);
 
 		// guidance_h_set_guided_vel(vx_des,vy_des);
 		
