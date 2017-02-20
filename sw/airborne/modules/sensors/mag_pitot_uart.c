@@ -128,8 +128,8 @@ static inline void mag_pitot_parse_msg(void)
 
       if(id==0&&agl<=2.0f)
       AbiSendMsgAGL(IMU_MAG_PITOT_ID, agl);
-      DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &length, &(length), length,
-    		  tel_buf);
+   /*   DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &length, &(length), length,
+    		  tel_buf);*/
       break;
   }
 

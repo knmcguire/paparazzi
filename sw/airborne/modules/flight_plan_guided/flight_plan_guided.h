@@ -45,6 +45,10 @@ extern struct range_finders_ range_finders;
 
 extern float wanted_heading;
 
+extern  float turn_angle;
+
+extern float stereo_distance;
+
 // Module functions
 void flight_plan_guided_init(void);
 

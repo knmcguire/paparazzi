@@ -2,10 +2,12 @@
 
 <flight_plan alt="1.0" ground_alt="0" lat0="51.990634" lon0="4.376789" max_dist_from_home="20" name="Rotorcraft Optitrack (Delft)" security_height="0.3">
   <header>
-#include "autopilot.h"
+	  #include "autopilot.h"
+    #include "guidance/guidance_h.h"
+    #include "guidance/guidance_v.h"
     #include "modules/flight_plan_guided/flight_plan_guided.h"
     #include "subsystems/datalink/datalink.h"
-#include "subsystems/radio_control.h"
+	  #include "subsystems/radio_control.h"
 </header>
   <waypoints>
     <waypoint name="HOME" x="0.0" y="0.0"/>
@@ -26,7 +28,7 @@
   
   <exceptions>
     <exception cond="datalink_time > 5" deroute="landed"/>
-    <exception cond="radio_control.status == RC_REALLY_LOST" deroute="landed"/>
+    <exception cond="radio_control.status == RC_REALLY_LOST" deroute="kill"/>
     <exception cond="autopilot_mode == AP_MODE_ATTITUDE_DIRECT" deroute="CL Start"/>
     <!--exception cond="stateGetPositionEnu_f()->z > 8." deroute="Land here"/-->
   </exceptions>
@@ -46,81 +48,61 @@
 <!--EKF turning closed loop-->
 
  <!--start block: hover for 2 sec -->
-    <block name="CL Start">
-        <!--call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/-->
-        <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
-        <call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/>
-    </block>
-
-   <block name="EKF Forward">
-     <!--call fun="MoveForward(0.3)"/>
-     <while cond="1"/>
-     <exception cond="EKF_turn_trigger == 1" deroute="EKF Wait"/--> <!-- If obstacle is within 1 meter, go to hover -->
-   </block>
-
-   <block name="EKF Wait">
-        <call fun="avoid_wall(-0.05)"/>
-        <!--call fun="reset_counter()"/>
-        <call fun="wait_counter(100)"/-->
-        <exception cond="stage_time>3" deroute="EKF Turn"/>
-   </block>
-
-   <block name="EKF Turn">
+		<block name="CL Start">
         <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
-        <!--set var="wanted_heading" value="stateGetNedToBodyEulers_f()->psi + RadOfDeg(EKF_desired_angle)"/-->
-        <set var="wanted_heading" value="stateGetNedToBodyEulers_f()->psi + RadOfDeg(60.0)"/>
-        <call fun="RotateToHeading_ATT(wanted_heading, RadOfDeg(0.0f),RadOfDeg(0.0f))"/>
-        <!--while cond="WaitforHeadingCondition(wanted_heading)"/>
-        <call fun="ResetAngles_ATT(wanted_heading)"/-->
-        <call fun="reset_counter()"/>
-        <call fun="wait_counter(25)"/>
-        <call fun="change_h_mode(GUIDANCE_H_MODE_GUIDED)"/>
-        <deroute block="EKF Forward"/>
-   </block>
-
-
-
-<!--JOURNAL TESTING closed loop flight/-->
-
-    <block name="CL Hover">
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
-        <call fun="avoid_wall(0.0)"/>
+        <!--call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/-->
+		</block>
+		<!--block name="CL forcefield"> 
+        <call fun="avoid_wall_and_sides(-0.01)"/>
+        <while cond="1"/> 
+    </block-->
+
+		<block name="CL Hover">
+        <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
+		    <call fun="avoid_wall_and_sides(-0.01)"/>
         <exception cond="stage_time>2" deroute="CL Go Forward with forcefield"/>
-    </block>
+		</block>
+
 <!--go forward, with a forcefield to prevent collissons -->
-    <block name="CL Go Forward with forcefield"> 
-        <call fun="avoid_wall(0.15)"/>
+		<block name="CL Go Forward with forcefield"> 
+        <call fun="avoid_wall_and_sides(-0.15)"/>
         <exception cond="1.2 > distance_stereo" deroute="CL Hover with forcefield"/> <!-- If obstacle is within 1 meter, go to hover -->
     </block>
+
 <!--Hover with a forcefield to prevent collissons -->
-    <block name="CL Hover with forcefield">
-        <call fun="avoid_wall(0.05)"/>
-        <exception cond="stage_time>1&&distance_stereo>0.8" deroute="CL Turn 60 deg"/> <!-- If 2 seconds are passed, go turn -->
+		<block name="CL Hover with forcefield">
+        <call fun="avoid_wall_and_sides(-0.05)"/>
+        <exception cond="stage_time>1" deroute="CL Turn"/> <!-- If 2 seconds are passed, go turn -->
     </block>
+
 <!-- turn 60 deg from current heading -->
-    <block name = "CL Turn 60 deg"> 
+    <block name = "CL Turn"> 
         <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
-        <set var="wanted_heading" value="stateGetNedToBodyEulers_f()->psi + RadOfDeg(60.0)"/>
-        <call fun="RotateToHeading_ATT(wanted_heading, RadOfDeg(0.0f),RadOfDeg(0.0f))"/>
-        <!--while cond="WaitforHeadingCondition(wanted_heading)"/>
-        <call fun="ResetAngles_ATT(wanted_heading)"/-->
+        <set var="wanted_heading" value="turn_angle"/>
+				<call fun="RotateToHeading_ATT(wanted_heading, RadOfDeg(0.0f),RadOfDeg(0.0f))"/>
+		    <!--while cond="WaitforHeadingCondition(wanted_heading)"/>
+ 				<call fun="ResetAngles_ATT(wanted_heading)"/-->
         <call fun="reset_counter()"/>
         <call fun="wait_counter(25)"/>
         <call fun="change_h_mode(GUIDANCE_H_MODE_GUIDED)"/>
-    </block>
+ 		</block>
+
  <!--check for obstacle -->
     <block name = "CL Hover and Check obstacle"> 
-        <call fun="avoid_wall(0.05)"/>
+        <call fun="avoid_wall_and_sides(-0.05)"/>
         <exception cond="1.2 > distance_stereo" deroute="CL Hover with forcefield"/>  <!-- if still obstacle, go to hover->turn again -->
-        <exception cond="stage_time>0.5" deroute="CL Go Forward with forcefield"/> <!-- No obstacle, go forward -->
-</block>
-
-
+        <exception cond="stage_time>0.5" deroute="CL Go Forward with forcefield"/>			<!-- No obstacle, go forward -->
+ 		</block>
 
     <block name="landed">
       <call fun="kill_mode()"/>
       <!--call fun="NavKillThrottle()"/>
       <attitude pitch="0" roll="0" throttle="0" until="FALSE" vmode="throttle"/-->
+    </block>
+
+    <block name="kill">
+      <call_once  fun = "autopilot_set_mode(AP_MODE_KILL)"/>
     </block>
   </blocks>
 </flight_plan>

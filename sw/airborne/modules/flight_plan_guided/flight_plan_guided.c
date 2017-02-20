@@ -88,7 +88,7 @@ static void range_sensors_cb(uint8_t sender_id,
 //abi for stereocam
 static abi_event stereocam_obstacle_ev;
 static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
-static float stereo_distance;
+float stereo_distance;
 void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
 {
 	stereo_distance = range;
@@ -97,7 +97,7 @@ void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
 
 static abi_event avoidance_turn_angle_ev;
 static void avoidance_turn_angle_cb(uint8_t sender_id, float angle);
-static float turn_angle;
+ float turn_angle;
 static void avoidance_turn_angle_cb(uint8_t sender_id, float angle)
 {
 	turn_angle = angle;
