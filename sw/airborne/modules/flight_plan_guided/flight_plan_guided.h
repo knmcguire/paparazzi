@@ -33,6 +33,9 @@ struct range_finders_ {
   int16_t right;  // mm
   int16_t left;   // mm
   int16_t back;   // mm
+  int16_t bottom;   // mm
+  int16_t top;   // mm
+
 };
 
 extern float marker_err;
