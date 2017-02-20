@@ -140,7 +140,7 @@ bool collisioncone_findnewdir_bool( bool *cc, float *psi_des)
 	float temp = *psi_des;
 	*psi_des = 180.0 / M_PI * *psi_des; // convert to degrees
 	float p = *psi_des/PSISEARCH; // round it here
-	array_shiftright_bool(cc, 36, (int)p);
+	array_shiftleft_bool(cc, 36, (int)p);
 	
 	for (i = 0; i < 36; i++)
 	{
@@ -152,7 +152,7 @@ bool collisioncone_findnewdir_bool( bool *cc, float *psi_des)
 		}
 	}
 
-	if ((temp - *psi_des) < 0.01) // check equal but with rounding
+	if (abs(temp - *psi_des) < 0.01) // check equal but with rounding
 		return false;
 	else
 		return true;
