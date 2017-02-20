@@ -37,9 +37,11 @@
 
 
 #include "mcu_periph/uart.h"
+/*
 #include "modules/stereocam/stereocam.h"
 #include "modules/stereocam/stereoprotocol.h"
 #include "modules/stereocam/stereocam2state/stereocam2state.h"
+*/
 
 // start and stop modules
 #include "generated/modules.h"
@@ -60,20 +62,11 @@ float nom_flight_alt; // nominal flight altitude
 #include "subsystems/abi.h"
 #include "subsystems/datalink/telemetry.h"
 
+//abi for range sensors
 static abi_event range_sensors_ev;
 static void range_sensors_cb(uint8_t sender_id,
 int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left);
 struct range_finders_ range_finders;
-
-static abi_event agl_ev;
-static float filtered_agl = LEGS_HEIGHT;
-static void agl_cb(uint8_t sender_id, float agl);
-
-static void agl_cb(uint8_t sender_id, float agl)
-{
-  filtered_agl = filtered_agl * 0.9 + agl * 0.1;
-}
-
 static void range_sensors_cb(uint8_t sender_id,
                              int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left)
 {
@@ -92,11 +85,45 @@ static void range_sensors_cb(uint8_t sender_id,
   		  tel_buf);*/
 }
 
+//abi for stereocam
+static abi_event stereocam_obstacle_ev;
+static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
+static float stereo_distance;
+void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
+{
+	stereo_distance = range;
+	//DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
+}
+
+static abi_event avoidance_turn_angle_ev;
+static void avoidance_turn_angle_cb(uint8_t sender_id, float angle);
+static float turn_angle;
+static void avoidance_turn_angle_cb(uint8_t sender_id, float angle)
+{
+	turn_angle = angle;
+}
+
+
+
+
+static abi_event agl_ev;
+static float filtered_agl = LEGS_HEIGHT;
+static void agl_cb(uint8_t sender_id, float agl);
+
+static void agl_cb(uint8_t sender_id, float agl)
+{
+  filtered_agl = filtered_agl * 0.9 + agl * 0.1;
+}
+
+
+
 void flight_plan_guided_init(void)
 {
   nom_flight_alt = NOM_FLIGHT_ALT;
   AbiBindMsgAGL(1, &agl_ev, agl_cb); // ABI to the altitude above ground level
   AbiBindMsgRANGE_SENSORS(ABI_BROADCAST, &range_sensors_ev, range_sensors_cb);
+  AbiBindMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, &stereocam_obstacle_ev, stereocam_obstacle_cb);
+  AbiBindMsgAVOIDANCE_TURN_ANGLE(ABI_BROADCAST, &avoidance_turn_angle_ev, avoidance_turn_angle_cb);
 }
 
 

@@ -95,6 +95,15 @@
       <field name="left_range_sensor" type="int16_t" unit="mm"/>
     </message>
 
+    <message name="AVOIDANCE_TURN_ANGLE" id="17">
+       <field name="turn_angle"  type="float" unit="deg"/>
+    </message>
+
+    <message name="STEREOCAM_OBSTACLE" id="18">
+       <field name="heading"  type="float" unit="deg"/>
+       <field name="range"  type="float" unit="m"/>
+    </message>
+
   </msg_class>
 
 </protocol>

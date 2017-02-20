@@ -78,7 +78,8 @@ void stereocam_to_state(void)
   flow_y |= (int16_t)stereocam_data.data[7];
 
   uint8_t agl = stereocam_data.data[8]; // in cm //TODO: use agl for in a guided obstacle avoidance.
-  float fps = (float)stereocam_data.data[9];
+  //float fps = (float)stereocam_data.data[9];
+  uint8_t obst_px = stereocam_data.data[9];
 
   // velocity global
   int16_t vel_x_global_int = (int16_t)stereocam_data.data[10] << 8;
@@ -140,7 +141,9 @@ void stereocam_to_state(void)
   }
 
   distance_stereo = filtered_agl;
+  float heading_obstacle = (64.0f-(float)(obst_px)) * 57.8f / 128.0f;
 
+  AbiSendMsgSTEREOCAM_OBSTACLE(STEREOCAM2STATE_SENDER_ID,heading_obstacle,filtered_agl);
   //Send velocities to state
   AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
                               vel_body_x_processed,
@@ -153,10 +156,10 @@ void stereocam_to_state(void)
   uint16_t dummy_uint16 = 0;
   int16_t dummy_int16 = 0;
   float dummy_float = 0;
-/*
-  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &fps, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y,
+
+  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &dummy_float, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y,
                                &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
-                               &distance_stereo, &dummy_float, &dummy_float);*/
+                               &distance_stereo, &heading_obstacle, &dummy_float);
 
 #endif
 
