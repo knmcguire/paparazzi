@@ -48,7 +48,6 @@ int IDarray[NUAVS-1]; 		// Array of IDs of other MAVs
 int8_t srcstrength[NUAVS-1];// Source strength
 uint32_t now_ts[NUAVS-1]; 	// Time of last received message from each MAV
 
-float ccvec[NUAVS-1][4];
 int nf; 					// Number of filters registered
 float EKF_desired_angle, v_des; 		// crs_des = desired course w.r.t. north, v_des = magnitude of velocity
 float vx_des, vy_des;		// Desired velocities in NED frame
@@ -160,20 +159,17 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z + 45.11;
 			
 			// Run the steps of the EKF
-			ekf_filter_predict(&ekf[i], &model[i]);
-			ekf_filter_update(&ekf[i], Y);
-				
+			if (  sqrt( pow(Y[1]-Y[2],2) + pow(Y[3]-Y[4],2) )  > 0.1 )
+			{
+				ekf_filter_predict(&ekf[i], &model[i]);
+				ekf_filter_update(&ekf[i], Y);
+			}	
 			/*
 			 * Xvector: dotx_other and doty_other are expressed in own bodyframe
 			 * X = [x y dotx_own doty_own dotx_other doty_other psi_own psi_other dh]
 			 * Yvector: dotx_other and dotyother are not rotated yet
 			 * Y = [RSSI dotx_own doty_own psi_own dotx_other doty_other psi_other dh]
 			 */
-			// Moving average filter to state (MAF_SIZE of 1, average with direct last measurment)
-			ccvec[i][0] = movingaveragefilter(x_est[i],  MAF_SIZE_POS, ekf[i].X[0]);
-			ccvec[i][1] = movingaveragefilter(y_est[i],  MAF_SIZE_POS, ekf[i].X[1]);
-			// ccvec[i][2] = movingaveragefilter(vx_est[i], MAF_SIZE_VEL, ekf[i].X[4]);
-			// ccvec[i][3] = movingaveragefilter(vy_est[i], MAF_SIZE_VEL, ekf[i].X[5]);
 		}
 		else
 		{
