@@ -37,9 +37,11 @@
 
 
 #include "mcu_periph/uart.h"
+/*
 #include "modules/stereocam/stereocam.h"
 #include "modules/stereocam/stereoprotocol.h"
 #include "modules/stereocam/stereocam2state/stereocam2state.h"
+*/
 
 // start and stop modules
 #include "generated/modules.h"
@@ -58,6 +60,52 @@ float wanted_heading;
 float nom_flight_alt; // nominal flight altitude
 
 #include "subsystems/abi.h"
+#include "subsystems/datalink/telemetry.h"
+
+//abi for range sensors
+static abi_event range_sensors_ev;
+static void range_sensors_cb(uint8_t sender_id,
+int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left);
+struct range_finders_ range_finders;
+static void range_sensors_cb(uint8_t sender_id,
+                             int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left)
+{
+  static int32_t front_wall_detect_counter = 0;
+  static const int32_t max_sensor_range = 2000;
+
+    // save range finders values
+    range_finders.front = range_front;
+    range_finders.right = range_right;
+    range_finders.left = range_left;
+    range_finders.back = range_back;
+    uint16_t tel_buf[4] = {0,range_right, 0 , range_left};
+     uint8_t length = 4;
+
+   /* DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &length, &(length), length,
+  		  tel_buf);*/
+}
+
+//abi for stereocam
+static abi_event stereocam_obstacle_ev;
+static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
+static float stereo_distance;
+void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
+{
+	stereo_distance = range;
+	//DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
+}
+
+static abi_event avoidance_turn_angle_ev;
+static void avoidance_turn_angle_cb(uint8_t sender_id, float angle);
+static float turn_angle;
+static void avoidance_turn_angle_cb(uint8_t sender_id, float angle)
+{
+	turn_angle = angle;
+}
+
+
+
+
 static abi_event agl_ev;
 static float filtered_agl = LEGS_HEIGHT;
 static void agl_cb(uint8_t sender_id, float agl);
@@ -67,10 +115,15 @@ static void agl_cb(uint8_t sender_id, float agl)
   filtered_agl = filtered_agl * 0.9 + agl * 0.1;
 }
 
+
+
 void flight_plan_guided_init(void)
 {
   nom_flight_alt = NOM_FLIGHT_ALT;
   AbiBindMsgAGL(1, &agl_ev, agl_cb); // ABI to the altitude above ground level
+  AbiBindMsgRANGE_SENSORS(ABI_BROADCAST, &range_sensors_ev, range_sensors_cb);
+  AbiBindMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, &stereocam_obstacle_ev, stereocam_obstacle_cb);
+  AbiBindMsgAVOIDANCE_TURN_ANGLE(ABI_BROADCAST, &avoidance_turn_angle_ev, avoidance_turn_angle_cb);
 }
 
 
@@ -229,14 +282,100 @@ void stereo_force_field(float *vel_body_x, float distance_stereo, float avoid_in
   *vel_body_x = avoid_x_command;
 }
 
+void range_sensor_force_field(float *vel_body_x, float *vel_body_y, int16_t avoid_inner_border, int16_t avoid_outer_border,
+    int16_t tinder_range, float min_vel_command, float max_vel_command)
+{
+  static const int16_t max_sensor_range = 2000;
+
+  int16_t difference_inner_outer = avoid_outer_border - avoid_inner_border;
+
+  // Velocity commands
+  float avoid_x_command = *vel_body_x;
+  float avoid_y_command = *vel_body_y;
+
+  // Balance avoidance command for y direction (sideways)
+  if (range_finders.right < 1 || range_finders.right > max_sensor_range)
+  {
+    //do nothing
+  } else if(range_finders.right < avoid_inner_border){
+    avoid_y_command -= max_vel_command;
+  } else if (range_finders.right < avoid_outer_border) {
+    // Linear
+    avoid_y_command -= (max_vel_command - min_vel_command) *
+        ((float)avoid_outer_border - (float)range_finders.right)
+        / (float)difference_inner_outer;
+  } else {}
+
+  if (range_finders.left < 1 || range_finders.left > max_sensor_range)
+  {
+    //do nothing
+  } else if(range_finders.left < avoid_inner_border){
+    avoid_y_command += max_vel_command;
+  } else if (range_finders.left < avoid_outer_border) {
+    // Linear
+    avoid_y_command += (max_vel_command - min_vel_command) *
+        ((float)avoid_outer_border - (float)range_finders.left)
+        / (float)difference_inner_outer;
+  } else {}
+
+  // balance avoidance command for x direction (forward/backward)
+  if (range_finders.front < 1 || range_finders.front > max_sensor_range)
+  {
+    //do nothing
+  } else if(range_finders.front < avoid_inner_border){
+    avoid_x_command -= max_vel_command;
+  } else if (range_finders.front < avoid_outer_border) {
+    // Linear
+    avoid_x_command -= (max_vel_command - min_vel_command) *
+        ((float)avoid_outer_border - (float)range_finders.front)
+        / (float)difference_inner_outer;
+  } else if(range_finders.front > tinder_range){
+      avoid_x_command += max_vel_command;
+  } else {}
+
+
+  if (range_finders.back < 1 || range_finders.back > max_sensor_range)
+  {
+    //do nothing
+  } else if(range_finders.back < avoid_inner_border){
+    avoid_x_command += max_vel_command;
+  } else if (range_finders.back < avoid_outer_border) {
+    // Linear
+    avoid_x_command += (max_vel_command - min_vel_command) *
+        ((float)avoid_outer_border - (float)range_finders.back)
+        / (float)difference_inner_outer;
+  } else {}
+
+  *vel_body_x = avoid_x_command;
+  *vel_body_y = avoid_y_command;
+}
+
 bool avoid_wall(float vel_body_x_command)
 {
   if (autopilot_mode != AP_MODE_GUIDED) { return true; }
 
   if (autopilot_mode == AP_MODE_GUIDED) {
 
-    stereo_force_field(&vel_body_x_command, distance_stereo, 0.80f, 1.2, 5.0f , 0.0f, 0.3f);
+    stereo_force_field(&vel_body_x_command, distance_stereo, 0.80f, 1.2, 5.0f , 0.0f, -0.2f);
     MoveForward(vel_body_x_command);
+
+  }
+  return true;
+
+}
+
+bool avoid_wall_and_sides(float vel_body_x_command)
+{
+  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+
+  if (autopilot_mode == AP_MODE_GUIDED) {
+
+	float vel_body_y_command = 0.0f;
+
+    stereo_force_field(&vel_body_x_command, distance_stereo, 0.8f, 1.2, 5.0f , 0.0f, -0.2f);
+    range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, 600, 1000, 9000 , 0.0f, 0.2f);
+
+    guidance_h_set_guided_body_vel(vel_body_x_command, vel_body_y_command);
   }
   return true;
 
@@ -322,5 +461,11 @@ bool wait_counter(int32_t end_counter)
 	  return true;
 
 
+}
+
+bool kill_mode()
+{
+	autopilot_set_mode(AP_MODE_KILL);
+	return true;
 }
 

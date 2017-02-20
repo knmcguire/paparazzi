@@ -109,5 +109,11 @@ extern bool wait_for_mode(uint8_t mode);
 extern bool reset_counter(void);
 extern bool wait_counter(int32_t end_counter);
 extern bool change_v_mode(uint8_t mode);
+extern bool kill_mode(void);
+
+void range_sensor_force_field(float *vel_body_x, float *vel_body_y, int16_t avoid_inner_border, int16_t avoid_outer_border,
+    int16_t tinder_range, float min_vel_command, float max_vel_command);
+void stereo_force_field(float *vel_body_x, float distance_stereo, float avoid_inner_border, float avoid_outer_border,
+                        float tinder_range, float min_vel_command, float max_vel_command);
 
 #endif

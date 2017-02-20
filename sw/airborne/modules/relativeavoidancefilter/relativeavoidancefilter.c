@@ -208,6 +208,7 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	pz = (float)gps_pos_cm_ned_i.z/100.0;
 
 	uint8_t id = (uint8_t)IDarray[i];
+	float ekft = (float)EKF_turn_trigger;
 
 	pprz_msg_send_RAFILTERDATA(trans, dev, AC_ID,
 		&id,			     		 // ID or filtered aircraft number
@@ -218,7 +219,7 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
 		&ekf[i].X[6],  				 // Height separation
-		&vx_des, &vy_des);	 // Commanded velocities
+		&ekft, &vy_des);	 // Commanded velocities
 
 	float temp = 0;
 };
@@ -235,6 +236,7 @@ void relativeavoidancefilter_init(void)
 	magprev   = 3.0; 	   	// Just a random high value
 	firsttime = false;
 	wall_imminent = false;     // Null assumption
+	EKF_turn_trigger = false; // Null assumption
 
 	for (int i = 0; i < NUAVS-1; i++) {
 		fmat_make_zeroes( x_est[i],  1, MAF_SIZE_POS );
