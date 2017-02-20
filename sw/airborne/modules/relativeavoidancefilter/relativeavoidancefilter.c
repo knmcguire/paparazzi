@@ -288,81 +288,16 @@ void relativeavoidancefilter_periodic(void)
 		//switch height to RC controlled height (for pocket drone without IR sensor!)
 	    // guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
 
-		// float cc[nf][6];
-
-		// Pos in X and Y just for arena border detection!
-		// float posx = stateGetPositionEnu_f()->y;
-		// float posy = stateGetPositionEnu_f()->x;
-		float posx = (float)gps_pos_cm_ned_i.x/100.0;
-		float posy = (float)gps_pos_cm_ned_i.y/100.0;
-
-		// bool collision_imminent = false; // Null assumption
-		// bool wall_imminent 		= false; // Null assumption
-
-		// // Wall detection
-		// if (sqrt(pow(posx,2) + pow(posy,2)) > magprev) {
-		// 	wall_imminent = true;
-		// }
-		// magprev = sqrt(pow(posx,2) + pow(posy,2));
-
-		// // If approaching wall, then change direction to avoid wall
-		// if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5))) && wall_imminent ) {
-		// // if ( ((abs(posx) > (ASIDE-0.5)) || (abs(posy) > (ASIDE-0.5)))) {
-		// 	//Equivalent to PID with gain 1 towards center. This is only to get the direction anyway.
-		// 	cart2polar(-posx,-posy, &v_des, &crs_des);
-		// 	v_des = V_NOMINAL;
-		// }
-		// // Otherwise worry about other drones
-		// else {
-		// 	polar2cart(v_des, crs_des, &vx_des, &vy_des); // vx_des & vy_des = desired velocity
-		// 	uint8_t i;
-		// 	for ( i = 0; i < nf; i++ ) { // nf is amount of filters running
-		// 		float dist = sqrt(pow(ekf[i].X[0],2) + pow(ekf[i].X[1],2));
-		// 		float eps = 1.0*ASIDE*tan(1.7/2) - MAVSIZE - ASIDE;
-				
-		// 		// cc[i] = collisioncone with respect to other robot i
-		// 		collisioncone_update(cc[i], ccvec[i][0], ccvec[i][1], ccvec[i][2], ccvec[i][3], dist+MAVSIZE+eps);	// x y xdot_0 ydot_0 (characteristics collision cones)
-				
-		// 		if ( collisioncone_checkdanger( cc[i], vx_des, vy_des )) {
-		// 			collision_imminent = true; 		// We could be colliding!
-		// 		}
-		// 	}
-	
-		// 	if (collision_imminent) { // If the desired velocity doesn't work, then let's find the next best thing according to VO
-		// 		v_des = V_NOMINAL;
-		// 		collisioncone_findnewcmd(cc, &v_des, &crs_des, CRSSEARCH, nf); // Go clockwise until save direction in found
-		// 	}
-		// }
-
-		// polar2cart(v_des, crs_des, &vx_des, &vy_des);  		// new desired speed in North (x) and East(y)
-		
-		/* Optitrack Guided commands */
-		// autopilot_guided_move_ned(vx_des, vy_des, 0.0, 0.0);  	//send to guided mode -- use this if flying with optitrack
-		
-		/* Opticflow Guided commands */
-		// vx_des_b = vx_des*cos(-stateGetNedToBodyEulers_f()->psi) - vy_des*sin(-stateGetNedToBodyEulers_f()->psi);
-		// vy_des_b = vx_des*sin(-stateGetNedToBodyEulers_f()->psi) + vy_des*cos(-stateGetNedToBodyEulers_f()->psi);
-		// guidance_h_set_guided_body_vel(vx_des, vy_des);
-
-		// implement memory
-		// if (!wall_imminent || ((get_sys_time_usec()-t_w1) > 0.0) ){
-		// if ( ((get_sys_time_usec()-t_w1) > 0.0) ){
-			array_make_zeros_bool(36, cc);  // Null assumption
-			t_w1 = get_sys_time_usec();
-			wall_imminent = false;
-		// }
-		// else {
-		// 	array_copy_bool(cc,cc_wall,36);
-		// }
-		// wall_imminent = false;
+		array_make_zeros_bool(36, cc);  // Null assumption
+		t_w1 = get_sys_time_usec();
+		wall_imminent = false;
 		
 		float b_wall,wallx,wally,temp;
 		// If outside of the arena bounds move back inside, or otherwise try and keep your heading at the nominal velocity
 		// Recalculate wall as an issue
 		
-		if ( !wall_imminent && 
-			( (abs(posx) > ASIDE-0.5) || (abs(posy) > ASIDE-0.5) ) )  {
-			// cout << name << " wall" << endl;
+		// change this if statement to if (trigger from camera) !!
+		if ( !wall_imminent )  {
 			BodyToNED(1.0, 0.0, stateGetNedToBodyEulers_f()->psi, &wallx, &wally); // Body to ENU
 			collisioncone_update_bool(cc, wallx, wally, 2.0); // this is with respect to the earth frammmeee!
 			// array_copy_bool(cc_wall,cc,36);
@@ -370,7 +305,7 @@ void relativeavoidancefilter_periodic(void)
 					
 		}
 
-		// Fill it up with the drone data
+		// Fill it up with the drone data 
 		for (int i = 0; i < nf; i++) {
 			// get polar coordinates
 			float dist, b_orig, b_orig_prev, pxo, pxy;
