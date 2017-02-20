@@ -49,6 +49,7 @@ extern struct range_finders_ range_finders;
 extern float wanted_heading;
 
 extern  float turn_angle;
+extern float  turn_trigger;
 
 extern float stereo_distance;
 

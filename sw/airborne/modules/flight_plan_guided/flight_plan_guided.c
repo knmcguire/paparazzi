@@ -98,10 +98,12 @@ void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
 }
 
 static abi_event avoidance_turn_angle_ev;
-static void avoidance_turn_angle_cb(uint8_t sender_id, float angle);
+static void avoidance_turn_angle_cb(uint8_t sender_id, float angle, bool trigger);
  float turn_angle;
-static void avoidance_turn_angle_cb(uint8_t sender_id, float angle)
+ float turn_trigger;
+static void avoidance_turn_angle_cb(uint8_t sender_id, float angle, bool trigger)
 {
+	turn_trigger = trigger;
 	turn_angle = angle;
 }
 

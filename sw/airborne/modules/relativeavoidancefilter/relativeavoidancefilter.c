@@ -137,9 +137,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		keepbounded(&ownVx,-2.0,2.0);
 		keepbounded(&ownVy,-2.0,2.0);
 
-		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED || firsttime == false) // only in guided mode (flight) (take off in NAV)
+		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED || firsttime == true) // only in guided mode (flight) (take off in NAV)
 		{
-			firsttime = true;
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
 
@@ -176,6 +175,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		}
 		else
 		{
+			firsttime = true;
 			ekf[i].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
 			ekf[i].X[1] = 1.0;
 			ekf[i].X[2] = 0.0;
@@ -343,7 +343,7 @@ void relativeavoidancefilter_periodic(void)
 			
 			b_orig_prev = b_orig;
 
-			if (dist < 2.0)
+//			if (dist < 2.0)
 				collisioncone_update_bool(cc, pxo, pxy, dist+MAVSIZE+eps);
 
 		}
@@ -352,11 +352,11 @@ void relativeavoidancefilter_periodic(void)
 		   DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &length, &(length), length,
 		    		  cc);
 		// array_print_bool(36,cc);
-		   EKF_desired_angle= stateGetNedToBodyEulers_f()->psi + M_PI;
+		EKF_desired_angle= stateGetNedToBodyEulers_f()->psi + M_PI;
 		EKF_turn_trigger = collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
 
 		if(EKF_turn_trigger)
-			AbiSendMsgAVOIDANCE_TURN_ANGLE(ABI_BROADCAST, EKF_desired_angle);
+			AbiSendMsgAVOIDANCE_TURN_ANGLE(ABI_BROADCAST, EKF_desired_angle, EKF_turn_trigger);
 
 		// guidance_h_set_guided_vel(vx_des,vy_des);
 		
