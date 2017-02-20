@@ -362,19 +362,41 @@ void relativeavoidancefilter_periodic(void)
 		
 		if ( !wall_imminent && 
 			( (abs(posx) > ASIDE-0.5) || (abs(posy) > ASIDE-0.5) ) )  {
-			// for real implementation, this should be rotated from body to global, it should just be bearing+ownPsi
-			cart2polar(posx, posy, &temp, &b_wall);
-			polar2cart(1.0, b_wall, &wallx, &wally);
-			collisioncone_update_bool(cc, wallx, wally, 100.0);
-			array_copy_bool(cc_wall,cc,36);
-			wall_imminent = true;
+			// cout << name << " wall" << endl;
+			BodyToNED(1.0, 0.0, stateGetNedToBodyEulers_f()->psi, &wallx, &wally); // Body to ENU
+			collisioncone_update_bool(cc, wallx, wally, 2.0); // this is with respect to the earth frammmeee!
+			// array_copy_bool(cc_wall,cc,36);
+			// wall_imminent = true;
+					
 		}
 
 		// Fill it up with the drone data
 		for (int i = 0; i < nf; i++) {
-			float dist = sqrt ( pow(ekf[i].X[0],2)  +  pow(ekf[i].X[1],2) );
-			float eps = 1.0*ASIDE*tan(1.7/2.0) - MAVSIZE - ASIDE;
-			collisioncone_update_bool(cc, ccvec[i][0], ccvec[i][1], dist+MAVSIZE+eps);
+			// get polar coordinates
+			float dist, b_orig, b_orig_prev, pxo, pxy;
+			cart2polar(ekf[i].X[0], ekf[i].X[1], &dist, &b_orig);
+
+			// get collision cone
+			float eps     = 1.0*ASIDE*tan(1.7/2) - MAVSIZE - ASIDE;
+			float vmag    = sqrt ( pow(ekf[i].X[4],2) +  pow(ekf[i].X[5],2) );
+			float dotprod = ekf[i].X[0] * ekf[i].X[4] + ekf[i].X[1] * ekf[i].X[5];
+			float magprod = dist * vmag;
+			float angle   = acos(dotprod/magprod);
+			float vrad    = vmag*sin(angle);
+			wrapTo2Pi(&b_orig);
+			wrapTo2Pi(&angle);
+
+			int sign = -1;
+			if ((b_orig - b_orig_prev) > 0)
+				sign = 1;
+
+			polar2cart(dist, b_orig+(vrad/dist*sign), &pxo, &pxy);
+			
+			b_orig_prev = b_orig;
+
+			if (dist < 2.0)
+				collisioncone_update_bool(cc, pxo, pxy, dist+MAVSIZE+eps);
+
 		}
 
 		// array_print_bool(36,cc);
@@ -389,7 +411,6 @@ void relativeavoidancefilter_periodic(void)
 		// 	z_des = 1.00;
 
 		// guidance_v_set_guided_z(-z_des);
-
 		// guidance_h_set_guided_heading(0.0); % not reccommended if without a good heading estimate
 
 	}

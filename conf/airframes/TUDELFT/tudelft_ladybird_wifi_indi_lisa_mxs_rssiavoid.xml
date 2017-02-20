@@ -6,9 +6,11 @@
 
 <!--
      The motor and rotor configuration is the following:
+
 	   Front
              ^
              |
+
     Motor3(NW)  Motor0(NE)
         CW      CCW
           \     /
@@ -19,6 +21,7 @@
           /     \
         CCW      CW
      Motor2(SW)  Motor1(SE)
+
 -->
 
 <airframe name="quadrotor_lisa_mxs">
@@ -60,7 +63,7 @@
   <section name="IMU" prefix="IMU_">
     <define name="BODY_TO_IMU_PHI"   value="-2.0" unit="deg"/>
     <define name="BODY_TO_IMU_THETA" value="-0.0" unit="deg"/>
-    <define name="BODY_TO_IMU_PSI"   value="135" unit="deg"/> <!-- Do not touch this! -->
+    <define name="BODY_TO_IMU_PSI"   value="135." unit="deg"/>
 
     <define name="ACCEL_X_NEUTRAL" value="0"/>
     <define name="ACCEL_Y_NEUTRAL" value="0"/>
@@ -83,11 +86,9 @@
  <section name="AUTOPILOT">
    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
-   <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_DIRECT"/>
-   <define name="MODE_AUTO2" value="AP_MODE_GUIDED"/>
-  <!--define name="MODE_AUTO2" value="AP_MODE_ATTITUDE_DIRECT"/-->
+   <define name="MODE_AUTO1" value="AP_MODE_HOVER_Z_HOLD"/>
+   <define name="MODE_AUTO2" value="AP_MODE_HOVER_DIRECT"/>
    <define name="NO_RC_THRUST_LIMIT"  value="TRUE"/>
-   <!--define name="USE_THROTTLE_FOR_MOTOR_ARMING" value="TRUE"/-->
  </section>
 
  <section name="BAT">
@@ -182,8 +183,8 @@
 
   <section name="INS" prefix="INS_">
      <!--define name="INT_GPS_ID" value="ABI_DISABLE"/-->
-     <define name="USE_GPS_ALT" value="TRUE"/>
-    <define name="OPTITRACK_DONOTUSESPEED" value="TRUE"/>
+     <define name="USE_GPS_ALT" value="true"/>
+     <define name="SONAR_UPDATE_ON_AGL" value="true"/>
   </section>
 
  <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
@@ -204,10 +205,10 @@
 
  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
    <define name="PGAIN" value="80"/>
-   <define name="DGAIN" value="165"/>
+   <define name="DGAIN" value="260"/>
    <define name="IGAIN" value="0"/>
-   <define name="MAX_BANK" value="RadOfDeg(10)"/>
-   <define name="REF_MAX_SPEED" value="0.3"/>
+   <define name="MAX_BANK" value="RadOfDeg(15)"/>
+   <define name="REF_MAX_SPEED" value="0.5"/>
    <define name="USE_SPEED_REF" value="TRUE"/>
 
  </section>
@@ -260,16 +261,18 @@
     <module name="traffic_info.xml"/>
     <module name="rssi.xml"/>
     <module name="relativeavoidancefilter.xml"/>
-    <!-- <module name="bluegiga_dl.xml"/> -->
-      <!-- <configure name="BLUEGIGA_DL_PORT" value="uart3"/> -->
-    <!-- </module> -->
-    <module name="flight_plan_guided"/>  
+   <module name="flight_plan_guided"/>
+   <module name="mag_pitot_uart.xml">
+       <configure name="MAG_PITOT_BAUD" value="38400"/>
+       <configure name="MAG_PITOT_PORT" value="UART4"/>
+   </module>
  </modules>
 
   <firmware name="rotorcraft">
     <target name="ap" board="lisa_mx_2.1">
 
       <define name="REMAP_UART3" value="TRUE" />
+
       <module name="radio_control" type="datalink"/>
       <!--module name="radio_control" type="spektrum">
         <configure name="RADIO_CONTROL_SPEKTRUM_PRIMARY_PORT" value="UART5" />
@@ -277,7 +280,6 @@
 
       <configure name="AHRS_PROPAGATE_FREQUENCY" value="500"/>
       <define name="USE_PERSISTENT_SETTINGS" value="TRUE"/>
-      <configure name="USE_BARO_BOARD" value="FALSE"/>
     </target>
 
     <target name="nps" board="pc">
@@ -285,6 +287,8 @@
       <module name="radio_control" type="ppm"/>
     </target>
 
+    <define name="USE_BARO_BOARD" value="TRUE"/>
+    <define name="USE_SONAR" value="TRUE"/>
     <module name="motor_mixing"/>
     <module name="actuators" type="pwm">
       <!-- This airframe is using the servo PWM outputs directly to drive mosfets, which in turn directly drive brushed motors.
@@ -296,7 +300,6 @@
       <!-- Setting the PWM interval to 36KHz -->
       <define name="SERVO_HZ" value="36000"/>
     </module>
-    <!-- <module name="telemetry_bluegiga.xml"/> -->
 
     <module name="telemetry" type="transparent">
       <configure name="MODEM_PORT" value="UART1"/>
@@ -309,12 +312,9 @@
 
     <!--module name="stabilization" type="int_quat"/-->
     <module name="stabilization" type="indi"/>
-    <module name="ahrs" type="int_cmpl_quat">
-      <configure name="USE_MAGNETOMETER" value="FALSE"/>
-      <configure name="AHRS_USE_GPS" value="FALSE"/>
-      <configure name="AHRS_USE_GPS_HEADING" value="FALSE"/>
-    </module>
-    <module name="ins"/>
+    <module name="ahrs" type="int_cmpl_quat"/>
+    <module name="ins" type="extended"/>
+    <configure name="USE_MAGNETOMETER" value="FALSE"/>
     <module name="air_data">
       <define name="AIR_DATA_CALC_AMSL_BARO" value="TRUE"/>
     </module>
