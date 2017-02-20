@@ -159,7 +159,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z + 45.11;
 			
 			// Run the steps of the EKF
-			if (  sqrt( pow(Y[1]-Y[2],2) + pow(Y[3]-Y[4],2) )  > 0.1 )
+			if (  sqrt( pow(Y[1]-Y[3],2) + pow(Y[2]-Y[4],2) ) > 0.1 )
 			{
 				ekf_filter_predict(&ekf[i], &model[i]);
 				ekf_filter_update(&ekf[i], Y);		
@@ -303,7 +303,7 @@ void relativeavoidancefilter_periodic(void)
 	    // guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
 
 		array_make_zeros_bool(36, cc);  // Null assumption
-		t_w1 = get_sys_time_usec();
+		// t_w1 = get_sys_time_usec();
 		wall_imminent = false;
 		
 		float b_wall, wallx, wally, temp;
@@ -312,11 +312,10 @@ void relativeavoidancefilter_periodic(void)
 
 		// change this if statement to if (trigger from camera) !!
 		if ( stereo_distance < 1.0 )  {
-			float xobst, yobst; 
-			polar2cart(stereo_distance, stereo_obst_bearing+M_PI, &xobst, &yobst);
-			BodyToNED(xobst, yobst,  
-					  stateGetNedToBodyEulers_f()->psi, &wallx, &wally); // Body to ENU
-			collisioncone_update_bool(cc, wallx, wally, 2.0); // this is with respect to the earth frammmeee!
+			float xobst, yobst;
+			polar2cart(stereo_distance, stereo_obst_bearing+stateGetNedToBodyEulers_f()->psi+M_PI, &xobst, &yobst);
+			// BodyToNED(xobst, yobst, stateGetNedToBodyEulers_f()->psi, &wallx, &wally); // Body to ENU
+			collisioncone_update_bool(cc,xobst, yobst, 2.0); // this is with respect to the earth frammmeee!
 		}
 
 		// Fill it up with the drone data 
