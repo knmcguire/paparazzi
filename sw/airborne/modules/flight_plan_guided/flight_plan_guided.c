@@ -286,7 +286,10 @@ void stereo_force_field(float *vel_body_x, float distance_stereo, float avoid_in
   *vel_body_x = avoid_x_command;
 }
 
-void range_sensor_force_field(float *vel_body_x, float *vel_body_y, int16_t avoid_inner_border, int16_t avoid_outer_border,
+
+
+
+void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_body_z, int16_t avoid_inner_border, int16_t avoid_outer_border,
     int16_t tinder_range, float min_vel_command, float max_vel_command)
 {
   static const int16_t max_sensor_range = 2000;
@@ -296,6 +299,7 @@ void range_sensor_force_field(float *vel_body_x, float *vel_body_y, int16_t avoi
   // Velocity commands
   float avoid_x_command = *vel_body_x;
   float avoid_y_command = *vel_body_y;
+  float avoid_z_command = *vel_body_z;
 
   // Balance avoidance command for y direction (sideways)
   if (range_finders.right < 1 || range_finders.right > max_sensor_range)
@@ -350,8 +354,23 @@ void range_sensor_force_field(float *vel_body_x, float *vel_body_y, int16_t avoi
         / (float)difference_inner_outer;
   } else {}
 
+
+  if (range_finders.top < 1 || range_finders.top > max_sensor_range)
+  {
+    //do nothing
+  } else if(range_finders.top < avoid_inner_border){
+    avoid_z_command += max_vel_command;
+  } else if (range_finders.top < avoid_outer_border) {
+    // Linear
+    avoid_z_command += (max_vel_command - min_vel_command) *
+        ((float)avoid_outer_border - (float)range_finders.top)
+        / (float)difference_inner_outer;
+  } else {}
+
   *vel_body_x = avoid_x_command;
   *vel_body_y = avoid_y_command;
+  *vel_body_z = avoid_z_command;
+
 }
 
 bool avoid_wall(float vel_body_x_command)
@@ -375,9 +394,14 @@ bool avoid_wall_and_sides(float vel_body_x_command)
   if (autopilot_mode == AP_MODE_GUIDED) {
 
 	float vel_body_y_command = 0.0f;
+	float vel_body_z_command = 0.0f;
 
     stereo_force_field(&vel_body_x_command, distance_stereo, 0.8f, 1.2, 5.0f , 0.0f, -0.2f);
-    range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, 600, 1000, 9000 , 0.0f, 0.2f);
+    range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, &vel_body_z_command, 800, 1200, 9000 , 0.0f, 0.2f);
+
+
+    guidance_v_set_guided_vz(vel_body_z_command);
+    guidance_h_set_guided_body_vel(vel_body_x_command, vel_body_y_command);
 
 
 /*
@@ -387,8 +411,7 @@ bool avoid_wall_and_sides(float vel_body_x_command)
     guidance_v_set_guided_z(reset_height);
     }
 */
-
-    guidance_h_set_guided_body_vel(vel_body_x_command, vel_body_y_command);
+  //  guidance_h_set_guided_body_vel(0.2,0.2);
   }
   return true;
 

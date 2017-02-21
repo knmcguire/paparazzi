@@ -54,7 +54,7 @@
         <call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/>
 		</block>
 		<!--block name="CL forcefield"> 
-        <call fun="avoid_wall_and_sides(-0.01)"/>
+        <call fun="avoid_wall_and_sides(-0.05)"/>
         <while cond="1"/> 
     </block-->
 

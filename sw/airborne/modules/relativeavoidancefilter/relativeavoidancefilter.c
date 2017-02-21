@@ -349,8 +349,8 @@ void relativeavoidancefilter_periodic(void)
 		}
 
 		uint8_t length = 36;
-		   DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &length, &(length), length,
-		    		  cc);
+		   DOWNLINK_SEND_AVOIDANCE_CC_BOOL(DefaultChannel, DefaultDevice, length, cc);
+
 		// array_print_bool(36,cc);
 		EKF_desired_angle= stateGetNedToBodyEulers_f()->psi + M_PI;
 		EKF_turn_trigger = collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
