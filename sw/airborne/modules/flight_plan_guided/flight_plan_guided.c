@@ -403,6 +403,7 @@ bool avoid_wall_and_sides(float vel_body_x_command)
     guidance_v_set_guided_vz(vel_body_z_command);
     guidance_h_set_guided_body_vel(vel_body_x_command, vel_body_y_command);
 
+    DOWNLINK_SEND_VELOCITY_COMMANDS(DefaultChannel, DefaultDevice, &vel_body_x_command, &vel_body_y_command, &vel_body_z_command);
 
 /*
     if(range_finders.top<2000)
