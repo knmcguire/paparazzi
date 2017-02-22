@@ -49,6 +49,7 @@ extern struct range_finders_ range_finders;
 extern float wanted_heading;
 
 extern  float turn_angle;
+extern float  turn_trigger;
 
 extern float stereo_distance;
 
@@ -108,6 +109,8 @@ extern bool WaitUntilMarker(void);
 
 // guided function for RAL journal testing!
 extern bool avoid_wall(float vel_body_x_command);
+extern bool avoid_wall_and_sides(float vel_body_x_command);
+
 extern bool change_h_mode(uint8_t mode);
 extern bool RotateToHeading_ATT(float new_heading, float trim_phi, float trim_theta);
 extern bool  ResetAngles_ATT(float current_heading);
@@ -118,7 +121,7 @@ extern bool wait_counter(int32_t end_counter);
 extern bool change_v_mode(uint8_t mode);
 extern bool kill_mode(void);
 
-void range_sensor_force_field(float *vel_body_x, float *vel_body_y, int16_t avoid_inner_border, int16_t avoid_outer_border,
+void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_body_z, int16_t avoid_inner_border, int16_t avoid_outer_border,
     int16_t tinder_range, float min_vel_command, float max_vel_command);
 void stereo_force_field(float *vel_body_x, float distance_stereo, float avoid_inner_border, float avoid_outer_border,
                         float tinder_range, float min_vel_command, float max_vel_command);

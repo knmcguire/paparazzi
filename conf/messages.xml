@@ -2229,7 +2229,13 @@
   </message>
   
   <!-- 249 is free -->
+  <message name="AVOIDANCE_CC_BOOL" id="249">
+    <field name="imageBuffer" type="uint8[]" unit="bool"/>
+  </message>
   <!-- 250 is free -->
+  <message name="RANGE_FINDERS" id="250">
+    <field name="imageBuffer" type="int16[]"/>
+  </message>
 
    <message name="GPS_RTK" id="251">
     <field name="iTOW"          type="uint32" unit="ms"/>
@@ -2276,6 +2282,12 @@
   </message>
 
   <!-- 254 is free -->
+  <!-- 250 is free -->
+  <message name="VELOCITY_COMMANDS" id="254">
+    <field name="vel_x" type="float" unit="m/s"/>
+    <field name="vel_y" type="float" unit="m/s"/>
+    <field name="vel_z" type="float" unit="m/s"/>
+  </message>
   <!-- 255 is free -->
 
 </msg_class>

@@ -99,6 +99,7 @@
 
     <message name="AVOIDANCE_TURN_ANGLE" id="17">
        <field name="turn_angle"  type="float" unit="deg"/>
+       <field name="turn_trigger" type="uint8_t" unit="bool"/>
     </message>
 
     <message name="STEREOCAM_OBSTACLE" id="18">

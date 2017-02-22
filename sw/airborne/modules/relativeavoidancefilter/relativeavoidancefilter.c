@@ -137,9 +137,8 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		keepbounded(&ownVx,-2.0,2.0);
 		keepbounded(&ownVy,-2.0,2.0);
 
-		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED || firsttime == false) // only in guided mode (flight) (take off in NAV)
+		if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED || firsttime == true) // only in guided mode (flight) (take off in NAV)
 		{
-			firsttime = true;
 			// Update the time between messages
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6);
 
@@ -156,15 +155,13 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			Y[2] = ownVy;
 			Y[3] = trackedVx;  // Velocity tracked from other drone (already in Earth NED frame!)
 			Y[4] = trackedVy;
-			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z + 45.11;
+			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z;
 			
 			// Run the steps of the EKF
-			if (  sqrt( pow(Y[1]-Y[3],2) + pow(Y[2]-Y[4],2) ) > 0.1 )
+			if (  sqrt( pow(Y[1]-Y[3],2) + pow(Y[2]-Y[4],2) ) > 0.05 )
 			{
 				ekf_filter_predict(&ekf[i], &model[i]);
-				ekf_filter_update(&ekf[i], Y);		
-				// Update latest time
-				now_ts[i] = get_sys_time_usec();
+				ekf_filter_update(&ekf[i], Y);
 
 			}	
 			/*
@@ -176,6 +173,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		}
 		else
 		{
+			firsttime = true;
 			ekf[i].X[0] = 1.0; // Initial positions cannot be zero or else you'll divide by zero
 			ekf[i].X[1] = 1.0;
 			ekf[i].X[2] = 0.0;
@@ -185,9 +183,12 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			ekf[i].X[6] = 0.0;// -stateGetPositionNed_f()->x; // Initial positions cannot be zero or else you'll divide by zero					
 		
 			// Update latest time
-			now_ts[i] = get_sys_time_usec();
+//			now_ts[i] = get_sys_time_usec();
 
 		}
+
+		// Update latest time
+		now_ts[i] = get_sys_time_usec();
 	}
 };
 
@@ -225,7 +226,7 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	pprz_msg_send_RAFILTERDATA(trans, dev, AC_ID,
 		&id,			     		 // ID or filtered aircraft number
 		&RSSIarray[i], 		    	 // Received ID and RSSI
-		&srcstrength[i],		     // Source strength
+		&nf,		     // Source strength
 		&px, &py, &pz, 				 // &gps_pos_cm_ned_i.z    //
 		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
@@ -297,7 +298,7 @@ void relativeavoidancefilter_periodic(void)
 	/*********************************************
 		Relative Avoidance Behavior
 	*********************************************/
-	if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
+	//if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
 
 		//switch height to RC controlled height (for pocket drone without IR sensor!)
 	    // guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
@@ -311,8 +312,7 @@ void relativeavoidancefilter_periodic(void)
 		// Recalculate wall as an issue
 
 		// change this if statement to if (trigger from camera) !!
-
-		if ( stereo_distance < 1.0 )  {
+		if ( stereo_distance < 1.2 )  {
 			float xobst, yobst;
 			polar2cart(stereo_distance, stereo_obst_bearing+stateGetNedToBodyEulers_f()->psi+M_PI, &xobst, &yobst);
 			// BodyToNED(xobst, yobst, stateGetNedToBodyEulers_f()->psi, &wallx, &wally); // Body to ENU
@@ -343,20 +343,20 @@ void relativeavoidancefilter_periodic(void)
 			
 			b_orig_prev = b_orig;
 
-			if (dist < 2.0)
-				collisioncone_update_bool(cc, pxo, pxy, dist+MAVSIZE+eps);
+//			if (dist < 2.0)
+			collisioncone_update_bool(cc, pxo, pxy, dist+MAVSIZE+eps);
 
-		}
+		//}
 
 		uint8_t length = 36;
-		   DOWNLINK_SEND_STEREO_IMG(DefaultChannel, DefaultDevice, &length, &(length), length,
-		    		  cc);
+		   DOWNLINK_SEND_AVOIDANCE_CC_BOOL(DefaultChannel, DefaultDevice, length, cc);
+
 		// array_print_bool(36,cc);
-		   EKF_desired_angle= stateGetNedToBodyEulers_f()->psi + M_PI;
+		EKF_desired_angle= stateGetNedToBodyEulers_f()->psi + M_PI;
 		EKF_turn_trigger = collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
 
 		if(EKF_turn_trigger)
-			AbiSendMsgAVOIDANCE_TURN_ANGLE(ABI_BROADCAST, EKF_desired_angle);
+			AbiSendMsgAVOIDANCE_TURN_ANGLE(ABI_BROADCAST, EKF_desired_angle, EKF_turn_trigger);
 
 		// guidance_h_set_guided_vel(vx_des,vy_des);
 		
