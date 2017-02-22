@@ -276,7 +276,7 @@ void relativeavoidancefilter_periodic(void)
 
 	/*********************************************
 		Sending speed directly between drones
-	*********************************************/
+	 *********************************************/
 	// Convert Course to the proper format (NED)
 	float spd, crs;
 	cart2polar(stateGetSpeedEnu_f()->y, stateGetSpeedEnu_f()->x, &spd, &crs); // Get the total speed and course
@@ -284,91 +284,89 @@ void relativeavoidancefilter_periodic(void)
 
 	int32_t course = (int32_t)(crs*(1e7)); // Typecast crs into a int32_t type integer with proper unit (see gps.course in gps.h)
 	uint32_t multiplex_speed = (((uint32_t)(floor(DeciDegOfRad(course) / 1e7) / 2)) & 0x7FF) <<
-	                        21; 									  // bits 31-21 course (where the magnitude is pointed at)
+			21; 									  // bits 31-21 course (where the magnitude is pointed at)
 	multiplex_speed |= (((uint32_t)(spd*100)) & 0x7FF) << 10;         // bits 20-10 speed in cm/s
 	multiplex_speed |= (((uint32_t)(-gps.ned_vel.z)) & 0x3FF);        // bits 9-0 z velocity in cm/s
 
 	// int16_t alt = (int16_t)(gps.hmsl / 10); 					  // height in cm
 	int16_t alt = (int16_t)(stateGetPositionEnu_f()->z*100.0);
 
-    // Message through USB bluetooth dongle to other drones
-    // Pocketdrones (STDMA Running within Paparazzi)
+	// Message through USB bluetooth dongle to other drones
+	// Pocketdrones (STDMA Running within Paparazzi)
 	DOWNLINK_SEND_GPS_SMALL(stdma_trans, bluegiga_p, &multiplex_speed, &gps.lla_pos.lat, &gps.lla_pos.lon, &alt);
 
 	/*********************************************
 		Relative Avoidance Behavior
-	*********************************************/
+	 *********************************************/
 	//if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
 
-		//switch height to RC controlled height (for pocket drone without IR sensor!)
-	    // guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
+	//switch height to RC controlled height (for pocket drone without IR sensor!)
+	// guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT);
 
-		array_make_zeros_bool(36, cc);  // Null assumption
-		// t_w1 = get_sys_time_usec();
-		wall_imminent = false;
-		
-		float b_wall, wallx, wally, temp;
-		// If outside of the arena bounds move back inside, or otherwise try and keep your heading at the nominal velocity
-		// Recalculate wall as an issue
+	array_make_zeros_bool(36, cc);  // Null assumption
+	// t_w1 = get_sys_time_usec();
+	wall_imminent = false;
 
-		// change this if statement to if (trigger from camera) !!
-		if ( stereo_distance < 1.2 )  {
-			float xobst, yobst;
-			polar2cart(stereo_distance, stereo_obst_bearing+stateGetNedToBodyEulers_f()->psi+M_PI, &xobst, &yobst);
-			// BodyToNED(xobst, yobst, stateGetNedToBodyEulers_f()->psi, &wallx, &wally); // Body to ENU
-			collisioncone_update_bool(cc,xobst, yobst, 2.0); // this is with respect to the earth frammmeee!
-		}
+	float b_wall, wallx, wally, temp;
+	// If outside of the arena bounds move back inside, or otherwise try and keep your heading at the nominal velocity
+	// Recalculate wall as an issue
 
-		// Fill it up with the drone data 
-		for (int i = 0; i < nf; i++) {
-			// get polar coordinates
-			float dist, b_orig, b_orig_prev, pxo, pxy;
-			cart2polar(ekf[i].X[0], ekf[i].X[1], &dist, &b_orig);
+	// change this if statement to if (trigger from camera) !!
+	if ( stereo_distance < 1.2 )  {
+		float xobst, yobst;
+		polar2cart(stereo_distance, stereo_obst_bearing+stateGetNedToBodyEulers_f()->psi+M_PI, &xobst, &yobst);
+		// BodyToNED(xobst, yobst, stateGetNedToBodyEulers_f()->psi, &wallx, &wally); // Body to ENU
+		collisioncone_update_bool(cc,xobst, yobst, 2.0); // this is with respect to the earth frammmeee!
+	}
 
-			// get collision cone
-			float eps     = 1.0*ASIDE*tan(1.7/2) - MAVSIZE - ASIDE;
-			float vmag    = sqrt ( pow(ekf[i].X[4],2) +  pow(ekf[i].X[5],2) );
-			float dotprod = ekf[i].X[0] * ekf[i].X[4] + ekf[i].X[1] * ekf[i].X[5];
-			float magprod = dist * vmag;
-			float angle   = acos(dotprod/magprod);
-			float vrad    = vmag*sin(angle);
-			wrapTo2Pi(&b_orig);
-			wrapTo2Pi(&angle);
+	// Fill it up with the drone data
+	for (int i = 0; i < nf; i++) {
+		// get polar coordinates
+		float dist, b_orig, b_orig_prev, pxo, pxy;
+		cart2polar(ekf[i].X[0], ekf[i].X[1], &dist, &b_orig);
 
-			int sign = -1;
-			if ((b_orig - b_orig_prev) > 0)
-				sign = 1;
+		// get collision cone
+		float eps     = 1.0*ASIDE*tan(1.7/2) - MAVSIZE - ASIDE;
+		float vmag    = sqrt ( pow(ekf[i].X[4],2) +  pow(ekf[i].X[5],2) );
+		float dotprod = ekf[i].X[0] * ekf[i].X[4] + ekf[i].X[1] * ekf[i].X[5];
+		float magprod = dist * vmag;
+		float angle   = acos(dotprod/magprod);
+		float vrad    = vmag*sin(angle);
+		wrapTo2Pi(&b_orig);
+		wrapTo2Pi(&angle);
 
-			polar2cart(dist, b_orig+(vrad/dist*sign), &pxo, &pxy);
-			
-			b_orig_prev = b_orig;
+		int sign = -1;
+		if ((b_orig - b_orig_prev) > 0)
+			sign = 1;
 
-//			if (dist < 2.0)
+		polar2cart(dist, b_orig+(vrad/dist*sign), &pxo, &pxy);
+
+		b_orig_prev = b_orig;
+
+		if (dist < 1.5)
 			collisioncone_update_bool(cc, pxo, pxy, dist+MAVSIZE+eps);
-
-		//}
-
-		uint8_t length = 36;
-		   DOWNLINK_SEND_AVOIDANCE_CC_BOOL(DefaultChannel, DefaultDevice, length, cc);
-
-		// array_print_bool(36,cc);
-		EKF_desired_angle= stateGetNedToBodyEulers_f()->psi + M_PI;
-		EKF_turn_trigger = collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
-
-		if(EKF_turn_trigger)
-			AbiSendMsgAVOIDANCE_TURN_ANGLE(ABI_BROADCAST, EKF_desired_angle, EKF_turn_trigger);
-
-		// guidance_h_set_guided_vel(vx_des,vy_des);
-		
-		// // Make them fly at different heights just for ultra safety
-		// if (AC_ID == 15)
-		// 	z_des = 1.30;
-		// else if (AC_ID == 16)
-		// 	z_des = 1.00;
-
-		// guidance_v_set_guided_z(-z_des);
-		// guidance_h_set_guided_heading(0.0); % not reccommended if without a good heading estimate
 
 	}
 
-};
+	uint8_t length = 36;
+	DOWNLINK_SEND_AVOIDANCE_CC_BOOL(DefaultChannel, DefaultDevice, length, cc);
+
+	// array_print_bool(36,cc);
+	EKF_desired_angle= stateGetNedToBodyEulers_f()->psi + M_PI;
+	EKF_turn_trigger = collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
+
+	//if(EKF_turn_trigger)
+	AbiSendMsgAVOIDANCE_TURN_ANGLE(ABI_BROADCAST, EKF_desired_angle, EKF_turn_trigger);
+
+	// guidance_h_set_guided_vel(vx_des,vy_des);
+
+	// // Make them fly at different heights just for ultra safety
+	// if (AC_ID == 15)
+	// 	z_des = 1.30;
+	// else if (AC_ID == 16)
+	// 	z_des = 1.00;
+
+	// guidance_v_set_guided_z(-z_des);
+	// guidance_h_set_guided_heading(0.0); % not reccommended if without a good heading estimate
+
+}

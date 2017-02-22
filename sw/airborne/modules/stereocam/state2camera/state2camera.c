@@ -41,7 +41,7 @@ PRINT_CONFIG_VAR(STATE2CAMERA_SEND_DATA_TYPE)
 static int frame_number_sending = 0;
 #endif
 #if STATE2CAMERA_SEND_DATA_TYPE == 1
-uint8_t stereocam_derotation_on = 1;
+uint8_t stereocam_derotation_on = 0;
 #endif
 
 

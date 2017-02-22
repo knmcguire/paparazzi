@@ -358,14 +358,18 @@ void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_b
   if (range_finders.top < 1 || range_finders.top > max_sensor_range)
   {
     //do nothing
-  } else if(range_finders.top < avoid_inner_border){
+  } else if(range_finders.top < 600){
     avoid_z_command += max_vel_command;
-  } else if (range_finders.top < avoid_outer_border) {
+  } else if (range_finders.top < 800) {
     // Linear
     avoid_z_command += (max_vel_command - min_vel_command) *
         ((float)avoid_outer_border - (float)range_finders.top)
         / (float)difference_inner_outer;
-  } else {}
+  } else {
+	    if (distance_stereo > 1200) {
+	      avoid_x_command -= max_vel_command;
+	    }
+  }
 
   *vel_body_x = avoid_x_command;
   *vel_body_y = avoid_y_command;
@@ -403,7 +407,7 @@ bool avoid_wall_and_sides(float vel_body_x_command)
     guidance_v_set_guided_vz(vel_body_z_command);
     guidance_h_set_guided_body_vel(vel_body_x_command, vel_body_y_command);
 
-    DOWNLINK_SEND_VELOCITY_COMMANDS(DefaultChannel, DefaultDevice, &vel_body_x_command, &vel_body_y_command, &vel_body_z_command);
+  //  DOWNLINK_SEND_VELOCITY_COMMANDS(DefaultChannel, DefaultDevice, &vel_body_x_command, &vel_body_y_command, &vel_body_z_command);
 
 /*
     if(range_finders.top<2000)
