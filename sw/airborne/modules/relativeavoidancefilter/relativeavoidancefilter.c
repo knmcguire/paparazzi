@@ -321,7 +321,7 @@ void relativeavoidancefilter_periodic(void)
 	// Recalculate wall as an issue
 
 	// change this if statement to if (trigger from camera) !!
-	if ( stereo_distance < 1.2 )  {
+	if ( stereo_distance < 1.5 )  {
 		float xobst, yobst;
 		polar2cart(stereo_distance, stereo_obst_bearing+stateGetNedToBodyEulers_f()->psi+M_PI, &xobst, &yobst);
 		// BodyToNED(xobst, yobst, stateGetNedToBodyEulers_f()->psi, &wallx, &wally); // Body to ENU

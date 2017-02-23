@@ -112,6 +112,9 @@ extern void guidance_h_mode_changed(uint8_t new_mode);
 extern void guidance_h_read_rc(bool in_flight);
 extern void guidance_h_run(bool in_flight);
 
+extern bool guidance_read_rc_setpoint_speed_i(void);
+
+
 extern void guidance_h_set_igain(uint32_t igain);
 
 /** Set horizontal position setpoint in GUIDED mode.

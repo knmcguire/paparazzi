@@ -673,6 +673,48 @@ static void read_rc_setpoint_speed_i(struct Int32Vect2 *speed_sp, bool in_flight
   }
 }
 
+
+bool guidance_read_rc_setpoint_speed_i(void)
+{
+	  if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED) {
+
+    // negative pitch is forward
+    int64_t rc_x = -radio_control.values[RADIO_PITCH];
+    int64_t rc_y = radio_control.values[RADIO_ROLL];
+    DeadBand(rc_x, MAX_PPRZ / 20);
+    DeadBand(rc_y, MAX_PPRZ / 20);
+
+    // convert input from MAX_PPRZ range to SPEED_BFP
+    int32_t max_speed = SPEED_BFP_OF_REAL(GUIDANCE_H_REF_MAX_SPEED);
+    /// @todo calc proper scale while making sure a division by zero can't occur
+    //int32_t rc_norm = sqrtf(rc_x * rc_x + rc_y * rc_y);
+    //int32_t max_pprz = rc_norm * MAX_PPRZ / Max(abs(rc_x), abs(rc_y);
+    rc_x = rc_x * max_speed / MAX_PPRZ;
+    rc_y = rc_y * max_speed / MAX_PPRZ;
+
+    /* Rotate from body to NED frame by negative psi angle */
+    int32_t psi = -stateGetNedToBodyEulers_i()->psi;
+    int32_t s_psi, c_psi;
+    PPRZ_ITRIG_SIN(s_psi, psi);
+    PPRZ_ITRIG_COS(c_psi, psi);
+    SetBit(guidance_h.sp.mask, 5);
+
+    guidance_h.sp.speed.x = (int32_t)(((int64_t)c_psi * rc_x + (int64_t)s_psi * rc_y) >> INT32_TRIG_FRAC);
+    guidance_h.sp.speed.y = (int32_t)((-(int64_t)s_psi * rc_x + (int64_t)c_psi * rc_y) >> INT32_TRIG_FRAC);
+  } else {
+	    SetBit(guidance_h.sp.mask, 5);
+
+	guidance_h.sp.speed.x = 0;
+	guidance_h.sp.speed.y = 0;
+  }
+	  float vel_x = SPEED_FLOAT_OF_BFP(guidance_h.sp.speed.x);
+	  float vel_y =  SPEED_FLOAT_OF_BFP(guidance_h.sp.speed.y);
+	    DOWNLINK_SEND_VELOCITY_COMMANDS(DefaultChannel, DefaultDevice, &vel_x, &vel_y, 0);
+
+	  return true;
+}
+
+
 void guidance_h_set_igain(uint32_t igain)
 {
   guidance_h.gains.i = igain;

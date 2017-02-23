@@ -355,7 +355,7 @@ void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_b
   } else {}
 
 
-  if (range_finders.top < 1 || range_finders.top > max_sensor_range)
+/*  if (range_finders.top < 1 || range_finders.top > max_sensor_range)
   {
     //do nothing
   } else if(range_finders.top < 600){
@@ -369,7 +369,7 @@ void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_b
 	    if (distance_stereo > 1200) {
 	      avoid_x_command -= max_vel_command;
 	    }
-  }
+  }*/
 
   *vel_body_x = avoid_x_command;
   *vel_body_y = avoid_y_command;

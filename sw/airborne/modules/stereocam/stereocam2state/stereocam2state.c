@@ -31,6 +31,7 @@ PRINT_CONFIG_VAR(STEREOCAM2STATE_EDGEFLOW_PIXELWISE)
 #endif
 uint8_t stereocam_medianfilter_on = 1;
 #endif
+PRINT_CONFIG_VAR(STEREOCAM2STATE_EDGEFLOW_PIXELWISE)
 
 #include "filters/median_filter.h"
 struct MedianFilterInt medianfilter_x, medianfilter_y, medianfilter_z, medianfilter_agl;
