@@ -403,8 +403,8 @@ bool avoid_wall_and_sides(float vel_body_x_command)
     stereo_force_field(&vel_body_x_command, distance_stereo, 0.8f, 1.2, 5.0f , 0.0f, -0.3f);
     range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, &vel_body_z_command, 1000, 1200, 9000 , 0.0f, 0.3f);
 
-
-    guidance_v_set_guided_vz(vel_body_z_command);
+    guidance_v_set_guided_z(-1.5);
+    //guidance_v_set_guided_vz(vel_body_z_command);
     guidance_h_set_guided_body_vel(vel_body_x_command, vel_body_y_command);
 
     DOWNLINK_SEND_VELOCITY_COMMANDS(DefaultChannel, DefaultDevice, &vel_body_x_command, &vel_body_y_command, &vel_body_z_command);

@@ -53,10 +53,10 @@
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
         <!--call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/-->
 		</block>
-		<!--block name="CL forcefield"> 
+		<block name="CL forcefield"> 
         <call fun="avoid_wall_and_sides(-0.05)"/>
         <while cond="1"/> 
-    </block-->
+    </block>
 
 		<block name="CL Hover">
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
