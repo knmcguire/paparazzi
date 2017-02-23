@@ -1,7 +1,7 @@
 <conf>
   <aircraft
    name="LadybirdMXS_swarm_1"
-   ac_id="1"
+   ac_id="15"
    airframe="airframes/TUDELFT/tudelft_ladybird_wifi_indi_lisa_mxs_rssiavoid.xml"
    radio="radios/dummy.xml"
    telemetry="telemetry/default_rotorcraft.xml"

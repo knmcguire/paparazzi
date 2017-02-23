@@ -129,7 +129,7 @@ static inline void mag_pitot_parse_msg(void)
 
       if(id==2&&agl<=2.0f)
       AbiSendMsgAGL(IMU_MAG_PITOT_ID, agl);
-      //DOWNLINK_SEND_RANGE_FINDERS(DefaultChannel, DefaultDevice, length, tel_buf);
+      DOWNLINK_SEND_RANGE_FINDERS(DefaultChannel, DefaultDevice, length, tel_buf);
       break;
   }
 

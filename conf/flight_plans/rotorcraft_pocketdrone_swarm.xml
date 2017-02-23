@@ -51,7 +51,7 @@
 		<block name="CL Start">
         <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
-        <!--call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/-->
+        <call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/>
 		</block>
 		<!--block name="CL forcefield"> 
         <call fun="avoid_wall_and_sides(-0.05)"/>
@@ -67,13 +67,13 @@
 <!--go forward, with a forcefield to prevent collissons -->
 		<block name="CL Go Forward with forcefield"> 
         <call fun="avoid_wall_and_sides(-0.15)"/>
-        <exception cond="turn_trigger" deroute="CL Hover with forcefield"/> <!-- If obstacle is within 1 meter, go to hover -->
+        <exception cond="1.2>stereo_distance||turn_trigger" deroute="CL Hover with forcefield"/> <!-- If obstacle is within 1 meter, go to hover -->
     </block>
 
 <!--Hover with a forcefield to prevent collissons -->
 		<block name="CL Hover with forcefield">
         <call fun="avoid_wall_and_sides(-0.05)"/>
-        <exception cond="stage_time>1" deroute="CL Turn"/> <!-- If 2 seconds are passed, go turn -->
+        <exception cond="stereo_distance>0.8&&stage_time>1.0" deroute="CL Turn"/> <!-- If 2 seconds are passed, go turn -->
     </block>
 
 
@@ -82,11 +82,11 @@
         <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
         <!--set var="wanted_heading" value="stateGetNedToBodyEulers_f()->psi + RadOfDeg(60.0)"/-->
         <set var="wanted_heading" value="turn_angle + RadOfDeg(180.0)"/>
-				<call fun="RotateToHeading_ATT(wanted_heading, RadOfDeg(0.0f),RadOfDeg(0.0f))"/>
+				<call fun="RotateToHeading_ATT(wanted_heading, RadOfDeg(-2.0f),RadOfDeg(0.0f))"/>
 		    <!--while cond="WaitforHeadingCondition(wanted_heading)"/>
  				<call fun="ResetAngles_ATT(wanted_heading)"/-->
         <call fun="reset_counter()"/>
-        <call fun="wait_counter(30)"/>
+        <call fun="wait_counter(35)"/>
         <call fun="change_h_mode(GUIDANCE_H_MODE_GUIDED)"/>
  		</block>
 

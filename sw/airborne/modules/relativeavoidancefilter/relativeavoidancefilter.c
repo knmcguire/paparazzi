@@ -133,6 +133,13 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 		float ownVx = stateGetSpeedEnu_f()->y; //vel_body.x; //From optical flow directly
 		float ownVy = stateGetSpeedEnu_f()->x; //vel_body.y;
 		
+		 // Make them fly at different heights just for ultra safety
+
+		float own_height = stateGetPositionEnu_f()->z;;
+		 if (AC_ID == 15)
+		 	own_height = 1.5;
+
+
 		// Bind velocities to a maximum to avoid occasional NaN or inf errors
 		keepbounded(&ownVx,-2.0,2.0);
 		keepbounded(&ownVy,-2.0,2.0);
@@ -155,7 +162,7 @@ static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)),
 			Y[2] = ownVy;
 			Y[3] = trackedVx;  // Velocity tracked from other drone (already in Earth NED frame!)
 			Y[4] = trackedVy;
-			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - stateGetPositionEnu_f()->z;
+			Y[5] = acInfoGetPositionUtm_f(ac_id)->alt - own_height;
 			
 			// Run the steps of the EKF
 			if (  sqrt( pow(Y[1]-Y[3],2) + pow(Y[2]-Y[4],2) ) > 0.05 )
@@ -232,7 +239,7 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
 		&ekf[i].X[4], &ekf[i].X[5],  // Received vx and vy
 		&ekf[i].X[6],  				 // Height separation
-		&ekft, &vy_des);	 // Commanded velocities
+		&ekft, &EKF_desired_angle);	 // Commanded velocities
 
 	float temp = 0;
 };
@@ -290,6 +297,8 @@ void relativeavoidancefilter_periodic(void)
 
 	// int16_t alt = (int16_t)(gps.hmsl / 10); 					  // height in cm
 	int16_t alt = (int16_t)(stateGetPositionEnu_f()->z*100.0);
+	 if (AC_ID == 15)
+		 alt = 150;
 
 	// Message through USB bluetooth dongle to other drones
 	// Pocketdrones (STDMA Running within Paparazzi)

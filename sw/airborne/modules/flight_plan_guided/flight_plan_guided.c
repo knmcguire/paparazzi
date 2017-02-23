@@ -94,7 +94,7 @@ float stereo_distance;
 void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
 {
 	stereo_distance = range;
-	//DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
+	DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
 }
 
 static abi_event avoidance_turn_angle_ev;
@@ -400,14 +400,14 @@ bool avoid_wall_and_sides(float vel_body_x_command)
 	float vel_body_y_command = 0.0f;
 	float vel_body_z_command = 0.0f;
 
-    stereo_force_field(&vel_body_x_command, distance_stereo, 0.8f, 1.2, 5.0f , 0.0f, -0.2f);
-    range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, &vel_body_z_command, 800, 1200, 9000 , 0.0f, 0.2f);
+    stereo_force_field(&vel_body_x_command, distance_stereo, 0.8f, 1.2, 5.0f , 0.0f, -0.3f);
+    range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, &vel_body_z_command, 1000, 1200, 9000 , 0.0f, 0.3f);
 
 
     guidance_v_set_guided_vz(vel_body_z_command);
     guidance_h_set_guided_body_vel(vel_body_x_command, vel_body_y_command);
 
-  //  DOWNLINK_SEND_VELOCITY_COMMANDS(DefaultChannel, DefaultDevice, &vel_body_x_command, &vel_body_y_command, &vel_body_z_command);
+    DOWNLINK_SEND_VELOCITY_COMMANDS(DefaultChannel, DefaultDevice, &vel_body_x_command, &vel_body_y_command, &vel_body_z_command);
 
 /*
     if(range_finders.top<2000)
