@@ -332,7 +332,7 @@ void ble_evt_gap_scan_response(const struct ble_msg_gap_scan_response_evt_t *msg
       dl_buffer[i] = stdma_trans.trans_rx.payload[i];
     }
     dl_msg_available = true;
-    DlCheckAndParse(&DOWNLINK_DEVICE.device, &stdma_trans.trans_tx, dl_buffer);
+    DlCheckAndParse(&DOWNLINK_DEVICE.device, &stdma_trans.trans_tx, dl_buffer,&dl_msg_available);
     stdma_trans.trans_rx.msg_received = false;
   }
 

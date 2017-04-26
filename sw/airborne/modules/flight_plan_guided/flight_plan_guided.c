@@ -26,7 +26,7 @@
 #include "modules/flight_plan_guided/flight_plan_guided.h"
 #include "subsystems/ins.h"
 #include "firmwares/rotorcraft/navigation.h"
-#include "firmwares/rotorcraft/autopilot.h"
+#include "autopilot.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
 #include "firmwares/rotorcraft/guidance/guidance_v.h"
 #include "modules/sonar/sonar_bebop.h"
@@ -154,7 +154,7 @@ uint8_t ResetAlt(void) {ins_reset_altitude_ref(); return false;}
 
 bool TakeOff(float climb_rate)
 {
-  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+  if (autopilot.mode != AP_MODE_GUIDED) { return true; }
 
   guidance_v_set_guided_vz(-climb_rate);
   guidance_h_set_guided_body_vel(0, 0);
@@ -165,7 +165,7 @@ bool TakeOff(float climb_rate)
 
 bool WaitUntilAltitude(float altitude)
 {
-  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+  if (autopilot.mode != AP_MODE_GUIDED) { return true; }
 
   if (stateGetPositionEnu_f()->z < altitude) { return true; }
 
@@ -175,7 +175,7 @@ bool WaitUntilAltitude(float altitude)
 
 bool WaitUntilSpeedOrAltitude(float speed, float fail_altitude)
 {
-  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+  if (autopilot.mode != AP_MODE_GUIDED) { return true; }
 
   if (stateGetPositionEnu_f()->z > fail_altitude) { return false; }
   if (stateGetSpeedEnu_f()->z < speed) { return true; }
@@ -193,7 +193,7 @@ bool ResetSpecialTimer(void)
 
 bool WaitUntilTimerOrAltitude(float sec, float fail_altitude)
 {
-  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+  if (autopilot.mode != AP_MODE_GUIDED) { return true; }
 
   if (stateGetPositionEnu_f()->z > fail_altitude) { return false; }
   specialtimer += 1.0f / ((float)NAV_FREQ);
@@ -205,7 +205,7 @@ bool WaitUntilTimerOrAltitude(float sec, float fail_altitude)
 
 bool RotateToHeading(float heading)
 {
-  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+  if (autopilot.mode != AP_MODE_GUIDED) { return true; }
 
   guidance_h_set_guided_heading(heading);
   return false;
@@ -226,7 +226,7 @@ bool WaitforHeading(float heading)
 
 uint8_t Hover(float alt)
 {
-  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+  if (autopilot.mode != AP_MODE_GUIDED) { return true; }
   // Horizontal velocities are set to zero
   guidance_h_set_guided_heading(stateGetNedToBodyEulers_f()->psi);
   guidance_h_set_guided_body_vel(0, 0);
@@ -238,9 +238,9 @@ uint8_t Hover(float alt)
 /* Move forward */
 uint8_t MoveForward(float vx)
 {
-  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+  if (autopilot.mode != AP_MODE_GUIDED) { return true; }
 
-  if (autopilot_mode == AP_MODE_GUIDED) {
+  if (autopilot.mode == AP_MODE_GUIDED) {
     guidance_h_set_guided_body_vel(vx, 0);
   }
   return false;
@@ -249,9 +249,9 @@ uint8_t MoveForward(float vx)
 /* Move Right */
 uint8_t MoveRight(float vy)
 {
-  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+  if (autopilot.mode != AP_MODE_GUIDED) { return true; }
 
-  if (autopilot_mode == AP_MODE_GUIDED) {
+  if (autopilot.mode == AP_MODE_GUIDED) {
     guidance_h_set_guided_body_vel(0, vy);
   }
   return false;
@@ -379,9 +379,9 @@ void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_b
 
 bool avoid_wall(float vel_body_x_command)
 {
-  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+  if (autopilot.mode != AP_MODE_GUIDED) { return true; }
 
-  if (autopilot_mode == AP_MODE_GUIDED) {
+  if (autopilot.mode == AP_MODE_GUIDED) {
 
     stereo_force_field(&vel_body_x_command, distance_stereo, 0.80f, 1.2, 5.0f , 0.0f, -0.2f);
     MoveForward(vel_body_x_command);
@@ -393,9 +393,9 @@ bool avoid_wall(float vel_body_x_command)
 
 bool avoid_wall_and_sides(float vel_body_x_command)
 {
-  if (autopilot_mode != AP_MODE_GUIDED) { return true; }
+  if (autopilot.mode != AP_MODE_GUIDED) { return true; }
 
-  if (autopilot_mode == AP_MODE_GUIDED) {
+  if (autopilot.mode == AP_MODE_GUIDED) {
 
 	float vel_body_y_command = 0.0f;
 	float vel_body_z_command = 0.0f;
