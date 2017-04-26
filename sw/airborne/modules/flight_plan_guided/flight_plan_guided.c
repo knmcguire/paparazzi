@@ -26,7 +26,6 @@
 #include "modules/flight_plan_guided/flight_plan_guided.h"
 #include "subsystems/ins.h"
 #include "firmwares/rotorcraft/navigation.h"
-#include "autopilot.h"
 #include "firmwares/rotorcraft/guidance/guidance_h.h"
 #include "firmwares/rotorcraft/guidance/guidance_v.h"
 #include "modules/sonar/sonar_bebop.h"
@@ -90,10 +89,10 @@ static void range_sensors_cb(uint8_t sender_id,
 //abi for stereocam
 static abi_event stereocam_obstacle_ev;
 static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
-float stereo_distance;
+float distance_stereo;
 void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
 {
-	stereo_distance = range;
+	distance_stereo = range;
 	DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
 }
 

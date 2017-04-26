@@ -67,14 +67,14 @@
 <!--go forward, with a forcefield to prevent collissons -->
 		<block name="CL Go Forward with forcefield"> 
         <call fun="avoid_wall_and_sides(-0.05)"/>
-        <exception cond="1.2>stereo_distance||turn_trigger" deroute="CL Hover with forcefield"/> <!-- If obstacle is within 1 meter, go to hover -->
+        <exception cond="1.2>distance_stereo||turn_trigger" deroute="CL Hover with forcefield"/> <!-- If obstacle is within 1 meter, go to hover -->
     </block>
 
 <!--Hover with a forcefield to prevent collissons -->
 		<block name="CL Hover with forcefield">
         <set var="wanted_heading" value="turn_angle + RadOfDeg(180.0)"/>
         <call fun="avoid_wall_and_sides(-0.05)"/>
-        <exception cond="stereo_distance>1.0&&stage_time>1.5" deroute="CL Turn"/> <!-- If 2 seconds are passed, go turn -->
+        <exception cond="distance_stereo>1.0&&stage_time>1.5" deroute="CL Turn"/> <!-- If 2 seconds are passed, go turn -->
     </block>
 
 

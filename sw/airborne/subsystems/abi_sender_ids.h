@@ -272,6 +272,10 @@
 #ifndef IMU_VECTORNAV_ID
 #define IMU_VECTORNAV_ID 19
 #endif
+  
+#ifndef RSSI_MODULE_ID
+#define RSSI_MODULE_ID 2
+#endif
 
 /*
  * IDs of RSSI measurements (message 13)
