@@ -27,6 +27,7 @@
 #include "subsystems/datalink/telemetry.h"
 #include "modules/multi/traffic_info.h"
 #include "modules/stdma/stdma.h"
+#include "modules/flight_plan_guided/flight_plan_guided.h"
 #include "subsystems/datalink/bluegiga.h"
 
 #include "pprzlink/pprz_transport.h"
@@ -45,7 +46,7 @@
 ekf_filter ekf[NUAVS-1]; 	// EKF structure
 btmodel model[NUAVS-1];  	// Bluetooth model structure 
 int IDarray[NUAVS-1]; 		// Array of IDs of other MAVs
-int8_t srcstrength[NUAVS-1];// Source strength
+uint8_t srcstrength[NUAVS-1];// Source strength
 uint32_t now_ts[NUAVS-1]; 	// Time of last received message from each MAV
 
 int nf; 					// Number of filters registered
@@ -67,16 +68,16 @@ float t_w1;
 float trackedVx, trackedVy;
 
 static abi_event stereocam_obstacle_ev;
-static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
+static void stereocam_obstacle_cb(uint8_t sender_id __attribute__((unused)),
+	float heading, float range);
 static float stereo_obst_range;
 static float stereo_obst_bearing;
-void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
+void stereocam_obstacle_cb(uint8_t sender_id __attribute__((unused)), 
+	float heading, float range)
 {
-	stereo_obst_range = range;
+	stereo_obst_range   = range;
 	stereo_obst_bearing = heading * M_PI/180;
-	//DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
 }
-
 
 static abi_event rssi_ev;
 static void bluetoothmsg_cb(uint8_t sender_id __attribute__((unused)), 
@@ -233,7 +234,7 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	pprz_msg_send_RAFILTERDATA(trans, dev, AC_ID,
 		&id,			     		 // ID or filtered aircraft number
 		&RSSIarray[i], 		    	 // Received ID and RSSI
-		&nf,		     // Source strength
+		&srcstrength[i],		     	 // Source strength
 		&px, &py, &pz, 				 // &gps_pos_cm_ned_i.z    //
 		&ekf[i].X[0], &ekf[i].X[1],  // x and y pos
 		&ekf[i].X[2], &ekf[i].X[3],  // Own vx and vy
@@ -241,7 +242,7 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		&ekf[i].X[6],  				 // Height separation
 		&ekft, &EKF_desired_angle);	 // Commanded velocities
 
-	float temp = 0;
+	// float temp = 0;
 };
 
 void relativeavoidancefilter_init(void)
@@ -316,7 +317,7 @@ void relativeavoidancefilter_periodic(void)
 	// t_w1 = get_sys_time_usec();
 	wall_imminent = false;
 
-	float b_wall, wallx, wally, temp;
+	// float b_wall, wallx, wally, temp;
 	// If outside of the arena bounds move back inside, or otherwise try and keep your heading at the nominal velocity
 	// Recalculate wall as an issue
 
@@ -345,20 +346,17 @@ void relativeavoidancefilter_periodic(void)
 		wrapTo2Pi(&angle);
 
 		int sign = -1;
-		if ((b_orig - b_orig_prev) > 0)
+		if ((b_orig - b_orig_prev) > 0){
 			sign = 1;
+		}
 
 		polar2cart(dist, b_orig+(vrad/dist*sign), &pxo, &pxy);
-
 		b_orig_prev = b_orig;
 
 		if (dist < 1.5)
 			collisioncone_update_bool(cc, pxo, pxy, dist+MAVSIZE+eps);
 
 	}
-
-	uint8_t length = 36;
-	DOWNLINK_SEND_AVOIDANCE_CC_BOOL(DefaultChannel, DefaultDevice, length, cc);
 
 	// array_print_bool(36,cc);
 	EKF_desired_angle= stateGetNedToBodyEulers_f()->psi + M_PI;

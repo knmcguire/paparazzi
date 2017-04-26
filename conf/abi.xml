@@ -93,6 +93,26 @@
       <field name="thrust_increment" type="float" unit="m/s^2"/>
     </message>
 
+    <message name="RANGE_SENSORS" id="17">
+      <field name="front_range_sensor" type="int16_t" unit="mm"/>
+      <field name="right_range_sensor" type="int16_t" unit="mm"/>
+      <field name="back_range_sensor" type="int16_t" unit="mm"/>
+      <field name="left_range_sensor" type="int16_t" unit="mm"/>
+      <field name="bottom_range_sensor" type="int16_t" unit="mm"/>
+      <field name="top_range_sensor" type="int16_t" unit="mm"/>
+    </message>
+
+    <message name="AVOIDANCE_TURN_ANGLE" id="18">
+       <field name="turn_angle"  type="float" unit="deg"/>
+       <field name="turn_trigger" type="uint8_t" unit="bool"/>
+    </message>
+
+    <message name="STEREOCAM_OBSTACLE" id="19">
+       <field name="heading"  type="float" unit="deg"/>
+       <field name="range"  type="float" unit="m"/>
+    </message>
+
+
   </msg_class>
 
 </protocol>
