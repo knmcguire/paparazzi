@@ -253,21 +253,20 @@
      <define name="STEREOCAM2STATE_EDGEFLOW_PIXELWISE" value="TRUE"/>
 	 </module>
 
-<!--STDMA 
-   <module name="stdma">
+<module name="stdma">
      <configure name="BLUEGIGA_UART" value="UART3"/>
-     <configure name="BLUEGIGA_BAUD" value="B115200"/-->
+     <configure name="BLUEGIGA_BAUD" value="B115200"/>
      <!--define name="UART3_STOP" value="USTOP_2"/--> <!-- this was off already?-->
-  <!--/module-->
+  </module>
 
-    <!--module name="traffic_info.xml"/>
+    <module name="traffic_info.xml"/>
     <module name="rssi.xml"/>
     <module name="relativeavoidancefilter.xml"/>
-   <module name="flight_plan_guided"/>
+   <module name="flight_plan_guided.xml"/>
    <module name="mag_pitot_uart.xml">
        <configure name="MAG_PITOT_BAUD" value="38400"/>
        <configure name="MAG_PITOT_PORT" value="UART4"/>
-   </module-->
+   </module>
  </modules>
 
   <firmware name="rotorcraft">
