@@ -56,7 +56,8 @@ void traffic_info_init(void)
   ti_acs[ti_acs_id[AC_ID]].ac_id = AC_ID;
   ti_acs_idx = 2;
 
-  geoid_height = NAV_MSL0;
+  // geoid_height = NAV_MSL0;
+  geoid_height=0.0;//NAV_ALT0; /* added this because to avoid offset when gps is not available */
 }
 
 /**

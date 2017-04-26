@@ -260,14 +260,14 @@
      <!--define name="UART3_STOP" value="USTOP_2"/--> <!-- this was off already?-->
   <!--/module-->
 
-    <!--module name="traffic_info.xml"/>
+    <module name="traffic_info.xml"/>
     <module name="rssi.xml"/>
     <module name="relativeavoidancefilter.xml"/>
-   <module name="flight_plan_guided"/>
+   <!--module name="flight_plan_guided.xml"/-->
    <module name="mag_pitot_uart.xml">
        <configure name="MAG_PITOT_BAUD" value="38400"/>
        <configure name="MAG_PITOT_PORT" value="UART4"/>
-   </module-->
+   </module>
  </modules>
 
   <firmware name="rotorcraft">
@@ -312,7 +312,7 @@
 
     <module name="imu" type="lisa_mx_v2.1"/>
 
-    <module name="gps" type="datalink"/>
+    <!--module name="gps" type="datalink"/-->
 
     <module name="stabilization" type="indi_simple"/>
     <module name="stabilization" type="rate_indi"/>
