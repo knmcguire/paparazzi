@@ -267,6 +267,7 @@
        <configure name="MAG_PITOT_BAUD" value="38400"/>
        <configure name="MAG_PITOT_PORT" value="UART4"/>
    </module>
+   <module name="range_module"/>
  </modules>
 
   <firmware name="rotorcraft">

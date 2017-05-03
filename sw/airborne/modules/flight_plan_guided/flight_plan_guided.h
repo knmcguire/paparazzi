@@ -28,15 +28,7 @@
 
 #include <std.h>
 
-struct range_finders_ {
-  int16_t front;  // mm
-  int16_t right;  // mm
-  int16_t left;   // mm
-  int16_t back;   // mm
-  int16_t bottom;   // mm
-  int16_t top;   // mm
 
-};
 
 extern float marker_err;
 extern bool marker_lost;
@@ -48,7 +40,7 @@ extern struct range_finders_ range_finders;
 
 extern float wanted_heading;
 
-extern  float turn_angle;
+extern float turn_angle;
 extern float  turn_trigger;
 
 extern float stereo_distance;
@@ -121,9 +113,5 @@ extern bool wait_counter(int32_t end_counter);
 extern bool change_v_mode(uint8_t mode);
 extern bool kill_mode(void);
 
-void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_body_z, int16_t avoid_inner_border, int16_t avoid_outer_border,
-    int16_t tinder_range, float min_vel_command, float max_vel_command);
-void stereo_force_field(float *vel_body_x, float distance_stereo, float avoid_inner_border, float avoid_outer_border,
-                        float tinder_range, float min_vel_command, float max_vel_command);
 
 #endif

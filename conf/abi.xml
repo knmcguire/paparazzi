@@ -112,6 +112,11 @@
        <field name="range"  type="float" unit="m"/>
     </message>
 
+    <message name="FORCEFIELD_VELOCITY" id="20">
+      <field name="vel_body_x_FF" type="float" unit="m/s"/>
+      <field name="vel_body_y_FF" type="float" unit="m/s"/>
+      <field name="vel_body_z_FF" type="float" unit="m/s"/>
+    </message>
 
   </msg_class>
 
