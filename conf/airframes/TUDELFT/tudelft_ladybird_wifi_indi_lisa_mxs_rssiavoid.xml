@@ -289,7 +289,6 @@
       <module name="radio_control" type="ppm"/>
     </target>
 
-    <define name="USE_BARO_BOARD" value="TRUE"/>
 <!-- An IR range sensor will replace the sonar for now -->
     <define name="USE_SONAR" value="TRUE"/> 
 
@@ -318,7 +317,6 @@
     <module name="stabilization" type="rate_indi"/>
     <module name="ahrs" type="int_cmpl_quat"/>
     <module name="ins" type="extended"/>
-    <configure name="USE_MAGNETOMETER" value="FALSE"/>
     <module name="air_data">
       <define name="AIR_DATA_CALC_AMSL_BARO" value="TRUE"/>
     </module>

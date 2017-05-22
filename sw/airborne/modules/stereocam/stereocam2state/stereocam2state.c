@@ -119,16 +119,17 @@ void stereocam_to_state(void)
 
 
 //TODO: this needs to be double checked if this works
-  float vel_body_x_processed=  0;// = quad_body_vel.x;
+  float vel_body_x_processed =  0; // = quad_body_vel.x;
   float vel_body_y_processed = 0;// quad_body_vel.y;
   float vel_body_z_processed = 0;//quad_body_vel.z;
 
-   quad_body_vel.x = (float)vel_z_pixelwise_int / RES;
-   quad_body_vel.y = -(float)vel_x_pixelwise_int / RES;
-   quad_body_vel.z = (float)vel_y_global_int / RES;
+  quad_body_vel.x = (float)vel_z_pixelwise_int / RES;
+  quad_body_vel.y = -(float)vel_x_pixelwise_int / RES;
+  quad_body_vel.z = (float)vel_y_global_int / RES;
 
-   if ( fabs(quad_body_vel.x)>1)
-	   quad_body_vel.x = 0;
+  if (fabs(quad_body_vel.x) > 1) {
+    quad_body_vel.x = 0;
+  }
 
   if (stereocam_medianfilter_on == 1) {
     // Use a slight median filter to filter out the large outliers before sending it to state
@@ -136,15 +137,15 @@ void stereocam_to_state(void)
     vel_body_x_processed = (float)update_median_filter(&medianfilter_x, (int32_t)(quad_body_vel.x * 100)) / 100;
     vel_body_y_processed = (float)update_median_filter(&medianfilter_y, (int32_t)(quad_body_vel.y * 100)) / 100;
     vel_body_z_processed = (float)update_median_filter(&medianfilter_z, (int32_t)(quad_body_vel.z * 100)) / 100;
-    float filtered_agl = (float)update_median_filter(&medianfilter_agl, (int32_t)(agl * 10)) / 100;
+//    float filtered_agl = (float)update_median_filter(&medianfilter_agl, (int32_t)(agl * 10)) / 100;
 
   }
 
 //TODO this needs to be reinstalled
-/*
-  distance_stereo = filtered_agl;
-  float heading_obstacle = (64.0f-(float)(obst_px)) * 57.8f / 128.0f;
-  AbiSendMsgSTEREOCAM_OBSTACLE(STEREOCAM2STATE_SENDER_ID,heading_obstacle,filtered_agl);*/
+  /*
+    distance_stereo = filtered_agl;
+    float heading_obstacle = (64.0f-(float)(obst_px)) * 57.8f / 128.0f;
+    AbiSendMsgSTEREOCAM_OBSTACLE(STEREOCAM2STATE_SENDER_ID,heading_obstacle,filtered_agl);*/
 
   //Send velocities to state
   AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,

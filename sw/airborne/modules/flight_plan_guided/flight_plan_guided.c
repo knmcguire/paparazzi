@@ -35,6 +35,9 @@
 #include <time.h>
 #include "math/pprz_algebra_float.h"
 
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude.h"
+
+
 #include "mcu_periph/uart.h"
 /*
 #include "modules/stereocam/stereocam.h"
@@ -66,7 +69,7 @@ float nom_flight_alt; // nominal flight altitude
 static abi_event stereocam_obstacle_ev;
 static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
 float distance_stereo;
-void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
+void stereocam_obstacle_cb(uint8_t UNUSED(sender_id), float UNUSED(heading), float range)
 {
   distance_stereo = range;
   DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
@@ -76,16 +79,16 @@ static abi_event avoidance_turn_angle_ev;
 static void avoidance_turn_angle_cb(uint8_t sender_id, float angle, bool trigger);
 float turn_angle;
 float turn_trigger;
-static void avoidance_turn_angle_cb(uint8_t sender_id, float angle, bool trigger)
+static void avoidance_turn_angle_cb(uint8_t UNUSED(sender_id), float angle, bool trigger)
 {
   turn_trigger = trigger;
   turn_angle = angle;
 }
 
 struct FloatVect3 vel_body_FF;
-static abi_event velocity_forcefield_ev;
-static void velocity_forcefield_cb(uint8_t sender_id, float vel_body_x_FF, float vel_body_y_FF, float vel_body_z_FF);
-static void velocity_forcefield_cb(uint8_t sender_id, float vel_body_x_FF, float vel_body_y_FF, float vel_body_z_FF)
+static abi_event forcefield_velocity_ev;
+static void forcefield_velocity_cb(uint8_t sender_id, float vel_body_x_FF, float vel_body_y_FF, float vel_body_z_FF);
+static void forcefield_velocity_cb(uint8_t UNUSED(sender_id), float vel_body_x_FF, float vel_body_y_FF, float vel_body_z_FF)
 {
   vel_body_FF.x = vel_body_x_FF;
   vel_body_FF.y = vel_body_y_FF;
@@ -99,11 +102,10 @@ static abi_event agl_ev;
 static float filtered_agl = LEGS_HEIGHT;
 static void agl_cb(uint8_t sender_id, float agl);
 
-static void agl_cb(uint8_t sender_id, float agl)
+static void agl_cb(uint8_t UNUSED(sender_id), float agl)
 {
   filtered_agl = filtered_agl * 0.9 + agl * 0.1;
 }
-
 
 
 void flight_plan_guided_init(void)
@@ -112,6 +114,7 @@ void flight_plan_guided_init(void)
   AbiBindMsgAGL(1, &agl_ev, agl_cb); // ABI to the altitude above ground level
   AbiBindMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, &stereocam_obstacle_ev, stereocam_obstacle_cb);
   AbiBindMsgAVOIDANCE_TURN_ANGLE(ABI_BROADCAST, &avoidance_turn_angle_ev, avoidance_turn_angle_cb);
+  AbiBindMsgFORCEFIELD_VELOCITY(ABI_BROADCAST, &forcefield_velocity_ev, forcefield_velocity_cb);
 }
 
 
@@ -266,25 +269,14 @@ bool avoid_wall_and_sides(float vel_body_x_command)
 
     vel_body_x_command += vel_body_FF.x;
     float vel_body_y_command = vel_body_FF.y;
-    float vel_body_z_command = vel_body_FF.z;
 
-    // old functions
+    //TODO: remove old functions
     //stereo_force_field(&vel_body_x_command, distance_stereo, 0.8f, 1.2, 5.0f , 0.0f, -0.3f);
     //range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, &vel_body_z_command, 1000, 1200, 9000 , 0.0f, 0.3f);
 
     guidance_v_set_guided_z(-nom_flight_alt);
     guidance_h_set_guided_body_vel(vel_body_x_command, vel_body_y_command);
 
-    //DOWNLINK_SEND_VELOCITY_COMMANDS(DefaultChannel, DefaultDevice, &vel_body_x_command, &vel_body_y_command, &vel_body_z_command);
-
-    /*
-        if(range_finders.top<2000)
-        {
-        float reset_height = stateGetPositionEnu_f()->z - (float)(range_finders.top - range_finders.bottom)/1000;
-        guidance_v_set_guided_z(reset_height);
-        }
-    */
-    //  guidance_h_set_guided_body_vel(0.2,0.2);
   }
   return true;
 
@@ -303,7 +295,7 @@ bool change_v_mode(uint8_t mode)
 }
 
 
-bool RotateToHeading_ATT(float new_heading, float trim_phi, float trim_theta)
+bool RotateToHeading_ATT(float new_heading, float trim_phi, float trim_theta, bool in_flight)
 {
   struct Int32Eulers cmd;
 
@@ -313,12 +305,12 @@ bool RotateToHeading_ATT(float new_heading, float trim_phi, float trim_theta)
     cmd.psi = ANGLE_BFP_OF_REAL(new_heading);
 
     stabilization_attitude_set_rpy_setpoint_i(&cmd);
-    stabilization_attitude_run(autopilot_in_flight);
+    stabilization_attitude_run(in_flight);
   }
   return false;
 }
 
-bool ResetAngles_ATT(float current_heading)
+bool ResetAngles_ATT(float current_heading, bool in_flight)
 {
   struct Int32Eulers cmd;
   if (guidance_h.mode == GUIDANCE_H_MODE_ATTITUDE) {
@@ -327,7 +319,7 @@ bool ResetAngles_ATT(float current_heading)
     cmd.psi = ANGLE_BFP_OF_REAL(current_heading);
 
     stabilization_attitude_set_rpy_setpoint_i(&cmd);
-    stabilization_attitude_run(autopilot_in_flight);
+    stabilization_attitude_run(in_flight);
   }
   return false;
 }

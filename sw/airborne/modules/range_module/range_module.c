@@ -38,7 +38,7 @@ static abi_event range_sensors_ev;
 static void range_sensors_cb(uint8_t sender_id,
                              int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left, int16_t range_bottom, int16_t range_top);
 struct range_finders_ range_finders;
-static void range_sensors_cb(uint8_t sender_id,
+static void range_sensors_cb(uint8_t UNUSED(sender_id),
                              int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left, int16_t range_bottom, int16_t range_top)
 {
   /* TODO: Toe removed
