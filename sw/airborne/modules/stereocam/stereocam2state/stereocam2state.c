@@ -77,8 +77,7 @@ void stereocam_to_state(void)
   flow_y |= (int16_t)stereocam_data.data[7];
 
   uint8_t agl = stereocam_data.data[8]; // in cm //TODO: use agl for in a guided obstacle avoidance.
-  float fps = (float)stereocam_data.data[9];
-  //uint8_t obst_px = stereocam_data.data[9]; //TODO: this needs to be changed
+  uint8_t obst_px = stereocam_data.data[9]; //TODO: this needs to be changed
 
   // velocity global
   int16_t vel_x_global_int = (int16_t)stereocam_data.data[10] << 8;
@@ -122,6 +121,7 @@ void stereocam_to_state(void)
   float vel_body_x_processed =  0; // = quad_body_vel.x;
   float vel_body_y_processed = 0;// quad_body_vel.y;
   float vel_body_z_processed = 0;//quad_body_vel.z;
+  float filtered_agl = 0;
 
   quad_body_vel.x = (float)vel_z_pixelwise_int / RES;
   quad_body_vel.y = -(float)vel_x_pixelwise_int / RES;
@@ -137,15 +137,13 @@ void stereocam_to_state(void)
     vel_body_x_processed = (float)update_median_filter(&medianfilter_x, (int32_t)(quad_body_vel.x * 100)) / 100;
     vel_body_y_processed = (float)update_median_filter(&medianfilter_y, (int32_t)(quad_body_vel.y * 100)) / 100;
     vel_body_z_processed = (float)update_median_filter(&medianfilter_z, (int32_t)(quad_body_vel.z * 100)) / 100;
-//    float filtered_agl = (float)update_median_filter(&medianfilter_agl, (int32_t)(agl * 10)) / 100;
+    filtered_agl = (float)update_median_filter(&medianfilter_agl, (int32_t)(agl * 10)) / 100;
 
   }
 
-//TODO this needs to be reinstalled
-  /*
     distance_stereo = filtered_agl;
     float heading_obstacle = (64.0f-(float)(obst_px)) * 57.8f / 128.0f;
-    AbiSendMsgSTEREOCAM_OBSTACLE(STEREOCAM2STATE_SENDER_ID,heading_obstacle,filtered_agl);*/
+    AbiSendMsgSTEREOCAM_OBSTACLE(STEREOCAM2STATE_SENDER_ID,heading_obstacle,filtered_agl);
 
   //Send velocities to state
   AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
