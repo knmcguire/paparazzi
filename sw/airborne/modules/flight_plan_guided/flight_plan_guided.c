@@ -68,18 +68,18 @@ static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
 float distance_stereo;
 void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range)
 {
-	distance_stereo = range;
-	DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
+  distance_stereo = range;
+  DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
 }
 
 static abi_event avoidance_turn_angle_ev;
 static void avoidance_turn_angle_cb(uint8_t sender_id, float angle, bool trigger);
- float turn_angle;
- float turn_trigger;
+float turn_angle;
+float turn_trigger;
 static void avoidance_turn_angle_cb(uint8_t sender_id, float angle, bool trigger)
 {
-	turn_trigger = trigger;
-	turn_angle = angle;
+  turn_trigger = trigger;
+  turn_angle = angle;
 }
 
 struct FloatVect3 vel_body_FF;
@@ -87,9 +87,9 @@ static abi_event velocity_forcefield_ev;
 static void velocity_forcefield_cb(uint8_t sender_id, float vel_body_x_FF, float vel_body_y_FF, float vel_body_z_FF);
 static void velocity_forcefield_cb(uint8_t sender_id, float vel_body_x_FF, float vel_body_y_FF, float vel_body_z_FF)
 {
-	vel_body_FF.x = vel_body_x_FF;
-	vel_body_FF.y = vel_body_y_FF;
-	vel_body_FF.z = vel_body_z_FF;
+  vel_body_FF.x = vel_body_x_FF;
+  vel_body_FF.y = vel_body_y_FF;
+  vel_body_FF.z = vel_body_z_FF;
 
 }
 
@@ -249,7 +249,7 @@ bool avoid_wall(float vel_body_x_command)
 
   if (autopilot.mode == AP_MODE_GUIDED) {
 
-	//TODO: DO stereo range also in range modules
+    //TODO: DO stereo range also in range modules
     //stereo_force_field(&vel_body_x_command, distance_stereo, 0.80f, 1.2, 5.0f , 0.0f, -0.2f);
     MoveForward(vel_body_x_command);
 
@@ -264,11 +264,11 @@ bool avoid_wall_and_sides(float vel_body_x_command)
 
   if (autopilot.mode == AP_MODE_GUIDED) {
 
-	vel_body_x_command += vel_body_FF.x;
-	float vel_body_y_command = vel_body_FF.y;
-	float vel_body_z_command = vel_body_FF.z;
+    vel_body_x_command += vel_body_FF.x;
+    float vel_body_y_command = vel_body_FF.y;
+    float vel_body_z_command = vel_body_FF.z;
 
-	// old functions
+    // old functions
     //stereo_force_field(&vel_body_x_command, distance_stereo, 0.8f, 1.2, 5.0f , 0.0f, -0.3f);
     //range_sensor_force_field(&vel_body_x_command, &vel_body_y_command, &vel_body_z_command, 1000, 1200, 9000 , 0.0f, 0.3f);
 
@@ -277,14 +277,14 @@ bool avoid_wall_and_sides(float vel_body_x_command)
 
     //DOWNLINK_SEND_VELOCITY_COMMANDS(DefaultChannel, DefaultDevice, &vel_body_x_command, &vel_body_y_command, &vel_body_z_command);
 
-/*
-    if(range_finders.top<2000)
-    {
-    float reset_height = stateGetPositionEnu_f()->z - (float)(range_finders.top - range_finders.bottom)/1000;
-    guidance_v_set_guided_z(reset_height);
-    }
-*/
-  //  guidance_h_set_guided_body_vel(0.2,0.2);
+    /*
+        if(range_finders.top<2000)
+        {
+        float reset_height = stateGetPositionEnu_f()->z - (float)(range_finders.top - range_finders.bottom)/1000;
+        guidance_v_set_guided_z(reset_height);
+        }
+    */
+    //  guidance_h_set_guided_body_vel(0.2,0.2);
   }
   return true;
 
@@ -343,35 +343,35 @@ bool WaitforHeadingCondition(float heading)
 
 bool wait_for_mode(uint8_t mode)
 {
-	  if (guidance_h.mode == mode) {
-		  return false;
-	  }
+  if (guidance_h.mode == mode) {
+    return false;
+  }
 
-	  return true;
+  return true;
 }
 
 bool reset_counter()
 {
-	counter = 0;
-	  return false;
+  counter = 0;
+  return false;
 
 }
 
 
 bool wait_counter(int32_t end_counter)
 {
-	counter++;
-	  if (counter>end_counter) {
-		  return false;
-	  }
+  counter++;
+  if (counter > end_counter) {
+    return false;
+  }
 
-	  return true;
+  return true;
 
 }
 
 bool kill_mode()
 {
-	autopilot_set_mode(AP_MODE_KILL);
-	return true;
+  autopilot_set_mode(AP_MODE_KILL);
+  return true;
 }
 
