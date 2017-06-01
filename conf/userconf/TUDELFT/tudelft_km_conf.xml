@@ -13,7 +13,7 @@
   <aircraft
    name="ARDrone_Gazebo"
    ac_id="16"
-   airframe="airframes/examples/ardrone2_gazebo.xml"
+   airframe="airframes/TUDELFT/tudelft_ardrone2_gazebo_opticflow.xml"
    radio="radios/dummy.xml"
    telemetry="telemetry/default_rotorcraft.xml"
    flight_plan="flight_plans/rotorcraft_optitrack.xml"
