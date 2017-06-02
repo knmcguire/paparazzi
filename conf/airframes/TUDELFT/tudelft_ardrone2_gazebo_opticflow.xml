@@ -38,6 +38,12 @@
       <define name="COLORFILTER_CAMERA" value="front_camera"/>
     </module>
 
+    <module name="cv_opticflow">
+      <define name="OPTICFLOW_CAMERA" value="bottom_camera"/>
+    </module>
+ <module name="pose_history"/>
+
+
     <module name="video_rtp_stream">
       <define name="VIEWVIDEO_CAMERA" value="front_camera"/>
       <define name="VIEWVIDEO_DOWNSIZE_FACTOR" value="4"/>
@@ -191,7 +197,6 @@
     <define name="BYPASS_AHRS" value="1"/>
     <define name="BYPASS_INS" value="1"/>
     <define name="SIMULATE_VIDEO" value="1"/>
-    <define name="NPS_GAZEBO_AC_NAME" value="ardrone_2cameras"/>
   </section>
 
   <section name="AUTOPILOT">

@@ -91,7 +91,7 @@ static void opticflow_body_to_imu_cb(uint8_t sender_id,
 static void opticflow_telem_send(struct transport_tx *trans, struct link_device *dev)
 {
   pthread_mutex_lock(&opticflow_mutex);
-  if (opticflow_result.noise_measurement < 0.8) {
+  //if (opticflow_result.noise_measurement < 0.8) {
     pprz_msg_send_OPTIC_FLOW_EST(trans, dev, AC_ID,
                                  &opticflow_result.fps, &opticflow_result.corner_cnt,
                                  &opticflow_result.tracked_cnt, &opticflow_result.flow_x,
@@ -99,7 +99,7 @@ static void opticflow_telem_send(struct transport_tx *trans, struct link_device 
                                  &opticflow_result.flow_der_y, &opticflow_result.vel_x,
                                  &opticflow_result.vel_y, &opticflow_result.div_size,
                                  &opticflow_result.surface_roughness, &opticflow_result.divergence); // TODO: no noise measurement here...
-  }
+ // }
   pthread_mutex_unlock(&opticflow_mutex);
 }
 #endif
@@ -127,7 +127,6 @@ void opticflow_module_init(void)
   opticflow_calc_init(&opticflow);
 
   cv_add_to_device(&OPTICFLOW_CAMERA, opticflow_module_calc);
-
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_OPTIC_FLOW_EST, opticflow_telem_send);
 #endif

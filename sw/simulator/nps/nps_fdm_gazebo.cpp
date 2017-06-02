@@ -448,6 +448,7 @@ static void init_gazebo_video(void)
     gazebo::sensors::SensorManager::Instance();
 
   cout << "Initializing cameras..." << endl;
+  cout<<"amount cameras is found: "<<model->GetSensorCount()<<endl;
   // Loop over cameras registered in video_thread_nps
   for (int i = 0; i < VIDEO_THREAD_MAX_CAMERAS && cameras[i] != NULL; ++i) {
     // Find link in gazebo model
