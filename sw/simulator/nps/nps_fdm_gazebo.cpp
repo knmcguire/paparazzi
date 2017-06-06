@@ -447,6 +447,7 @@ static void init_gazebo_video(void)
   gazebo::sensors::SensorManager *mgr =
     gazebo::sensors::SensorManager::Instance();
 
+
   cout << "Initializing cameras..." << endl;
   cout<<"amount cameras is found: "<<model->GetSensorCount()<<endl;
   // Loop over cameras registered in video_thread_nps
@@ -469,12 +470,14 @@ static void init_gazebo_video(void)
     string name = link->GetSensorName(0);
     gazebo::sensors::CameraSensorPtr cam = static_pointer_cast
                                            < gazebo::sensors::CameraSensor > (mgr->GetSensor(name));
+
     if (!cam) {
       cout << "ERROR: Could not get pointer to '" << name << "'!" << endl;
       continue;
     }
     // Activate sensor
     cam->SetActive(true);
+
     // Add to list of cameras
     gazebo_cams[i].cam = cam;
     gazebo_cams[i].last_measurement_time = cam->LastMeasurementTime();
@@ -483,6 +486,7 @@ static void init_gazebo_video(void)
     cameras[i]->output_size.h = cam->ImageHeight();
     cameras[i]->sensor_size.w = cam->ImageWidth();
     cameras[i]->sensor_size.h = cam->ImageHeight();
+
     cameras[i]->crop.w = cam->ImageWidth();
     cameras[i]->crop.h = cam->ImageHeight();
     cameras[i]->fps = cam->UpdateRate();
