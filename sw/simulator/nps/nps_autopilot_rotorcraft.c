@@ -139,7 +139,6 @@ void nps_autopilot_run_step(double time)
     main_event();
   }
 #endif
-
 #if USE_GPS
   if (nps_sensors_gps_available()) {
     gps_feed_value();
@@ -152,6 +151,7 @@ void nps_autopilot_run_step(double time)
   }
 
   if (nps_bypass_ins) {
+	  printf("check\n");
     sim_overwrite_ins();
   }
 

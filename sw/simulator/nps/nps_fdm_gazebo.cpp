@@ -46,6 +46,7 @@ extern "C" {
 
 #include "nps_fdm.h"
 #include "math/pprz_algebra_double.h"
+#include "nps_sensors.h"
 
 #include "generated/airframe.h"
 #include "autopilot.h"
@@ -330,7 +331,9 @@ static void gazebo_read(void)
                       gazebo::common::SphericalCoordinates::LOCAL,
                       gazebo::common::SphericalCoordinates::SPHERICAL));
   fdm.hmsl = pose.pos.z;
+
   /* debug positions */
+  //@TODO: apperently this is important!
   fdm.lla_pos_pprz = fdm.lla_pos; // Don't really care...
   fdm.lla_pos_geod = fdm.lla_pos;
   fdm.lla_pos_geoc = fdm.lla_pos;
@@ -362,7 +365,6 @@ static void gazebo_read(void)
   fdm.body_inertial_accel = fdm.body_ecef_accel; // Approximate, unused.
   fdm.body_accel = to_pprz_body(
                      pose.rot.RotateVectorReverse(accel.Ign() - world->Gravity()));
-
   /* attitude */
   // ecef_to_body_quat: unused
   fdm.ltp_to_body_eulers = to_pprz_eulers(local_to_global_quat * pose.rot);
@@ -387,6 +389,27 @@ static void gazebo_read(void)
                                           gazebo::common::SphericalCoordinates::LOCAL,
                                           gazebo::common::SphericalCoordinates::GLOBAL));
 
+
+
+  /* GPS fill */
+  sensors.gps.ecef_pos = to_pprz_ecef(
+                   sphere->PositionTransform(pose.pos.Ign(),
+                       gazebo::common::SphericalCoordinates::LOCAL,
+                       gazebo::common::SphericalCoordinates::ECEF));
+  sensors.gps.lla_pos = to_pprz_lla(
+                  sphere->PositionTransform(pose.pos.Ign(),
+                      gazebo::common::SphericalCoordinates::LOCAL,
+                      gazebo::common::SphericalCoordinates::SPHERICAL));
+  sensors.gps.hmsl = pose.pos.z;
+  /* debug positions */
+
+
+  /* velocity */
+  sensors.gps.ecef_vel = to_pprz_ecef(
+                        sphere->VelocityTransform(vel.Ign(),
+                            gazebo::common::SphericalCoordinates::LOCAL,
+                            gazebo::common::SphericalCoordinates::ECEF));
+  sensors.gps.data_available = true;
   /* atmosphere */
   // TODO after upgrade to gazebo 8!
   /* flight controls: unused */
