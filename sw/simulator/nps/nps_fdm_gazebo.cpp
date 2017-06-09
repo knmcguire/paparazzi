@@ -318,6 +318,12 @@ static void gazebo_read(void)
   // nan_count: unused
 
   /* position */
+
+  // Setting reference attitude to be similar to the standard flightplan of paparazzi
+  sphere->SetLatitudeReference(RadOfDeg(51.990634));
+  sphere->SetLongitudeReference(RadOfDeg(4.376789));
+  sphere->SetElevationReference(45);
+
   fdm.ecef_pos = to_pprz_ecef(
                    sphere->PositionTransform(pose.pos.Ign(),
                        gazebo::common::SphericalCoordinates::LOCAL,
@@ -333,11 +339,11 @@ static void gazebo_read(void)
   fdm.hmsl = pose.pos.z;
 
   /* debug positions */
-  //@TODO: apperently this is important!
   fdm.lla_pos_pprz = fdm.lla_pos; // Don't really care...
   fdm.lla_pos_geod = fdm.lla_pos;
   fdm.lla_pos_geoc = fdm.lla_pos;
   fdm.agl = pose.pos.z; // TODO Measure with sensor
+
 
   /* velocity */
   fdm.ecef_ecef_vel = to_pprz_ecef(
