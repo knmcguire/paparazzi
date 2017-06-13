@@ -81,6 +81,18 @@ struct gazebocam_t {
 };
 static struct gazebocam_t gazebo_cams[VIDEO_THREAD_MAX_CAMERAS] =
 { { NULL, 0 } };
+
+//stereocamera
+
+  static void read_stereoimage(
+    struct image_t *img,
+    gazebo::sensors::MultiCameraSensorPtr  cam);
+struct gazebostereocam_t{
+	gazebo::sensors::MultiCameraSensorPtr stereocam;
+	  gazebo::common::Time last_measurement_time;
+
+};
+static struct gazebostereocam_t gazebo_stereocam;
 #endif
 
 /// Holds all necessary NPS FDM state information
@@ -476,7 +488,7 @@ static void init_gazebo_video(void)
   gazebo::sensors::SensorManager *mgr =
     gazebo::sensors::SensorManager::Instance();
 
-
+ //Bottom and front camera
   cout << "Initializing cameras..." << endl;
   cout<<"amount cameras is found: "<<model->GetSensorCount()<<endl;
   // Loop over cameras registered in video_thread_nps
@@ -521,6 +533,18 @@ static void init_gazebo_video(void)
     cameras[i]->fps = cam->UpdateRate();
     cout << "ok" << endl;
   }
+
+  //stereo camera
+  gazebo_stereocam.stereocam = static_pointer_cast
+                                            < gazebo::sensors::MultiCameraSensor > (mgr->GetSensor("stereo_camera"));
+  if (!gazebo_stereocam.stereocam) {
+      cout << "ERROR: Could not get pointer to stereocam!" << endl;
+    }
+  gazebo_stereocam.stereocam->SetActive(true);
+
+  gazebo_stereocam.last_measurement_time =   gazebo_stereocam.stereocam->LastMeasurementTime();
+
+
 }
 
 /**
@@ -543,8 +567,15 @@ static void gazebo_read_video(void)
         || cam->LastMeasurementTime() == 0) { continue; }
     // Grab image, convert and send to video thread
     struct image_t img;
-    read_image(&img, cam);
-    cv_run_device(cameras[i], &img);
+
+
+// Temporarily show stereo camera as bottom camera
+     //read_image(&img, cam);
+    //stereo camera
+      read_stereoimage(&img, gazebo_stereocam.stereocam);
+
+      cv_run_device(cameras[i], &img);
+
     // Free image buffer after use.
     image_free(&img);
     // Keep track of last update time.
@@ -595,6 +626,53 @@ static void read_image(
   img->ts.tv_usec = ts.nsec / 1000.0;
   img->pprz_ts = ts.Double() * 1e6;
   img->buf_idx = 0; // unused
+}
+
+static void read_stereoimage(
+  struct image_t *img,
+  gazebo::sensors::MultiCameraSensorPtr cam)
+{
+  image_create(img, cam->ImageWidth(0), cam->ImageHeight(0), IMAGE_YUV422);
+
+  // Convert Gazebo's *RGB888* image to Paparazzi's YUV422
+  const uint8_t *data_rgb = cam->ImageData(0);
+  uint8_t *data_yuv = (uint8_t *)(img->buf);
+
+for (int x = 0; x < img->w; ++x) {
+    for (int y = 0; y < img->h; ++y) {
+      int idx_rgb = 3 * (img->w * y + x);
+      int idx_yuv = 2 * (img->w * y + x);
+      int idx_px = img->w * y + x;
+
+
+
+      if (idx_px % 2 == 0) { // Pick U or V
+
+
+        data_yuv[idx_yuv] = -0.148 * data_rgb[idx_rgb]
+                            - 0.291 * data_rgb[idx_rgb + 1]
+                            + 0.439 * data_rgb[idx_rgb + 2] + 128; // U
+
+      } else {
+        data_yuv[idx_yuv] = 0.439 * data_rgb[idx_rgb]
+                            - 0.368 * data_rgb[idx_rgb + 1]
+                            - 0.071 * data_rgb[idx_rgb + 2] + 128; // V
+      }
+      data_yuv[idx_yuv + 1] = 0.257 * data_rgb[idx_rgb]
+                              + 0.504 * data_rgb[idx_rgb + 1]
+                              + 0.098 * data_rgb[idx_rgb + 2] + 16; // Y
+
+    }
+
+  }
+
+  // Fill miscellaneous fields
+  gazebo::common::Time ts = cam->LastMeasurementTime();
+  img->ts.tv_sec = ts.sec;
+  img->ts.tv_usec = ts.nsec / 1000.0;
+  img->pprz_ts = ts.Double() * 1e6;
+  img->buf_idx = 0; // unused
+
 }
 #endif
 

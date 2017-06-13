@@ -47,55 +47,51 @@
 				</inertia>
 			</inertial>
 
-			<sensor type="multicamera" name="stereo_camera">
-				<update_rate>30.0</update_rate>
-				<camera name="left">
-					<horizontal_fov>1.3962634</horizontal_fov>
-					<image>
-						<width>128</width>
-						<height>96</height>
-						<format>R8G8B8</format>
-					</image>
-					<clip>
-						<near>0.02</near>
-						<far>300</far>
-					</clip>
-					<noise>
-						<type>gaussian</type>
-						<!-- Noise is sampled independently per pixel on each frame. That pixel's 
-							noise value is added to each of its color channels, which at that point lie 
-							in the range [0,1]. -->
-						<mean>0.0</mean>
-						<stddev>0.007</stddev>
-					</noise>
-				</camera>
-				<camera name="right">
+
+
+		    <sensor type="multicamera" name="stereo_camera">
+      <update_rate>30.0</update_rate>
+      <camera name="left">
+        <horizontal_fov>1.3962634</horizontal_fov>
+        <image>
+						<width>320</width>
+						<height>240</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.007</stddev>
+        </noise>
+      </camera>
+      <camera name="right">
         <pose>0 -0.07 0 0 0 0</pose>
-					<horizontal_fov>1.3962634</horizontal_fov>
-					<image>
-						<width>128</width>
-						<height>96</height>
-						<format>R8G8B8</format>
-					</image>
-					<clip>
-						<near>0.02</near>
-						<far>300</far>
-					</clip>
-					<noise>
-						<type>gaussian</type>
-						<!-- Noise is sampled independently per pixel on each frame. That pixel's 
-							noise value is added to each of its color channels, which at that point lie 
-							in the range [0,1]. -->
-						<mean>0.0</mean>
-						<stddev>0.007</stddev>
-					</noise>
-				</camera>
+        <horizontal_fov>1.3962634</horizontal_fov>
+        <image>
+						<width>320</width>
+						<height>240</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.007</stddev>
+        </noise>
+      </camera>
 			</sensor>
 		</link>
 		
 		<joint name="stereo_camera_joint" type="fixed">
 			<parent>chassis</parent>
-			<child>stereo_camera_camera</child>
+			<child>stereo_camera</child>
 		</joint>
 		
 		<link name="bottom_camera">

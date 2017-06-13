@@ -1,0 +1,3 @@
+/home/knmcguire/paparazzi/conf/simulator/gazebo/plugins/build/CMakeFiles/rebuild_cache.dir
+/home/knmcguire/paparazzi/conf/simulator/gazebo/plugins/build/CMakeFiles/edit_cache.dir
+/home/knmcguire/paparazzi/conf/simulator/gazebo/plugins/build/CMakeFiles/hello_world.dir
