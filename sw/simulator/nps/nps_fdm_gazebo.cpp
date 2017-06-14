@@ -590,8 +590,19 @@ static void gazebo_read_video(void)
     // Keep track of last update time.
     gazebo_cams[i].last_measurement_time = cam->LastMeasurementTime();
   }
+
+
+  gazebo::sensors::MultiCameraSensorPtr &stereocam = gazebo_stereocam.stereocam;
+
+
+  if (!(stereocam->LastMeasurementTime() == gazebo_stereocam.last_measurement_time
+      || stereocam->LastMeasurementTime() == 0))
+		{
+
+
   struct image_t img;
-  read_stereoimage(&img, gazebo_stereocam.stereocam);
+  read_stereoimage(&img, stereocam);
+
 
   //dummyvalues
   int16_t *stereocam_data;
@@ -605,7 +616,8 @@ static void gazebo_read_video(void)
                  &edgeflow_parameters, &edgeflow_results);
 
   image_free(&img);
-
+  gazebo_stereocam.last_measurement_time = stereocam->LastMeasurementTime();
+		}
 
 }
 
@@ -672,12 +684,6 @@ static void read_stereoimage(
       int idx_yuv = 2 * (img->w * y + x);
       int idx_px = img->w * y + x;
 
-      data_yuv[idx_yuv] = 0;
-      data_yuv[idx_yuv+1] = 0;
-
-
-/*
-
       data_yuv[idx_yuv] =  0.257 * data_rgb_left[idx_rgb]
 				                              + 0.504 * data_rgb_left[idx_rgb + 1]
 				                              + 0.098 * data_rgb_left[idx_rgb + 2] + 16; // Y
@@ -685,7 +691,6 @@ static void read_stereoimage(
       data_yuv[idx_yuv + 1] = 0.257 * data_rgb_right[idx_rgb]
                               + 0.504 * data_rgb_right[idx_rgb + 1]
                               + 0.098 * data_rgb_right[idx_rgb + 2] + 16; // Y
-*/
 
     }
 
