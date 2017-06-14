@@ -87,6 +87,14 @@
     nps.LDFLAGS += $(shell pkg-config gazebo --libs)
   	</raw>
     <file name="nps_fdm_gazebo.cpp" dir="nps"/>
+    <file name="edgeflow.c" dir="/home/knmcguire/stereoboard/stereoboard/"/>
+    <include name="/home/knmcguire/stereoboard/common/"/>
+    <flag name="DEFINES" value="-DCOMPILE_ON_LINUX"/>
+    <include name="modules/computer_vision"/>
+    <file name="image.c" dir="modules/computer_vision/lib/vision"/>
+    <file name="jpeg.c" dir="modules/computer_vision/lib/encoding"/>
+    <file name="rtp.c" dir="modules/computer_vision/lib/encoding"/>
+    <file name="v4l2.c" dir="modules/computer_vision/lib/v4l"/>
   </makefile>
 </module>
 

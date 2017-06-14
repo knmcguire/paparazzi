@@ -51,6 +51,8 @@ extern "C" {
 #include "generated/airframe.h"
 #include "autopilot.h"
 
+#include "/home/knmcguire/stereoboard/stereoboard/edgeflow.h"
+
 #ifdef NPS_SIMULATE_VIDEO
 #include "modules/computer_vision/cv.h"
 #include "modules/computer_vision/video_thread_nps.h"
@@ -93,6 +95,13 @@ struct gazebostereocam_t{
 
 };
 static struct gazebostereocam_t gazebo_stereocam;
+
+//parameters for edgeflow
+struct edgeflow_parameters_t edgeflow_parameters;
+struct edgeflow_results_t edgeflow_results;
+#define FOVX 1.001819   // 57.4deg = 1.001819 rad
+#define FOVY 0.776672   // 44.5deg = 0.776672 rad
+
 #endif
 
 /// Holds all necessary NPS FDM state information
@@ -544,6 +553,8 @@ static void init_gazebo_video(void)
 
   gazebo_stereocam.last_measurement_time =   gazebo_stereocam.stereocam->LastMeasurementTime();
 
+  edgeflow_init(&edgeflow_parameters, &edgeflow_results, 128, 96, 0);
+cout<<"edgeflow Init"<<endl;
 
 }
 
@@ -570,10 +581,8 @@ static void gazebo_read_video(void)
 
 
 // Temporarily show stereo camera as bottom camera
-     //read_image(&img, cam);
+      read_image(&img, cam);
     //stereo camera
-      read_stereoimage(&img, gazebo_stereocam.stereocam);
-
       cv_run_device(cameras[i], &img);
 
     // Free image buffer after use.
@@ -581,6 +590,23 @@ static void gazebo_read_video(void)
     // Keep track of last update time.
     gazebo_cams[i].last_measurement_time = cam->LastMeasurementTime();
   }
+  struct image_t img;
+  read_stereoimage(&img, gazebo_stereocam.stereocam);
+
+  //dummyvalues
+  int16_t *stereocam_data;
+  uint8_t *edgeflowArray;
+
+  edgeflow_parameters.fovx = (int32_t)(FOVX * 100);
+  edgeflow_parameters.fovy = (int32_t)(FOVY * 100);
+
+  //calculate edgeflow
+  edgeflow_total(edgeflowArray, stereocam_data, 0, (uint8_t *)(img.buf),
+                 &edgeflow_parameters, &edgeflow_results);
+
+  image_free(&img);
+
+
 }
 
 /**
@@ -635,32 +661,31 @@ static void read_stereoimage(
   image_create(img, cam->ImageWidth(0), cam->ImageHeight(0), IMAGE_YUV422);
 
   // Convert Gazebo's *RGB888* image to Paparazzi's YUV422
-  const uint8_t *data_rgb = cam->ImageData(0);
+  const uint8_t *data_rgb_left = cam->ImageData(0);
+  const uint8_t *data_rgb_right = cam->ImageData(1);
+
   uint8_t *data_yuv = (uint8_t *)(img->buf);
 
-for (int x = 0; x < img->w; ++x) {
+ for (int x = 0; x < img->w; ++x) {
     for (int y = 0; y < img->h; ++y) {
       int idx_rgb = 3 * (img->w * y + x);
       int idx_yuv = 2 * (img->w * y + x);
       int idx_px = img->w * y + x;
 
+      data_yuv[idx_yuv] = 0;
+      data_yuv[idx_yuv+1] = 0;
 
 
-      if (idx_px % 2 == 0) { // Pick U or V
+/*
 
+      data_yuv[idx_yuv] =  0.257 * data_rgb_left[idx_rgb]
+				                              + 0.504 * data_rgb_left[idx_rgb + 1]
+				                              + 0.098 * data_rgb_left[idx_rgb + 2] + 16; // Y
 
-        data_yuv[idx_yuv] = -0.148 * data_rgb[idx_rgb]
-                            - 0.291 * data_rgb[idx_rgb + 1]
-                            + 0.439 * data_rgb[idx_rgb + 2] + 128; // U
-
-      } else {
-        data_yuv[idx_yuv] = 0.439 * data_rgb[idx_rgb]
-                            - 0.368 * data_rgb[idx_rgb + 1]
-                            - 0.071 * data_rgb[idx_rgb + 2] + 128; // V
-      }
-      data_yuv[idx_yuv + 1] = 0.257 * data_rgb[idx_rgb]
-                              + 0.504 * data_rgb[idx_rgb + 1]
-                              + 0.098 * data_rgb[idx_rgb + 2] + 16; // Y
+      data_yuv[idx_yuv + 1] = 0.257 * data_rgb_right[idx_rgb]
+                              + 0.504 * data_rgb_right[idx_rgb + 1]
+                              + 0.098 * data_rgb_right[idx_rgb + 2] + 16; // Y
+*/
 
     }
 
@@ -671,7 +696,7 @@ for (int x = 0; x < img->w; ++x) {
   img->ts.tv_sec = ts.sec;
   img->ts.tv_usec = ts.nsec / 1000.0;
   img->pprz_ts = ts.Double() * 1e6;
-  img->buf_idx = 0; // unused
+  img->buf_idx = 0; // unused*/
 
 }
 #endif

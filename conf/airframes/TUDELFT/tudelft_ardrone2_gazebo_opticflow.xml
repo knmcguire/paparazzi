@@ -27,7 +27,6 @@
   <modules main_freq="512">
     <module name="bat_voltage_ardrone2"/>
     <!-- remove the gps_ubx_ucenter module if you use the sirf gps (flight recorder) -->
-    <module name="gps" type="ubx_ucenter"/>
     <module name="send_imu_mag_current"/>
     <module name="air_data"/>
     <module name="geo_mag"/>
@@ -38,9 +37,9 @@
       <define name="COLORFILTER_CAMERA" value="front_camera"/>
     </module>
 
-    <module name="cv_opticflow">
+    <!--module name="cv_opticflow">
       <define name="OPTICFLOW_CAMERA" value="bottom_camera"/>
-    </module>
+    </module-->
  <module name="pose_history"/>
 
 
