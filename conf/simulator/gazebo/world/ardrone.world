@@ -1,6 +1,6 @@
-<?xml version='1.0'?>
-<sdf version="1.6">
-	<world name="default">
+<?xml version="1.0"?>
+<sdf version="1.4">
+  <world name="default">
 		<physics type="ode">
 			<max_step_size>0.001</max_step_size>
 			<real_time_update_rate>0</real_time_update_rate><!-- Handled by Paparazzi! -->
@@ -30,12 +30,25 @@
 			<elevation>0</elevation>
 			<heading_deg>180</heading_deg><!-- Temporary fix for issue https://bitbucket.org/osrf/gazebo/issues/2022/default-sphericalcoordinates-frame-should -->
 		</spherical_coordinates>
-
-		<include>
-			<uri>model://ground_plane</uri>
-		</include>
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    <include>
+      <uri>model://sun</uri>
+    </include>
 		<include>
 			<uri>model://ardrone_stereo</uri>
 		</include>
-	</world>
+  <model name="building">
+      <pose>0 0 0  0 0 0</pose>
+      <static>true</static>
+      <link name="body">
+        <visual name="visual">
+          <geometry>
+            <mesh><uri>file://model.dae</uri></mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+  </world>
 </sdf>
