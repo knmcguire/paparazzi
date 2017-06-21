@@ -599,7 +599,6 @@ static void gazebo_read_video(void)
       || stereocam->LastMeasurementTime() == 0))
 		{
 
-
   struct image_t img;
   read_stereoimage(&img, stereocam);
 
@@ -615,6 +614,7 @@ static void gazebo_read_video(void)
   edgeflow_total(edgeflowArray, stereocam_data, 0, (uint8_t *)(img.buf),
                  &edgeflow_parameters, &edgeflow_results);
 
+  cout<<edgeflow_results.vel_x_global<<endl;
   image_free(&img);
   gazebo_stereocam.last_measurement_time = stereocam->LastMeasurementTime();
 		}

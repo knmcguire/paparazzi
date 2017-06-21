@@ -39,7 +39,10 @@
 		<include>
 			<uri>model://ardrone_stereo</uri>
 		</include>
-  <model name="building">
+		<include>
+			<uri>model://building_1_paparazzi</uri>
+		</include>
+  <!--model name="building">
       <pose>0 0 0  0 0 0</pose>
       <static>true</static>
       <link name="body">
@@ -49,6 +52,6 @@
           </geometry>
         </visual>
       </link>
-    </model>
+    </model-->
   </world>
 </sdf>

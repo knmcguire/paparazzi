@@ -33,9 +33,9 @@
     <!--module name="logger_file"/-->
     <module name="video_thread">
     </module>
-    <module name="cv_colorfilter">
+    <!--module name="cv_colorfilter">
       <define name="COLORFILTER_CAMERA" value="bottom_camera"/>
-    </module>
+    </module-->
 
     <!--module name="cv_opticflow">
       <define name="OPTICFLOW_CAMERA" value="bottom_camera"/>
@@ -43,11 +43,11 @@
  <module name="pose_history"/>
 
 
-    <module name="video_rtp_stream">
+    <!--module name="video_rtp_stream">
       <define name="VIEWVIDEO_CAMERA" value="front_camera"/>
       <define name="VIEWVIDEO_DOWNSIZE_FACTOR" value="1"/>
       <define name="VIEWVIDEO_QUALITY_FACTOR" value="60"/>
-    </module>
+    </module-->
   </modules>
 
   <commands>
