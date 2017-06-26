@@ -58,6 +58,9 @@ extern "C" {
 #include "modules/computer_vision/video_thread_nps.h"
 #include "modules/computer_vision/lib/vision/image.h"
 #include "mcu_periph/sys_time.h"
+#include "subsystems/datalink/telemetry.h"
+#include "subsystems/abi.h"
+
 #endif
 }
 
@@ -614,9 +617,32 @@ static void gazebo_read_video(void)
   edgeflow_total(edgeflowArray, stereocam_data, 0, (uint8_t *)(img.buf),
                  &edgeflow_parameters, &edgeflow_results);
 
-  cout<<edgeflow_results.vel_x_global<<endl;
   image_free(&img);
   gazebo_stereocam.last_measurement_time = stereocam->LastMeasurementTime();
+
+ float  vel_body_x_processed = (float)edgeflow_results.vel_z_global / 100;
+ float  vel_body_y_processed = (float)edgeflow_results.vel_x_global / 100;
+ float  vel_body_z_processed = (float)edgeflow_results.vel_y_global / 100;
+
+ int16_t flow_x =  edgeflow_results.edge_flow.flow_x;
+ int16_t flow_y =  edgeflow_results.edge_flow.flow_y;
+
+ uint16_t dummy_uint16 = 0;
+ int16_t dummy_int16 = 0;
+ float dummy_float = 0;
+
+  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &dummy_float, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y,
+                               &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
+                               &dummy_float, &dummy_float, &dummy_float);
+  uint32_t now_ts = get_sys_time_usec();
+
+  AbiSendMsgVELOCITY_ESTIMATE(ABI_BROADCAST, now_ts,
+                              vel_body_x_processed,
+                              vel_body_y_processed,
+                              vel_body_z_processed,
+                              0.3f
+                             );
+
 		}
 
 }

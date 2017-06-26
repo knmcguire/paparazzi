@@ -125,6 +125,7 @@
 
     <define name="USE_GPS_ALT" value="TRUE"/>
     <define name="USE_GPS_ALT_SPEED" value="TRUE"/>
+    <!--define name="USE_ONLY_GPS_ALT" value="TRUE"/-->
   </section>
 
 
