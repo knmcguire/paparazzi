@@ -620,9 +620,15 @@ static void gazebo_read_video(void)
   image_free(&img);
   gazebo_stereocam.last_measurement_time = stereocam->LastMeasurementTime();
 
- float  vel_body_x_processed = (float)edgeflow_results.vel_z_global / 100;
- float  vel_body_y_processed = (float)edgeflow_results.vel_x_global / 100;
+ float  vel_body_x_processed = (float)edgeflow_results.vel_z_pixelwise / 100;
+ float  vel_body_y_processed = (float)edgeflow_results.vel_x_pixelwise / 100;
  float  vel_body_z_processed = (float)edgeflow_results.vel_y_global / 100;
+
+
+ float distance_closest_obstacle = (float)edgeflow_results.distance_closest_obstacle/100;
+
+ if (distance_closest_obstacle < 1)
+	 vel_body_x_processed += 2;
 
  int16_t flow_x =  edgeflow_results.edge_flow.flow_x;
  int16_t flow_y =  edgeflow_results.edge_flow.flow_y;
