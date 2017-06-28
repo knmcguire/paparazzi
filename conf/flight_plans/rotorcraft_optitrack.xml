@@ -58,9 +58,17 @@
       <stay wp="p1"/>
     </block>
     <block name="hover">
-      <call fun="guidance_v_set_guided_z(-1)"/>
+      <call_once fun="guidance_v_set_guided_z(-1.5f)"/>
 			<call fun="guidance_h_set_guided_body_vel(0.0f,0.0f)"/>
       <deroute block ="hover"/>
+    </block>
+    <block name="go left">
+			<call fun="guidance_h_set_guided_body_vel(0.0f,-0.1f)"/>
+      <deroute block ="go left"/>
+    </block>
+    <block name="go right">
+			<call fun="guidance_h_set_guided_body_vel(0.0f,0.1f)"/>
+      <deroute block ="go right"/>
     </block>
     <block name="go_p2">
       <call_once fun="nav_set_heading_deg(90)"/>
