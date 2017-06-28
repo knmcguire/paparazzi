@@ -2,13 +2,13 @@
 <sdf version="1.4">
   <world name="default">
 		<physics type="ode">
-			<max_step_size>0.01</max_step_size>
+			<max_step_size>0.001</max_step_size>
 			<real_time_update_rate>0</real_time_update_rate><!-- Handled by Paparazzi! -->
 		</physics>
 		<scene>
-			<ambient>0.4 0.4 0.4 1</ambient>
+			<ambient>1 1 1 1</ambient>
 			<background>0.7 0.7 0.7 1</background>
-			<shadows>1</shadows>
+			<shadows>0</shadows>
 		</scene>
 		<light name='sun' type='directional'>
 			<cast_shadows>1</cast_shadows>
@@ -40,7 +40,7 @@
 			<uri>model://ardrone_stereo</uri>
 		</include>
 		<include>
-			<uri>model://building_1_paparazzi</uri>
+			<uri>model://office_1_paparazzi</uri>
 		</include>
   <!--model name="building">
       <pose>0 0 0  0 0 0</pose>
