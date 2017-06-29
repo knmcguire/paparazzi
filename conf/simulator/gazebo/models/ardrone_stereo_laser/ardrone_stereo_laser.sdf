@@ -47,7 +47,7 @@
 					<ixz>0</ixz>
 				</inertia>
 			</inertial>
-      <sensor type= "ray" name="sensor">
+      <sensor type= "ray" name="left_range_sensor">
         <visualize>true</visualize>
         <update_rate>30</update_rate>
 					<ray>
@@ -78,7 +78,7 @@
 					<ixz>0</ixz>
 				</inertia>
 			</inertial>
-      <sensor type= "ray" name="sensor">
+      <sensor type= "ray" name="right_range_sensor">
         <visualize>true</visualize>
         <update_rate>30</update_rate>
 					<ray>
@@ -95,6 +95,8 @@
 			<parent>chassis</parent>
 			<child>right_range_sensor</child>
 		</joint>
+
+
 
 		<link name="stereo_camera">
 			<pose>0.15 0 0 0 0 0</pose>
