@@ -50,12 +50,13 @@
     <module name="traffic_info.xml"/>
     <module name="rssi.xml"/>
     <module name="relativeavoidancefilter.xml"/>
-    <module name="video_rtp_stream">
+    <!--module name="video_rtp_stream">
       <define name="VIEWVIDEO_CAMERA" value="front_camera"/>
       <define name="VIEWVIDEO_DOWNSIZE_FACTOR" value="1"/>
       <define name="VIEWVIDEO_QUALITY_FACTOR" value="60"/>
-    </module>
+    </module-->
 <module name="flight_plan_guided"/>
+   <module name="range_module"/>
   </modules>
  <section name="RELATIVEAVOIDANCEFILTER" prefix="">
   <define name="MAVSIZE" value="0.15"/>   <!-- MAV diameter -->

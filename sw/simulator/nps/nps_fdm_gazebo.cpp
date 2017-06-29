@@ -567,7 +567,6 @@ cout<<"edgeflow Init"<<endl;
 
 // range sensors
 
-
 ray_left = static_pointer_cast<gazebo::sensors::RaySensor>(mgr->GetSensor("left_range_sensor"));
 ray_right = static_pointer_cast<gazebo::sensors::RaySensor>(mgr->GetSensor("right_range_sensor"));
 
@@ -668,14 +667,14 @@ static void gazebo_read_video(void)
                               0.3f
                              );
 
+  AbiSendMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, 0,distance_closest_obstacle);
+
 		}
 
-  double range_left = ray_left->Range(0);
-  double range_right = ray_right->Range(0);
+  int16_t range_left = (int16_t)ray_left->Range(0)*1000;
+  int16_t range_right = (int16_t)ray_right->Range(0)*1000;
 
-  cout<<range_left<<" "<< range_right<<endl;
-
-
+  AbiSendMsgRANGE_SENSORS(ABI_BROADCAST, 0, range_right, 0, range_left, 0,0);
 
 }
 

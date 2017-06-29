@@ -37,7 +37,7 @@
       <uri>model://sun</uri>
     </include>
 		<include>
-			<uri>model://ardrone_stereo</uri>
+			<uri>model://ardrone_stereo_laser</uri>
 		</include>
 		<include>
 			<uri>model://office_1_paparazzi</uri>

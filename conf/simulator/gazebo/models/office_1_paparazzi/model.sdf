@@ -9,6 +9,13 @@
             <mesh><uri>model://office_1_paparazzi/model.dae</uri></mesh>
           </geometry>
         </visual>
+      <collision name="collision">
+        <geometry>
+          <mesh>
+            <uri>model://office_1_paparazzi/model_collision_2.dae</uri>
+          </mesh>
+        </geometry>
+       </collision>
       </link>
     </model>
 </sdf>
