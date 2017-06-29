@@ -62,8 +62,9 @@ float wanted_heading;
 float nom_flight_alt; // nominal flight altitude
 
 #include "subsystems/datalink/telemetry.h"
+#include "subsystems/abi.h"
 
-
+float distance_stereo;
 
 //abi for stereocam
 static abi_event stereocam_obstacle_ev;
@@ -298,6 +299,8 @@ bool change_v_mode(uint8_t mode)
 bool RotateToHeading_ATT(float new_heading, float trim_phi, float trim_theta, bool in_flight)
 {
   struct Int32Eulers cmd;
+
+  printf("%f\n",new_heading);
 
   if (guidance_h.mode == GUIDANCE_H_MODE_ATTITUDE) {
     cmd.phi = ANGLE_BFP_OF_REAL(trim_phi); //trim?

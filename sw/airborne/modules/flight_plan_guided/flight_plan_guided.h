@@ -42,7 +42,7 @@ extern float wanted_heading;
 
 extern float turn_angle;
 extern float  turn_trigger;
-
+extern float distance_stereo;
 
 // Module functions
 void flight_plan_guided_init(void);

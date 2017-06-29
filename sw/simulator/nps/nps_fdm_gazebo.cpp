@@ -647,6 +647,8 @@ static void gazebo_read_video(void)
                               0.3f
                              );
 
+  AbiSendMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, 0,distance_closest_obstacle);
+
 		}
 
 }

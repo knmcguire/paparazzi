@@ -9,8 +9,8 @@
       <module name="fdm" type="gazebo"/>
     </target>
 
-    <define name="USE_SONAR" value="FALSE"/>
-    <define name="USE_BARO_BOARD" value="FALSE"/>
+    <define name="USE_SONAR" value="TRUE"/>
+
 	<!-- Subsystem section -->
     <module name="telemetry" type="transparent_udp"/>
     <module name="radio_control" type="datalink"/>
@@ -18,10 +18,10 @@
     <module name="actuators" type="ardrone2"/>
     <module name="imu" type="ardrone2"/>
     <!-- gps: "ublox" or change to "sirf" for usage with parrot flight recorder -->
-    <module name="gps" type="optitrack"/>
+    <module name="gps" type="ublox"/>
     <module name="stabilization" type="indi_simple"/>
     <module name="ahrs" type="int_cmpl_quat"/>
-    <module name="ins"/>
+    <module name="ins" type="extended"/>
   </firmware>
 
   <modules main_freq="512">
@@ -40,16 +40,30 @@
     <!--module name="cv_opticflow">
       <define name="OPTICFLOW_CAMERA" value="bottom_camera"/>
     </module-->
- <module name="pose_history"/>
 
+<module name="stdma">
+     <configure name="BLUEGIGA_UART" value="UART3"/>
+     <configure name="BLUEGIGA_BAUD" value="B115200"/>
+     <!--define name="UART3_STOP" value="USTOP_2"/--> <!-- this was off already?-->
+  </module>
 
+    <module name="traffic_info.xml"/>
+    <module name="rssi.xml"/>
+    <module name="relativeavoidancefilter.xml"/>
     <module name="video_rtp_stream">
       <define name="VIEWVIDEO_CAMERA" value="front_camera"/>
       <define name="VIEWVIDEO_DOWNSIZE_FACTOR" value="1"/>
       <define name="VIEWVIDEO_QUALITY_FACTOR" value="60"/>
     </module>
+<module name="flight_plan_guided"/>
   </modules>
-
+ <section name="RELATIVEAVOIDANCEFILTER" prefix="">
+  <define name="MAVSIZE" value="0.15"/>   <!-- MAV diameter -->
+  <define name="ASIDE" value="1.0"/>      <!-- Size of arena (for testing) -->
+  <define name="RSSINOISE" value="5.0"/>  <!-- (Expected) Noise on RSSI -->
+  <define name="SPEEDNOISE" value="0.2"/> <!-- (Expected) Noise on other measurements, roughly also based on kimberly's journal paper-->
+  <define name="V_NOMINAL" value="0.5"/>  <!-- Desired nominal velocity -->
+ </section>
   <commands>
     <axis name="PITCH" failsafe_value="0"/>
     <axis name="ROLL" failsafe_value="0"/>
@@ -120,8 +134,8 @@
   </section>
 
   <section name="INS" prefix="INS_">
-    <!--define name="SONAR_MAX_RANGE" value="2.2"/-->
-    <define name="SONAR_UPDATE_ON_AGL" value="FALSE"/>
+    <define name="SONAR_MAX_RANGE" value="2.2"/>
+    <define name="SONAR_UPDATE_ON_AGL" value="TRUE"/>
 
     <define name="USE_GPS_ALT" value="TRUE"/>
     <define name="USE_GPS_ALT_SPEED" value="TRUE"/>
@@ -229,7 +243,7 @@
     <define name="JSBSIM_MODEL" value="simple_ardrone2" type="string"/>
     <define name="SENSORS_PARAMS" value="nps_sensors_params_ardrone2.h" type="string"/>
     <define name="BYPASS_AHRS" value="1"/>
-    <define name="BYPASS_INS" value="0"/>
+    <define name="BYPASS_INS" value="1"/>
     <define name="SIMULATE_VIDEO" value="1"/>
   </section>
 

@@ -303,7 +303,7 @@ void relativeavoidancefilter_periodic(void)
 
 	// Message through USB bluetooth dongle to other drones
 	// Pocketdrones (STDMA Running within Paparazzi)
-	DOWNLINK_SEND_GPS_SMALL(stdma_trans, bluegiga_p, &multiplex_speed, &gps.lla_pos.lat, &gps.lla_pos.lon, &alt);
+//	DOWNLINK_SEND_GPS_SMALL(stdma_trans, bluegiga_p, &multiplex_speed, &gps.lla_pos.lat, &gps.lla_pos.lon, &alt);
 
 	/*********************************************
 		Relative Avoidance Behavior
