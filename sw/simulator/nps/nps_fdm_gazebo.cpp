@@ -105,6 +105,11 @@ struct edgeflow_results_t edgeflow_results;
 #define FOVX 1.001819   // 57.4deg = 1.001819 rad
 #define FOVY 0.776672   // 44.5deg = 0.776672 rad
 
+
+//rangesensors
+gazebo::sensors::RaySensorPtr ray_left;
+gazebo::sensors::RaySensorPtr ray_right;
+
 #endif
 
 /// Holds all necessary NPS FDM state information
@@ -502,7 +507,7 @@ static void init_gazebo_video(void)
 
  //Bottom and front camera
   cout << "Initializing cameras..." << endl;
-  cout<<"amount cameras is found: "<<model->GetSensorCount()<<endl;
+  cout<<"Amount of sensors found: "<<model->GetSensorCount()<<endl;
   // Loop over cameras registered in video_thread_nps
   for (int i = 0; i < VIDEO_THREAD_MAX_CAMERAS && cameras[i] != NULL; ++i) {
     // Find link in gazebo model
@@ -558,6 +563,22 @@ static void init_gazebo_video(void)
 
   edgeflow_init(&edgeflow_parameters, &edgeflow_results, 128, 96, 0);
 cout<<"edgeflow Init"<<endl;
+
+
+// range sensors
+
+
+ray_left = static_pointer_cast<gazebo::sensors::RaySensor>(mgr->GetSensor("left_range_sensor"));
+ray_right = static_pointer_cast<gazebo::sensors::RaySensor>(mgr->GetSensor("right_range_sensor"));
+
+if (!ray_left) {
+    cout << "ERROR: Could not get pointer to raysensor!" << endl;
+  }
+
+ray_left->SetActive(true);
+ray_right->SetActive(true);
+
+
 
 }
 
@@ -647,9 +668,14 @@ static void gazebo_read_video(void)
                               0.3f
                              );
 
-  AbiSendMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, 0,distance_closest_obstacle);
-
 		}
+
+  double range_left = ray_left->Range(0);
+  double range_right = ray_right->Range(0);
+
+  cout<<range_left<<" "<< range_right<<endl;
+
+
 
 }
 
