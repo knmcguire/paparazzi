@@ -427,28 +427,53 @@ static void gazebo_read(void)
 
 
   /* GPS fill */
-  sensors.gps.ecef_pos = to_pprz_ecef(
+/*  sensors.gps.ecef_pos = to_pprz_ecef(
                    sphere->PositionTransform(pose.pos.Ign(),
                        gazebo::common::SphericalCoordinates::LOCAL,
                        gazebo::common::SphericalCoordinates::ECEF));
   sensors.gps.lla_pos = to_pprz_lla(
                   sphere->PositionTransform(pose.pos.Ign(),
                       gazebo::common::SphericalCoordinates::LOCAL,
-                      gazebo::common::SphericalCoordinates::SPHERICAL));
+                      gazebo::common::SphericalCoordinates::SPHERICAL));*/
   sensors.gps.hmsl = pose.pos.z;
-  /* debug positions */
+//   debug positions
 
 
-  /* velocity */
-  sensors.gps.ecef_vel = to_pprz_ecef(
+ //  velocity
+/*  sensors.gps.ecef_vel = to_pprz_ecef(
                         sphere->VelocityTransform(vel.Ign(),
                             gazebo::common::SphericalCoordinates::LOCAL,
-                            gazebo::common::SphericalCoordinates::ECEF));
+                            gazebo::common::SphericalCoordinates::ECEF));*/
   sensors.gps.data_available = true;
-  /* atmosphere */
+   /*atmosphere */
   // TODO after upgrade to gazebo 8!
   /* flight controls: unused */
   /* engine: unused */
+
+    /* atmosphere */
+  #if GAZEBO_MAJOR_VERSION >= 8 && 0 // TODO implement
+
+  #else
+    // Gazebo versions < 8 do not have atmosphere or wind support
+    // Use placeholder values. Valid for low altitude, low speed flights.
+    fdm.wind = {.x = 0, .y = 0, .z = 0};
+    fdm.pressure_sl = 101325; // Pa
+
+    fdm.airspeed = 0;
+    fdm.pressure = fdm.pressure_sl; // Pa
+    fdm.dynamic_pressure = fdm.pressure_sl; // Pa
+    fdm.temperature = 20.0; // C
+    fdm.aoa = 0; // rad
+    fdm.sideslip = 0; // rad
+  #endif
+    /* flight controls: unused */
+    fdm.elevator = 0;
+    fdm.flap = 0;
+    fdm.left_aileron = 0;
+    fdm.right_aileron = 0;
+    fdm.rudder = 0;
+    /* engine: unused */
+    fdm.num_engines = 0;
 }
 
 /**

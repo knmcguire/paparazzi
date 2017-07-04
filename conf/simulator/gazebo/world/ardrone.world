@@ -4,7 +4,14 @@
 		<physics type="ode">
 			<max_step_size>0.001</max_step_size>
 			<real_time_update_rate>0</real_time_update_rate><!-- Handled by Paparazzi! -->
+    <ode>
+ 			<solver>
+				<type>quick</type>
+        <iters>1</iters>
+			</solver>
+		</ode>
 		</physics>
+  
 		<scene>
 			<ambient>1 1 1 1</ambient>
 			<background>0.7 0.7 0.7 1</background>
@@ -39,9 +46,9 @@
 		<include>
 			<uri>model://ardrone_stereo_laser</uri>
 		</include>
-		<include>
+		<!--include>
 			<uri>model://office_1_paparazzi</uri>
-		</include>
+		</include-->
   <!--model name="building">
       <pose>0 0 0  0 0 0</pose>
       <static>true</static>
