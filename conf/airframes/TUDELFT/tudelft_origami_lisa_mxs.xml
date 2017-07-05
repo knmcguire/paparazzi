@@ -27,10 +27,10 @@
 <airframe name="quadrotor_lisa_mxs">
 
   <servos driver="Pwm">
-    <servo name="NE" no="0" min="0" neutral="50" max="1000"/>
-    <servo name="SE" no="5" min="0" neutral="50" max="1000"/>
-    <servo name="SW" no="4" min="0" neutral="50" max="1000"/>
-    <servo name="NW" no="1" min="0" neutral="50" max="1000"/>
+    <servo name="NE" no="1" min="0" neutral="50" max="1000"/><!--1-->
+    <servo name="SE" no="0" min="0" neutral="50" max="1000"/><!--0-->
+    <servo name="SW" no="3" min="0" neutral="50" max="1000"/><!--3-->
+    <servo name="NW" no="2" min="0" neutral="50" max="1000"/><!--2-->
   </servos>
 
   <commands>
