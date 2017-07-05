@@ -405,6 +405,10 @@
 
     <!-- 55 is free -->
 
+    <message name="RANGE_FINDERS" id="55">
+       <field name="tel_buf" type="uint16[]"/>
+    </message>
+
     <message name="BARO_ETS" id="56">
       <field name="adc" type="uint16"/>
       <field name="offset" type="uint16"/>
