@@ -91,7 +91,7 @@ static abi_event forcefield_velocity_ev;
 static void forcefield_velocity_cb(uint8_t sender_id, float vel_body_x_FF, float vel_body_y_FF, float vel_body_z_FF);
 static void forcefield_velocity_cb(uint8_t UNUSED(sender_id), float vel_body_x_FF, float vel_body_y_FF, float vel_body_z_FF)
 {
-	  DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
+	//  DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
 
   vel_body_FF.x = vel_body_x_FF;
   vel_body_FF.y = vel_body_y_FF;

@@ -30,7 +30,7 @@
     </sector>
   </sectors>
   <exceptions>
-    <!--exception cond="datalink_time > 3" deroute="landed"/-->
+    <exception cond="datalink_time > 3" deroute="landed"/>
   </exceptions>
 
   <blocks>
