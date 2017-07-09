@@ -26,6 +26,7 @@
 
 #include "modules/range_module/range_module.h"
 #include "subsystems/abi.h"
+#include "subsystems/datalink/telemetry.h"
 
 
 
@@ -46,7 +47,6 @@ static void range_sensors_cb(uint8_t UNUSED(sender_id),
     static const int32_t max_sensor_range = 2000;
   */
 
-
   //TODO: Make a seperate module
   // save range finders values
   range_finders.front = range_front;
@@ -55,8 +55,11 @@ static void range_sensors_cb(uint8_t UNUSED(sender_id),
   range_finders.back = range_back;
   range_finders.top = range_top;
   range_finders.bottom = range_bottom;
-  /*    uint16_t tel_buf[4] = {0,range_right, 0 , range_left};
-      uint8_t length = 4;*/
+     uint16_t tel_buf[4] = {0,range_right, 0 , range_left};
+      uint8_t length = 4;
+
+  DOWNLINK_SEND_RANGE_FINDERS(DefaultChannel, DefaultDevice, length, tel_buf);
+
 
 }
 

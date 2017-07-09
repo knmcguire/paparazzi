@@ -696,8 +696,8 @@ static void gazebo_read_video(void)
 
 		}
 
-  int16_t range_left = (int16_t)ray_left->Range(0)*1000;
-  int16_t range_right = (int16_t)ray_right->Range(0)*1000;
+  int16_t range_left = (int16_t)(ray_left->Range(0)*1000);
+  int16_t range_right = (int16_t)(ray_right->Range(0)*1000);
 
   AbiSendMsgRANGE_SENSORS(ABI_BROADCAST, 0, range_right, 0, range_left, 0,0);
 
