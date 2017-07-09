@@ -109,6 +109,10 @@ struct edgeflow_results_t edgeflow_results;
 //rangesensors
 gazebo::sensors::RaySensorPtr ray_left;
 gazebo::sensors::RaySensorPtr ray_right;
+gazebo::sensors::RaySensorPtr ray_down;
+
+#include "filters/median_filter.h"
+struct MedianFilterInt medianfilter_x, medianfilter_y, medianfilter_z, medianfilter_agl;
 
 #endif
 
@@ -527,6 +531,14 @@ static void gazebo_write(double commands[], int commands_nb)
  */
 static void init_gazebo_video(void)
 {
+
+
+	  init_median_filter(&medianfilter_x);
+	  init_median_filter(&medianfilter_y);
+	  init_median_filter(&medianfilter_z);
+	init_median_filter(&medianfilter_agl);
+
+
   gazebo::sensors::SensorManager *mgr =
     gazebo::sensors::SensorManager::Instance();
 
@@ -594,6 +606,7 @@ cout<<"edgeflow Init"<<endl;
 
 ray_left = static_pointer_cast<gazebo::sensors::RaySensor>(mgr->GetSensor("left_range_sensor"));
 ray_right = static_pointer_cast<gazebo::sensors::RaySensor>(mgr->GetSensor("right_range_sensor"));
+ray_down = static_pointer_cast<gazebo::sensors::RaySensor>(mgr->GetSensor("down_range_sensor"));
 
 if (!ray_left) {
     cout << "ERROR: Could not get pointer to raysensor!" << endl;
@@ -601,6 +614,7 @@ if (!ray_left) {
 
 ray_left->SetActive(true);
 ray_right->SetActive(true);
+ray_down->SetActive(true);
 
 
 
@@ -665,12 +679,18 @@ static void gazebo_read_video(void)
   image_free(&img);
   gazebo_stereocam.last_measurement_time = stereocam->LastMeasurementTime();
 
- float  vel_body_x_processed = (float)edgeflow_results.vel_z_pixelwise / 100;
+ float  vel_body_x_processed = 2*(float)edgeflow_results.vel_z_pixelwise / 100;
  float  vel_body_y_processed = (float)edgeflow_results.vel_x_pixelwise / 100;
  float  vel_body_z_processed = (float)edgeflow_results.vel_y_global / 100;
-
-
  float distance_closest_obstacle = (float)edgeflow_results.distance_closest_obstacle/100;
+
+
+   // Use a slight median filter to filter out the large outliers before sending it to state
+   // TODO: if a float median filter exist, replace this version
+   vel_body_x_processed = (float)update_median_filter(&medianfilter_x, (int32_t)(vel_body_x_processed * 100)) / 100;
+   vel_body_y_processed = (float)update_median_filter(&medianfilter_y, (int32_t)(vel_body_y_processed * 100)) / 100;
+   vel_body_z_processed = (float)update_median_filter(&medianfilter_z, (int32_t)(vel_body_y_processed * 100)) / 100;
+   distance_closest_obstacle = (float)update_median_filter(&medianfilter_agl, (int32_t)(distance_closest_obstacle * 10)) / 10;
 
 
  int16_t flow_x =  edgeflow_results.edge_flow.flow_x;
@@ -682,7 +702,7 @@ static void gazebo_read_video(void)
 
   DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &dummy_float, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y,
                                &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
-                               &dummy_float, &dummy_float, &dummy_float);
+                               &dummy_float, &dummy_float, &distance_closest_obstacle);
   uint32_t now_ts = get_sys_time_usec();
 
   AbiSendMsgVELOCITY_ESTIMATE(ABI_BROADCAST, now_ts,
@@ -700,6 +720,7 @@ static void gazebo_read_video(void)
   int16_t range_right = (int16_t)(ray_right->Range(0)*1000);
 
   AbiSendMsgRANGE_SENSORS(ABI_BROADCAST, 0, range_right, 0, range_left, 0,0);
+  AbiSendMsgAGL(ABI_BROADCAST, ray_down->Range(0));
 
 }
 

@@ -72,14 +72,14 @@
 
 <!--go forward, with a forcefield to prevent collissons -->
 		<block name="CL Go Forward with forcefield"> 
-        <call fun="avoid_wall_and_sides(0.3)"/>
+        <call fun="avoid_wall_and_sides(0.1)"/>
         <exception cond="1.2>distance_stereo||turn_trigger" deroute="CL Hover with forcefield"/> <!-- If obstacle is within 1 meter, go to hover -->
     </block>
 
 <!--Hover with a forcefield to prevent collissons -->
 		<block name="CL Hover with forcefield">
-        <set var="wanted_heading" value="turn_angle + RadOfDeg(180.0)"/>
-        <call fun="avoid_wall_and_sides(-0.05)"/>
+        <set var="wanted_heading" value="turn_angle"/>
+        <call fun="avoid_wall_and_sides(0.1)"/>
         <exception cond="distance_stereo>1.2&&stage_time>1.5" deroute="CL Turn"/> <!-- If 2 seconds are passed, go turn -->
     </block>
 
@@ -89,17 +89,20 @@
         <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
         <!--set var="wanted_heading" value="stateGetNedToBodyEulers_f()->psi + RadOfDeg(60.0)"/-->
 				<call fun="RotateToHeading_ATT(wanted_heading, RadOfDeg(0.0f),RadOfDeg(0.0f),autopilot_in_flight)"/>
-		    <!--while cond="WaitforHeadingCondition(wanted_heading)"/>
- 				<call fun="ResetAngles_ATT(wanted_heading)"/-->
-        <call fun="reset_counter()"/>
-        <call fun="wait_counter(30)"/>
+		    <while cond="WaitforHeadingCondition(wanted_heading)"/>
+        <!--call fun="reset_counter()"/>
+        <call fun="wait_counter(30)"/-->
  				<call fun="ResetAngles_ATT(wanted_heading,autopilot_in_flight)"/>
+        <call fun="reset_counter()"/>
+        <call fun="wait_counter(2)"/>
         <call fun="change_h_mode(GUIDANCE_H_MODE_GUIDED)"/>
+        <exception cond="stage_time>2.0" deroute="CL Hover and Check obstacle"/>			<!-- No-->
  		</block>
 
  <!--check for obstacle -->
     <block name = "CL Hover and Check obstacle"> 
-        <call fun="avoid_wall_and_sides(-0.05)"/>
+        <call fun="change_h_mode(GUIDANCE_H_MODE_GUIDED)"/>
+        <call fun="avoid_wall_and_sides(0.01)"/>
         <exception cond="1.2 > distance_stereo" deroute="CL Hover with forcefield"/>  <!-- if still obstacle, go to hover->turn again -->
         <exception cond="stage_time>1.0" deroute="CL Go Forward with forcefield"/>			<!-- No obstacle, go forward -->
  		</block>

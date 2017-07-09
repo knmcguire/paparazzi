@@ -62,10 +62,20 @@ static void range_sensors_cb(uint8_t UNUSED(sender_id),
 
 
 }
+static abi_event stereocam_obstacle_ev;
+static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
+float distance_stereo;
+void stereocam_obstacle_cb(uint8_t UNUSED(sender_id), float UNUSED(heading), float range)
+{
+  distance_stereo = range;
+ // DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
+}
+
 
 void range_init(void)
 {
   AbiBindMsgRANGE_SENSORS(RANGE_MODULE_SENDER_ID, &range_sensors_ev, range_sensors_cb);
+  AbiBindMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, &stereocam_obstacle_ev, stereocam_obstacle_cb);
 
 }
 
@@ -84,6 +94,8 @@ void range_run(void)
 
   range_sensor_force_field(&vel_body_x, &vel_body_y, &vel_body_z,
                            avoid_inner_border, avoid_outer_border, tinder_range, min_vel_command, max_vel_command);
+
+  stereo_force_field(&vel_body_x, distance_stereo,   (float)avoid_inner_border / 1000, (float)avoid_outer_border/1000, (float)tinder_range/1000, min_vel_command, max_vel_command);
 
 
   AbiSendMsgFORCEFIELD_VELOCITY(RANGE_MODULE_SENDER_ID, vel_body_x, vel_body_y, vel_body_z);
@@ -172,14 +184,17 @@ void stereo_force_field(float *vel_body_x, float distance_stereo, float avoid_in
     //do nothing
   } else if (distance_stereo < avoid_inner_border) {
     avoid_x_command -= max_vel_command;
+
   } else if (distance_stereo < avoid_outer_border) {
     // Linear
+
     avoid_x_command -= (max_vel_command - min_vel_command) *
                        (avoid_outer_border - distance_stereo)
                        / difference_inner_outer;
   } else {
     if (distance_stereo > tinder_range) {
-      avoid_x_command += max_vel_command;
+     // avoid_x_command += max_vel_command;
+
     }
   }
 

@@ -147,7 +147,7 @@ bool collisioncone_findnewdir_bool( bool *cc, float *psi_des)
 		if (!cc[i]){
 			*psi_des = (i+(int)p)*PSISEARCH;
 			*psi_des = M_PI / 180.0 * *psi_des; // convert to radians
-			wrapTo2Pi(psi_des);
+			wrapToPi(psi_des);
 			break;
 		}
 	}

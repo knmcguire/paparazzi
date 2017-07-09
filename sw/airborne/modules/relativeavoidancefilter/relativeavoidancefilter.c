@@ -266,6 +266,8 @@ void relativeavoidancefilter_init(void)
 		// fmat_make_zeroes( vy_est[i], 1, MAF_SIZE_POS );
 	}
 
+	init_angle = stateGetNedToBodyEulers_f()->psi;
+
 	// Subscribe to the ABI RSSI messages
 	AbiBindMsgRSSI(ABI_BROADCAST, &rssi_ev, bluetoothmsg_cb);
 	AbiBindMsgGPS(ABI_BROADCAST, &gps_ev, gps_cb);
@@ -324,7 +326,7 @@ void relativeavoidancefilter_periodic(void)
 	// change this if statement to if (trigger from camera) !!
 	if ( stereo_obst_range < 1.5 )  {
 		float xobst, yobst;
-		polar2cart(stereo_obst_range, stereo_obst_bearing+stateGetNedToBodyEulers_f()->psi+M_PI, &xobst, &yobst);
+		polar2cart(stereo_obst_range, stereo_obst_bearing+stateGetNedToBodyEulers_f()->psi, &xobst, &yobst);
 		// BodyToNED(xobst, yobst, stateGetNedToBodyEulers_f()->psi, &wallx, &wally); // Body to ENU
 		collisioncone_update_bool(cc,xobst, yobst, 2.0); // this is with respect to the earth frammmeee!
 	}
@@ -358,10 +360,12 @@ void relativeavoidancefilter_periodic(void)
 
 	}
 
-	// array_print_bool(36,cc);
-	EKF_desired_angle= stateGetNedToBodyEulers_f()->psi + M_PI;
+	 array_print_bool(36,cc);
+	//printf("init heading %f\n",init_heading);
+	EKF_desired_angle= stateGetNedToBodyEulers_f()->psi;
+    wrapTo2Pi(&EKF_desired_angle);
 	EKF_turn_trigger = collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
-
+    printf("EKF_desired_angle %f\n", EKF_desired_angle);
 	//if(EKF_turn_trigger)
 	AbiSendMsgAVOIDANCE_TURN_ANGLE(ABI_BROADCAST, EKF_desired_angle, EKF_turn_trigger);
 

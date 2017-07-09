@@ -319,7 +319,11 @@
       <field name="power"   type="float" unit="W"/>
     </message>
 
-    <!-- 38 is free -->
+    <message name="FORCEFIELD_VELOCITY" id="38">
+      <field name="vel_body_x_FF"      type="float" unit="m/s"/>
+      <field name="vel_body_y_FF"   type="float" unit="m/s"/>
+      <field name="vel_body_z_FF"   type="float" unit="m/s"/>
+    </message>
     <!-- 39 is free -->
     <!-- 40 is free -->
 

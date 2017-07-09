@@ -140,6 +140,7 @@
 
     <define name="USE_GPS_ALT" value="TRUE"/>
     <define name="USE_GPS_ALT_SPEED" value="TRUE"/>
+    <define name="INS_GPS_ID" value="ABI_DISABLE"/>
     <!--define name="USE_ONLY_GPS_ALT" value="TRUE"/-->
   </section>
 
@@ -228,13 +229,14 @@
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
     <!-- Good weather -->
-    <define name="MAX_BANK" value="20" unit="deg"/>
+    <define name="MAX_BANK" value="15" unit="deg"/>
     <!-- Bad weather -->
     <!-- define name="MAX_BANK" value="32" unit="deg"/ -->
-    <define name="PGAIN" value="160"/>
-    <define name="DGAIN" value="200"/>
-    <define name="IGAIN" value="30"/>
+    <define name="PGAIN" value="80"/>
+    <define name="DGAIN" value="290"/>
+    <define name="IGAIN" value="0"/>
     <define name="USE_SPEED_REF" value = "TRUE"/>
+ <define name="REF_MAX_SPEED" value="0.5"/>
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">
