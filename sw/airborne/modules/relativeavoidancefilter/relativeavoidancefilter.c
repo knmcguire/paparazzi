@@ -266,7 +266,6 @@ void relativeavoidancefilter_init(void)
 		// fmat_make_zeroes( vy_est[i], 1, MAF_SIZE_POS );
 	}
 
-	init_angle = stateGetNedToBodyEulers_f()->psi;
 
 	// Subscribe to the ABI RSSI messages
 	AbiBindMsgRSSI(ABI_BROADCAST, &rssi_ev, bluetoothmsg_cb);
@@ -360,12 +359,11 @@ void relativeavoidancefilter_periodic(void)
 
 	}
 
-	 array_print_bool(36,cc);
+	// array_print_bool(36,cc);
 	//printf("init heading %f\n",init_heading);
 	EKF_desired_angle= stateGetNedToBodyEulers_f()->psi;
     wrapTo2Pi(&EKF_desired_angle);
 	EKF_turn_trigger = collisioncone_findnewdir_bool(cc, &EKF_desired_angle);
-    printf("EKF_desired_angle %f\n", EKF_desired_angle);
 	//if(EKF_turn_trigger)
 	AbiSendMsgAVOIDANCE_TURN_ANGLE(ABI_BROADCAST, EKF_desired_angle, EKF_turn_trigger);
 

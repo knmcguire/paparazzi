@@ -100,8 +100,8 @@ struct gazebostereocam_t{
 static struct gazebostereocam_t gazebo_stereocam;
 
 //parameters for edgeflow
-struct edgeflow_parameters_t edgeflow_parameters;
-struct edgeflow_results_t edgeflow_results;
+//struct edgeflow_parameters_t edgeflow_parameters;
+//struct edgeflow_t edgeflow_results;
 #define FOVX 1.001819   // 57.4deg = 1.001819 rad
 #define FOVY 0.776672   // 44.5deg = 0.776672 rad
 
@@ -598,7 +598,9 @@ static void init_gazebo_video(void)
 
   gazebo_stereocam.last_measurement_time =   gazebo_stereocam.stereocam->LastMeasurementTime();
 
-  edgeflow_init(&edgeflow_parameters, &edgeflow_results, 128, 96, 0);
+ // edgeflow_init(&edgeflow_parameters, &edgeflow_results, 128, 96, 0);
+   edgeflow_init(128, 96, 0);
+
 cout<<"edgeflow Init"<<endl;
 
 
@@ -669,20 +671,31 @@ static void gazebo_read_video(void)
   int16_t *stereocam_data;
   uint8_t *edgeflowArray;
 
-  edgeflow_parameters.fovx = (int32_t)(FOVX * 100);
-  edgeflow_parameters.fovy = (int32_t)(FOVY * 100);
+  edgeflow_params.fovx = (int32_t)(FOVX * 100);
+  edgeflow_params.fovy = (int32_t)(FOVY * 100);
 
   //calculate edgeflow
-  edgeflow_total(edgeflowArray, stereocam_data, 0, (uint8_t *)(img.buf),
-                 &edgeflow_parameters, &edgeflow_results);
+/*  edgeflow_total( (uint8_t *)(img.buf),
+                 &edgeflow_parameters, &edgeflow_results);*/
+  gazebo::common::Time ts = gazebo_stereocam.last_measurement_time;
+
+  uint32_t pprz_ts = ts.Double() * 1e6;
+
+  edgeflow_total((uint8_t *)(img.buf), pprz_ts,
+		  stereocam_data, 0);
+
 
   image_free(&img);
   gazebo_stereocam.last_measurement_time = stereocam->LastMeasurementTime();
 
- float  vel_body_x_processed = 2*(float)edgeflow_results.vel_z_pixelwise / 100;
+  float  vel_body_x_processed = -(float)edgeflow.vel.z/ 100;
+   float  vel_body_y_processed = (float)edgeflow.vel.x / 100;
+   float  vel_body_z_processed = (float)edgeflow.vel.y / 100;
+
+/* float  vel_body_x_processed = (float)edgeflow_results.vel_z_pixelwise / 100;
  float  vel_body_y_processed = (float)edgeflow_results.vel_x_pixelwise / 100;
- float  vel_body_z_processed = (float)edgeflow_results.vel_y_global / 100;
- float distance_closest_obstacle = (float)edgeflow_results.distance_closest_obstacle/100;
+ float  vel_body_z_processed = (float)edgeflow_results.vel_y_global / 100;*/
+ float distance_closest_obstacle = (float)edgeflow.distance_closest_obstacle / 100;
 
 
    // Use a slight median filter to filter out the large outliers before sending it to state
@@ -690,17 +703,17 @@ static void gazebo_read_video(void)
    vel_body_x_processed = (float)update_median_filter(&medianfilter_x, (int32_t)(vel_body_x_processed * 100)) / 100;
    vel_body_y_processed = (float)update_median_filter(&medianfilter_y, (int32_t)(vel_body_y_processed * 100)) / 100;
    vel_body_z_processed = (float)update_median_filter(&medianfilter_z, (int32_t)(vel_body_y_processed * 100)) / 100;
-   distance_closest_obstacle = (float)update_median_filter(&medianfilter_agl, (int32_t)(distance_closest_obstacle * 10)) / 10;
+   distance_closest_obstacle = (float)update_median_filter(&medianfilter_agl, (int32_t)(distance_closest_obstacle * 100)) / 100;
 
 
- int16_t flow_x =  edgeflow_results.edge_flow.flow_x;
- int16_t flow_y =  edgeflow_results.edge_flow.flow_y;
+/* int16_t flow_x =  edgeflow_results.edge_flow.flow_x;
+ int16_t flow_y =  edgeflow_results.edge_flow.flow_y;*/
 
  uint16_t dummy_uint16 = 0;
  int16_t dummy_int16 = 0;
  float dummy_float = 0;
 
-  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &dummy_float, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y,
+  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &dummy_float, &dummy_uint16, &dummy_uint16, &dummy_int16, &dummy_int16,
                                &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
                                &dummy_float, &dummy_float, &distance_closest_obstacle);
   uint32_t now_ts = get_sys_time_usec();
@@ -712,7 +725,8 @@ static void gazebo_read_video(void)
                               0.3f
                              );
 
-  AbiSendMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, 0,distance_closest_obstacle);
+//  float heading_obstacle = (64.0f-(float)(edgeflow.pixel_location_closest_obstacle)) * 57.8f / 128.0f;
+  AbiSendMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, 0, distance_closest_obstacle);
 
 		}
 
