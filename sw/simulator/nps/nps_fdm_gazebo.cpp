@@ -725,8 +725,10 @@ static void gazebo_read_video(void)
                               0.3f
                              );
 
-//  float heading_obstacle = (64.0f-(float)(edgeflow.pixel_location_closest_obstacle)) * 57.8f / 128.0f;
-  AbiSendMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, 0, distance_closest_obstacle);
+ float heading_obstacle = ((64.0f - (float)edgeflow.pixel_location_closest_obstacle )) * 57.8f / 128.0f;
+
+
+ AbiSendMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, heading_obstacle, distance_closest_obstacle);
 
 		}
 

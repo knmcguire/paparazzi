@@ -67,25 +67,25 @@ void stereocam_to_state(void)
   // 0 = stereoboard's #define SEND_EDGEFLOW
 #if STEREOCAM2STATE_RECEIVED_DATA_TYPE == 0
   // opticflow and divergence (unscaled with depth)
-  int16_t div_x = (int16_t)stereocam_data.data[0] << 8;
+/*  int16_t div_x = (int16_t)stereocam_data.data[0] << 8;
   div_x |= (int16_t)stereocam_data.data[1];
   int16_t flow_x = (int16_t)stereocam_data.data[2] << 8;
   flow_x |= (int16_t)stereocam_data.data[3];
   int16_t div_y = (int16_t)stereocam_data.data[4] << 8;
   div_y |= (int16_t)stereocam_data.data[5];
   int16_t flow_y = (int16_t)stereocam_data.data[6] << 8;
-  flow_y |= (int16_t)stereocam_data.data[7];
+  flow_y |= (int16_t)stereocam_data.data[7];*/
 
-  uint8_t agl = stereocam_data.data[8]; // in cm //TODO: use agl for in a guided obstacle avoidance.
-  uint8_t obst_px = stereocam_data.data[9]; //TODO: this needs to be changed
+  uint8_t agl = stereocam_data.data[0]; // in cm //TODO: use agl for in a guided obstacle avoidance.
+  uint8_t obst_px = stereocam_data.data[1]; //TODO: this needs to be changed
 
   // velocity global
-  int16_t vel_x_global_int = (int16_t)stereocam_data.data[10] << 8;
-  vel_x_global_int |= (int16_t)stereocam_data.data[11];
-  int16_t vel_y_global_int = (int16_t)stereocam_data.data[12] << 8;
-  vel_y_global_int |= (int16_t)stereocam_data.data[13];
-  int16_t vel_z_global_int = (int16_t)stereocam_data.data[14] << 8;
-  vel_z_global_int |= (int16_t)stereocam_data.data[15];
+  int16_t vel_x_global_int = (int16_t)stereocam_data.data[2] << 8;
+  vel_x_global_int |= (int16_t)stereocam_data.data[3];
+  int16_t vel_y_global_int = (int16_t)stereocam_data.data[4] << 8;
+  vel_y_global_int |= (int16_t)stereocam_data.data[5];
+  int16_t vel_z_global_int = (int16_t)stereocam_data.data[6] << 8;
+  vel_z_global_int |= (int16_t)stereocam_data.data[7];
 
   // Velocity Pixelwise
   int16_t vel_x_pixelwise_int = (int16_t)stereocam_data.data[16] << 8;
@@ -96,9 +96,9 @@ void stereocam_to_state(void)
 // Select what type of velocity estimate fom edgeflow is wanted
 #if STEREOCAM2STATE_EDGEFLOW_PIXELWISE == TRUE
   struct FloatVect3 camera_frame_vel;
-  camera_frame_vel.x = (float)vel_x_pixelwise_int / RES;
+  camera_frame_vel.x = (float)vel_x_global_int / RES;
   camera_frame_vel.y = (float)vel_y_global_int / RES;
-  camera_frame_vel.z = (float)vel_z_pixelwise_int / RES;
+  camera_frame_vel.z = (float)vel_z_global_int / RES;
 
 #else
   struct FloatVect3 camera_frame_vel;
@@ -124,8 +124,8 @@ void stereocam_to_state(void)
   float filtered_agl = 0;
 
   quad_body_vel.x = (float)vel_z_pixelwise_int / RES;
-  quad_body_vel.y = -(float)vel_x_pixelwise_int / RES;
-  quad_body_vel.z = (float)vel_y_global_int / RES;
+  quad_body_vel.y = (float)vel_x_pixelwise_int / RES;
+  quad_body_vel.z = -(float)vel_y_global_int / RES;
 
   if (fabs(quad_body_vel.x) > 1) {
     quad_body_vel.x = 0;
@@ -143,6 +143,8 @@ void stereocam_to_state(void)
 
     distance_stereo = filtered_agl;
     float heading_obstacle = (64.0f-(float)(obst_px)) * 57.8f / 128.0f;
+
+
     AbiSendMsgSTEREOCAM_OBSTACLE(STEREOCAM2STATE_SENDER_ID,heading_obstacle,filtered_agl);
 
   //Send velocities to state
