@@ -97,7 +97,7 @@ static void forcefield_velocity_cb(uint8_t UNUSED(sender_id), float vel_body_x_F
   vel_body_FF.y = vel_body_y_FF;
   vel_body_FF.z = vel_body_z_FF;
 
-  DOWNLINK_SEND_FORCEFIELD_VELOCITY(DefaultChannel, DefaultDevice,&vel_body_x_FF,&vel_body_y_FF,&vel_body_z_FF);
+ // DOWNLINK_SEND_FORCEFIELD_VELOCITY(DefaultChannel, DefaultDevice,&vel_body_x_FF,&vel_body_y_FF,&vel_body_z_FF);
 
 }
 

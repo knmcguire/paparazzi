@@ -121,11 +121,11 @@ void stereocam_to_state(void)
   float vel_body_x_processed =  0; // = quad_body_vel.x;
   float vel_body_y_processed = 0;// quad_body_vel.y;
   float vel_body_z_processed = 0;//quad_body_vel.z;
-  float filtered_agl = 0;
+  float filtered_agl = (float)agl /10;;
 
-  quad_body_vel.x = (float)vel_z_pixelwise_int / RES;
-  quad_body_vel.y = (float)vel_x_pixelwise_int / RES;
-  quad_body_vel.z = -(float)vel_y_global_int / RES;
+  quad_body_vel.x = -(float)vel_z_global_int / RES;
+  quad_body_vel.y = (float)vel_x_global_int / RES;
+  quad_body_vel.z = (float)vel_y_global_int / RES;
 
   if (fabs(quad_body_vel.x) > 1) {
     quad_body_vel.x = 0;
@@ -137,8 +137,14 @@ void stereocam_to_state(void)
     vel_body_x_processed = (float)update_median_filter(&medianfilter_x, (int32_t)(quad_body_vel.x * 100)) / 100;
     vel_body_y_processed = (float)update_median_filter(&medianfilter_y, (int32_t)(quad_body_vel.y * 100)) / 100;
     vel_body_z_processed = (float)update_median_filter(&medianfilter_z, (int32_t)(quad_body_vel.z * 100)) / 100;
-    filtered_agl = (float)update_median_filter(&medianfilter_agl, (int32_t)(agl * 10)) / 100;
+    //filtered_agl = (float)update_median_filter(&medianfilter_agl, (int32_t)(agl * 10)) / 100;
 
+  }
+  else
+  {
+	  vel_body_x_processed= quad_body_vel.x;
+	  vel_body_y_processed= quad_body_vel.y;
+	  vel_body_z_processed= quad_body_vel.z;
   }
 
     distance_stereo = filtered_agl;
@@ -160,9 +166,9 @@ void stereocam_to_state(void)
   int16_t dummy_int16 = 0;
   float dummy_float = 0;
 
-/*  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &dummy_uint16, &dummy_uint16, &dummy_uint16, &flow_x, &flow_y,
+  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &dummy_uint16, &dummy_uint16, &dummy_uint16, &dummy_int16, &dummy_int16,
                                &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
-                               &dummy_float, &dummy_float, &dummy_float);*/
+                               &dummy_float, &heading_obstacle, &distance_stereo);
 
 #endif
 

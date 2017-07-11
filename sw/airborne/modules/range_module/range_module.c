@@ -58,16 +58,16 @@ static void range_sensors_cb(uint8_t UNUSED(sender_id),
      uint16_t tel_buf[4] = {0,range_right, 0 , range_left};
       uint8_t length = 4;
 
-  DOWNLINK_SEND_RANGE_FINDERS(DefaultChannel, DefaultDevice, length, tel_buf);
+//  DOWNLINK_SEND_RANGE_FINDERS(DefaultChannel, DefaultDevice, length, tel_buf);
 
 
 }
 static abi_event stereocam_obstacle_ev;
 static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
-float distance_stereo;
+float stereo_range;
 void stereocam_obstacle_cb(uint8_t UNUSED(sender_id), float UNUSED(heading), float range)
 {
-  distance_stereo = range;
+	stereo_range = range;
  // DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
 }
 
@@ -95,7 +95,7 @@ void range_run(void)
   range_sensor_force_field(&vel_body_x, &vel_body_y, &vel_body_z,
                            avoid_inner_border, avoid_outer_border, tinder_range, min_vel_command, max_vel_command);
 
-  stereo_force_field(&vel_body_x, distance_stereo,   (float)avoid_inner_border / 1000, (float)avoid_outer_border/1000, (float)tinder_range/1000, min_vel_command, max_vel_command);
+  stereo_force_field(&vel_body_x, stereo_range,   (float)avoid_inner_border / 1000, (float)avoid_outer_border/1000, (float)tinder_range/1000, min_vel_command, max_vel_command);
 
 
   AbiSendMsgFORCEFIELD_VELOCITY(RANGE_MODULE_SENDER_ID, vel_body_x, vel_body_y, vel_body_z);
@@ -169,7 +169,7 @@ void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_b
 
 }
 
-void stereo_force_field(float *vel_body_x, float distance_stereo, float avoid_inner_border, float avoid_outer_border,
+void stereo_force_field(float *vel_body_x, float stereo_range, float avoid_inner_border, float avoid_outer_border,
                         float tinder_range, float min_vel_command, float max_vel_command)
 {
   static const int16_t max_sensor_range = 2.0f;
@@ -180,19 +180,19 @@ void stereo_force_field(float *vel_body_x, float distance_stereo, float avoid_in
   float avoid_x_command = *vel_body_x;
 
   // Balance avoidance command for front direction (sideways)
-  if (distance_stereo > max_sensor_range) {
+  if (stereo_range > max_sensor_range) {
     //do nothing
-  } else if (distance_stereo < avoid_inner_border) {
+  } else if (stereo_range < avoid_inner_border) {
     avoid_x_command -= max_vel_command;
 
-  } else if (distance_stereo < avoid_outer_border) {
+  } else if (stereo_range < avoid_outer_border) {
     // Linear
 
     avoid_x_command -= (max_vel_command - min_vel_command) *
-                       (avoid_outer_border - distance_stereo)
+                       (avoid_outer_border - stereo_range)
                        / difference_inner_outer;
   } else {
-    if (distance_stereo > tinder_range) {
+    if (stereo_range > tinder_range) {
      // avoid_x_command += max_vel_command;
 
     }
