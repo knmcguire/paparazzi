@@ -31,9 +31,9 @@
   </sectors>
   
   <exceptions>
-    <exception cond="datalink_time > 3" deroute="landed"/>
+    <!--exception cond="datalink_time > 3" deroute="landed"/-->
     <!--exception cond="radio_control.status == RC_REALLY_LOST" deroute="kill"/-->
-    <exception cond="autopilot.mode == AP_MODE_ATTITUDE_DIRECT" deroute="CL Start"/>
+    <!--exception cond="autopilot.mode == AP_MODE_ATTITUDE_DIRECT" deroute="CL Start"/-->
     <!--exception cond="stateGetPositionEnu_f()->z > 8." deroute="Land here"/-->
   </exceptions>
 
@@ -66,7 +66,6 @@
 
 		<block name="CL Hover">
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
-        <call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/>
 		    <call fun="avoid_wall_and_sides(0.01)"/>
         <exception cond="stage_time>2" deroute="CL Go Forward with forcefield"/>
 		</block>

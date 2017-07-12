@@ -688,7 +688,7 @@ static void gazebo_read_video(void)
   image_free(&img);
   gazebo_stereocam.last_measurement_time = stereocam->LastMeasurementTime();
 
-  float  vel_body_x_processed = -(float)edgeflow.vel.z/ 100;
+  float  vel_body_x_processed = (float)edgeflow.vel.z/ 100;
    float  vel_body_y_processed = (float)edgeflow.vel.x / 100;
    float  vel_body_z_processed = (float)edgeflow.vel.y / 100;
 
