@@ -45,6 +45,10 @@
 #include "modules/stereocam/stereocam2state/stereocam2state.h"
 */
 
+float distance_thres_logic;
+int32_t turn_counter;
+float hover_wait_sec;
+
 // start and stop modules
 #include "generated/modules.h"
 
@@ -65,6 +69,7 @@ float nom_flight_alt; // nominal flight altitude
 #include "subsystems/abi.h"
 
 float distance_stereo;
+
 
 //abi for stereocam
 static abi_event stereocam_obstacle_ev;
@@ -115,6 +120,12 @@ static void agl_cb(uint8_t UNUSED(sender_id), float agl)
 
 void flight_plan_guided_init(void)
 {
+
+   distance_stereo = 2.0f;
+   distance_thres_logic =  1.2f;
+   turn_counter = 2;
+   hover_wait_sec = 1.5f;
+
   nom_flight_alt = NOM_FLIGHT_ALT;
   AbiBindMsgAGL(1, &agl_ev, agl_cb); // ABI to the altitude above ground level
   AbiBindMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, &stereocam_obstacle_ev, stereocam_obstacle_cb);

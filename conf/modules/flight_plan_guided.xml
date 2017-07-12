@@ -9,6 +9,13 @@
     <dl_settings>
       <dl_settings NAME="guided_flight_plan">
         <dl_setting var="nom_flight_alt" min="0.2" step="0.1" max="3." module="flight_plan_guided/flight_plan_guided" shortname="nom_flight_alt" param="NOM_FLIGHT_ALT"/>
+        <dl_setting var="distance_thres_logic" min="0.5" step="0.1" max="3." module="flight_plan_guided/flight_plan_guided" shortname="distance_thres_logic" param="distance_thres_logic"/>
+        <dl_setting var="turn_counter" min="1" step="1" max="30." module="flight_plan_guided/flight_plan_guided" shortname="turn_counter" param="turn_counter"/>
+        <dl_setting var="hover_wait_sec" min="0.0" step="0.1" max="5." module="flight_plan_guided/flight_plan_guided" shortname="hover_wait_sec" param="hover_wait_sec"/>
+        <dl_setting var="inner_border_FF" min="0.5" step="0.1" max="3." module="range_module/range_module" shortname="inner_border" param="inner_border_FF"/>
+        <dl_setting var="outer_border_FF" min="0.5" step="0.1" max="3." module="range_module/range_module" shortname="outer_border" param="outer_border_FF"/>
+        <dl_setting var="min_vel_command" min="0.0" step="0.1" max="1." module="range_module/range_module" shortname="min_vel_command" param="min_vel_command"/>
+        <dl_setting var="max_vel_command" min="0.1" step="0.1" max="5." module="range_module/range_module" shortname="max_vel_command" param="max_vel_command"/>
       </dl_settings>
     </dl_settings>
   </settings>

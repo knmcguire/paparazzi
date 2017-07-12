@@ -38,6 +38,12 @@ struct range_finders_ {
 };
 
 
+extern float inner_border_FF;
+extern float outer_border_FF;
+extern float min_vel_command;
+extern float max_vel_command;
+
+
 extern void range_init(void);
 extern void range_run(void);
 

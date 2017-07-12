@@ -28,7 +28,10 @@
 #include "subsystems/abi.h"
 #include "subsystems/datalink/telemetry.h"
 
-
+float inner_border_FF;
+float outer_border_FF;
+float min_vel_command;
+float max_vel_command;
 
 //abi for range sensors
 #ifndef RANGE_MODULE_SENDER_ID
@@ -74,6 +77,10 @@ void stereocam_obstacle_cb(uint8_t UNUSED(sender_id), float UNUSED(heading), flo
 
 void range_init(void)
 {
+    inner_border_FF = 0.8f;
+    outer_border_FF = 1.2f;
+    min_vel_command = 0.0f;
+    max_vel_command = 0.3f;
   AbiBindMsgRANGE_SENSORS(RANGE_MODULE_SENDER_ID, &range_sensors_ev, range_sensors_cb);
   AbiBindMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, &stereocam_obstacle_ev, stereocam_obstacle_cb);
 
@@ -86,17 +93,14 @@ void range_run(void)
   float vel_body_y  = 0;
   float vel_body_z  = 0;
 
-  int16_t avoid_inner_border = 800;
-  int16_t avoid_outer_border = 1200;
+/*  int16_t avoid_inner_border = 800;
+  int16_t avoid_outer_border = 1200;*/
   int16_t tinder_range = 2000;
-  float min_vel_command = 0;
-  float max_vel_command = 0.3;
 
   range_sensor_force_field(&vel_body_x, &vel_body_y, &vel_body_z,
-                           avoid_inner_border, avoid_outer_border, tinder_range, min_vel_command, max_vel_command);
+		  (int16_t)(inner_border_FF *1000), (int16_t)(outer_border_FF *1000), tinder_range, min_vel_command, max_vel_command);
 
-  stereo_force_field(&vel_body_x, stereo_range,   (float)avoid_inner_border / 1000, (float)avoid_outer_border/1000, (float)tinder_range/1000, min_vel_command, max_vel_command);
-
+  stereo_force_field(&vel_body_x, stereo_range,   inner_border_FF, outer_border_FF, (float)tinder_range/1000, min_vel_command, max_vel_command);
 
   AbiSendMsgFORCEFIELD_VELOCITY(RANGE_MODULE_SENDER_ID, vel_body_x, vel_body_y, vel_body_z);
 }
