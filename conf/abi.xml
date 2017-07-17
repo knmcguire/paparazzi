@@ -110,6 +110,7 @@
     <message name="STEREOCAM_OBSTACLE" id="19">
        <field name="heading"  type="float" unit="deg"/>
        <field name="range"  type="float" unit="m"/>
+       <field name="quality" type="float"/>
     </message>
 
     <message name="FORCEFIELD_VELOCITY" id="20">

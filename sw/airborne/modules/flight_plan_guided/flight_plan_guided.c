@@ -75,11 +75,13 @@ float distance_stereo;
 
 //abi for stereocam
 static abi_event stereocam_obstacle_ev;
-static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
+static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range,float quality);
 float distance_stereo;
-void stereocam_obstacle_cb(uint8_t UNUSED(sender_id), float UNUSED(heading), float range)
+float quality;
+void stereocam_obstacle_cb(uint8_t UNUSED(sender_id), float UNUSED(heading), float range, float flow_quality)
 {
   distance_stereo = range;
+  quality = flow_quality;
  // DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
 }
 
@@ -127,7 +129,7 @@ void flight_plan_guided_init(void)
    distance_thres_logic =  1.2f;
    turn_counter = 2;
    hover_wait_sec = 1.5f;
-   forward_speed = 1.0f;
+   forward_speed = 0.1f;
 
   nom_flight_alt = NOM_FLIGHT_ALT;
   AbiBindMsgAGL(1, &agl_ev, agl_cb); // ABI to the altitude above ground level
@@ -285,6 +287,11 @@ bool avoid_wall_and_sides(float vel_body_x_command)
   if (autopilot.mode != AP_MODE_GUIDED) { return true; }
 
   if (autopilot.mode == AP_MODE_GUIDED) {
+
+
+	  vel_body_x_command = vel_body_x_command*quality/100.0f;
+	  if( quality > 100)
+		  vel_body_x_command = 0;
 
     vel_body_x_command += vel_body_FF.x;
     float vel_body_y_command = vel_body_FF.y;

@@ -87,12 +87,20 @@
     nps.LDFLAGS += $(shell pkg-config gazebo --libs)
   	</raw>
     <file name="nps_fdm_gazebo.cpp" dir="nps"/>
+<!--new code-->
     <file name="edgeflow.c" dir="/home/knmcguire/stereoboard/stereoboard/"/>
     <include name="/home/knmcguire/stereoboard/common/"/>
     <include name="/home/knmcguire/stereoboard/stereoboard/"/>
     <file name="filter.c" dir="/home/knmcguire/stereoboard/stereoboard/math/"/>
     <file name="stats.c" dir="/home/knmcguire/stereoboard/stereoboard/math/"/>
-    <flag name="DEFINES" value="-DCOMPILE_ON_LINUX"/>
+<!-- Old code-->
+    <!--define name= "NPS_OLD_STEREOBOARD_CODE" value="1"/>
+    <file name="edgeflow.c" dir="/home/knmcguire/stereoboard_old_repositories/stereoboard_old_2/stereoboard/"/>
+    <include name="/home/knmcguire/stereoboard_old_repositories/stereoboard_old_2/common/"/-->
+     
+    <!--file name="edgeflow.c" dir="/home/knmcguire/stereoboard/stereoboard/"/>
+    <include name="/home/knmcguire/stereoboard/common/"/-->
+
     <include name="modules/computer_vision"/>
     <file name="image.c" dir="modules/computer_vision/lib/vision"/>
     <file name="jpeg.c" dir="modules/computer_vision/lib/encoding"/>

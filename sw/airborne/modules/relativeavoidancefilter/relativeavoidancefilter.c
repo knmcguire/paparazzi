@@ -69,11 +69,11 @@ float trackedVx, trackedVy;
 
 static abi_event stereocam_obstacle_ev;
 static void stereocam_obstacle_cb(uint8_t sender_id __attribute__((unused)),
-	float heading, float range);
+	float heading, float range,float quality);
 static float stereo_obst_range;
 static float stereo_obst_bearing;
 void stereocam_obstacle_cb(uint8_t sender_id __attribute__((unused)), 
-	float heading, float range)
+	float heading, float range, float quality)
 {
 	stereo_obst_range   = range;
 	stereo_obst_bearing = heading * M_PI/180;
