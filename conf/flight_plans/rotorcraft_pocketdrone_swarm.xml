@@ -31,9 +31,9 @@
   </sectors>
   
   <exceptions>
-    <!--exception cond="datalink_time > 3" deroute="landed"/-->
-    <!--exception cond="radio_control.status == RC_REALLY_LOST" deroute="kill"/-->
-    <!--exception cond="autopilot.mode == AP_MODE_ATTITUDE_DIRECT" deroute="CL Start"/-->
+    <exception cond="datalink_time > 3" deroute="landed"/>
+    <exception cond="radio_control.status == RC_REALLY_LOST" deroute="kill"/>
+    <exception cond="autopilot.mode == AP_MODE_ATTITUDE_DIRECT" deroute="CL Start"/>
     <!--exception cond="stateGetPositionEnu_f()->z > 8." deroute="Land here"/-->
   </exceptions>
 
@@ -57,7 +57,7 @@
 		<block name="CL Start">
         <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
         <call fun="wait_for_mode(GUIDANCE_H_MODE_GUIDED)"/>
-        <!--call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/-->
+        <call fun="change_v_mode(GUIDANCE_V_MODE_RC_DIRECT)"/>
 		</block>
 		<!--block name="CL forcefield"> 
         <call fun="avoid_wall_and_sides(-0.05)"/>
@@ -72,7 +72,7 @@
 
 <!--go forward, with a forcefield to prevent collissons -->
 		<block name="CL Go Forward with forcefield"> 
-        <call fun="avoid_wall_and_sides(0.1)"/>
+        <call fun="avoid_wall_and_sides(forward_speed)"/>
         <exception cond="distance_thres_logic>distance_stereo" deroute="CL Hover with forcefield"/> <!-- If obstacle is within 1 meter, go to hover -->
     </block>
 

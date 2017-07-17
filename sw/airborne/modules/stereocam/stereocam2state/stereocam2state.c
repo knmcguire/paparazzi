@@ -123,7 +123,7 @@ void stereocam_to_state(void)
   float vel_body_z_processed = 0;//quad_body_vel.z;
   float filtered_agl = (float)agl /10;;
 
-  quad_body_vel.x = -(float)vel_z_global_int / RES;
+  quad_body_vel.x = (float)vel_z_global_int / RES;
   quad_body_vel.y = (float)vel_x_global_int / RES;
   quad_body_vel.z = (float)vel_y_global_int / RES;
 
@@ -166,9 +166,9 @@ void stereocam_to_state(void)
   int16_t dummy_int16 = 0;
   float dummy_float = 0;
 
-/*  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &dummy_uint16, &dummy_uint16, &dummy_uint16, &dummy_int16, &dummy_int16,
+  DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &dummy_uint16, &dummy_uint16, &dummy_uint16, &dummy_int16, &dummy_int16,
                                &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
-                               &dummy_float, &heading_obstacle, &distance_stereo);*/
+                               &dummy_float, &heading_obstacle, &distance_stereo);
 
 #endif
 

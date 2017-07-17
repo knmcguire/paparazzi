@@ -48,6 +48,8 @@
 float distance_thres_logic;
 int32_t turn_counter;
 float hover_wait_sec;
+float forward_speed;
+
 
 // start and stop modules
 #include "generated/modules.h"
@@ -125,6 +127,7 @@ void flight_plan_guided_init(void)
    distance_thres_logic =  1.2f;
    turn_counter = 2;
    hover_wait_sec = 1.5f;
+   forward_speed = 1.0f;
 
   nom_flight_alt = NOM_FLIGHT_ALT;
   AbiBindMsgAGL(1, &agl_ev, agl_cb); // ABI to the altitude above ground level

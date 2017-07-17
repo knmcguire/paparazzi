@@ -47,6 +47,7 @@ extern float distance_stereo;
 extern float distance_thres_logic;
 extern int32_t turn_counter;
 extern float hover_wait_sec;
+extern float forward_speed;
 
 // Module functions
 void flight_plan_guided_init(void);

@@ -158,10 +158,10 @@
 
   <section name="STABILIZATION_ATTITUDE_INDI" prefix="STABILIZATION_INDI_">
     <!-- control effectiveness -->
-    <define name="G1_P" value="0.038174"/> 
-    <define name="G1_Q" value="0.063857"/>
-    <define name="G1_R" value="0.002845"/>
-    <define name="G2_R" value="0.128776"/>
+    <define name="G1_P" value="0.067204"/> 
+    <define name="G1_Q" value="0.066647"/>
+    <define name="G1_R" value="0.003575"/>
+    <define name="G2_R" value="0.098106"/>
 
     <!-- reference acceleration for attitude control -->
     <define name="REF_ERR_P" value="170.0"/>
@@ -323,6 +323,7 @@
     <module name="stabilization" type="rate_indi"/>
     <module name="ahrs" type="int_cmpl_quat"/>
     <module name="ins" type="extended"/>
+    <configure name="USE_MAGNETOMETER" value="FALSE"/>
     <module name="air_data">
       <define name="AIR_DATA_CALC_AMSL_BARO" value="TRUE"/>
     </module>
