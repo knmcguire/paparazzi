@@ -210,8 +210,8 @@
   </section>
 
  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-   <define name="PGAIN" value="80"/>
-   <define name="DGAIN" value="290"/>
+   <define name="PGAIN" value="40"/>
+   <define name="DGAIN" value="145"/>
    <define name="IGAIN" value="0"/>
    <define name="MAX_BANK" value="RadOfDeg(15)"/>
    <define name="REF_MAX_SPEED" value="0.5"/>

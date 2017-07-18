@@ -126,8 +126,8 @@ void flight_plan_guided_init(void)
 {
 
    distance_stereo = 2.0f;
-   distance_thres_logic =  1.2f;
-   turn_counter = 2;
+   distance_thres_logic =  1.4f;
+   turn_counter = 3;
    hover_wait_sec = 1.5f;
    forward_speed = 0.1f;
 
@@ -289,7 +289,7 @@ bool avoid_wall_and_sides(float vel_body_x_command)
   if (autopilot.mode == AP_MODE_GUIDED) {
 
       if (quality <= 100)
-	  vel_body_x_command = vel_body_x_command*quality/100.0f;
+	  vel_body_x_command = vel_body_x_command*quality/100.0f + 0.05;
 
 
     vel_body_x_command += vel_body_FF.x;

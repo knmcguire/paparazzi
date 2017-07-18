@@ -66,9 +66,9 @@ static void range_sensors_cb(uint8_t UNUSED(sender_id),
 
 }
 static abi_event stereocam_obstacle_ev;
-static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range);
+static void stereocam_obstacle_cb(uint8_t sender_id, float heading, float range,float flow_quality);
 float stereo_range;
-void stereocam_obstacle_cb(uint8_t UNUSED(sender_id), float UNUSED(heading), float range)
+void stereocam_obstacle_cb(uint8_t UNUSED(sender_id), float UNUSED(heading), float range, float UNUSED(flow_quality))
 {
 	stereo_range = range;
  // DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
@@ -77,10 +77,11 @@ void stereocam_obstacle_cb(uint8_t UNUSED(sender_id), float UNUSED(heading), flo
 
 void range_init(void)
 {
-    inner_border_FF = 0.8f;
-    outer_border_FF = 1.2f;
-    min_vel_command = 0.0f;
+    inner_border_FF = 1.0f;
+    outer_border_FF = 1.4f;
+    min_vel_command = 0.1f;
     max_vel_command = 0.3f;
+
   AbiBindMsgRANGE_SENSORS(RANGE_MODULE_SENDER_ID, &range_sensors_ev, range_sensors_cb);
   AbiBindMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, &stereocam_obstacle_ev, stereocam_obstacle_cb);
 
@@ -107,7 +108,7 @@ void range_run(void)
 
 
 void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_body_z, int16_t avoid_inner_border, int16_t avoid_outer_border,
-                              int16_t tinder_range, float min_vel_command, float max_vel_command)
+                              int16_t tinder_range, float min_vel_command_lc, float max_vel_command_lc)
 {
   static const int16_t max_sensor_range = 2000;
 
@@ -122,10 +123,10 @@ void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_b
   if (range_finders.right < 1 || range_finders.right > max_sensor_range) {
     //do nothing
   } else if (range_finders.right < avoid_inner_border) {
-    avoid_y_command -= max_vel_command;
+    avoid_y_command -= max_vel_command_lc;
   } else if (range_finders.right < avoid_outer_border) {
     // Linear
-    avoid_y_command -= (max_vel_command - min_vel_command) *
+    avoid_y_command -= (max_vel_command_lc - min_vel_command_lc) *
                        ((float)avoid_outer_border - (float)range_finders.right)
                        / (float)difference_inner_outer;
   } else {}
@@ -133,10 +134,10 @@ void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_b
   if (range_finders.left < 1 || range_finders.left > max_sensor_range) {
     //do nothing
   } else if (range_finders.left < avoid_inner_border) {
-    avoid_y_command += max_vel_command;
+    avoid_y_command += max_vel_command_lc;
   } else if (range_finders.left < avoid_outer_border) {
     // Linear
-    avoid_y_command += (max_vel_command - min_vel_command) *
+    avoid_y_command += (max_vel_command_lc - min_vel_command_lc) *
                        ((float)avoid_outer_border - (float)range_finders.left)
                        / (float)difference_inner_outer;
   } else {}
@@ -145,24 +146,24 @@ void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_b
   if (range_finders.front < 1 || range_finders.front > max_sensor_range) {
     //do nothing
   } else if (range_finders.front < avoid_inner_border) {
-    avoid_x_command -= max_vel_command;
+    avoid_x_command -= max_vel_command_lc;
   } else if (range_finders.front < avoid_outer_border) {
     // Linear
-    avoid_x_command -= (max_vel_command - min_vel_command) *
+    avoid_x_command -= (max_vel_command_lc - min_vel_command_lc) *
                        ((float)avoid_outer_border - (float)range_finders.front)
                        / (float)difference_inner_outer;
   } else if (range_finders.front > tinder_range) {
-    avoid_x_command += max_vel_command;
+    avoid_x_command += max_vel_command_lc;
   } else {}
 
 
   if (range_finders.back < 1 || range_finders.back > max_sensor_range) {
     //do nothing
   } else if (range_finders.back < avoid_inner_border) {
-    avoid_x_command += max_vel_command;
+    avoid_x_command += max_vel_command_lc;
   } else if (range_finders.back < avoid_outer_border) {
     // Linear
-    avoid_x_command += (max_vel_command - min_vel_command) *
+    avoid_x_command += (max_vel_command_lc - min_vel_command_lc) *
                        ((float)avoid_outer_border - (float)range_finders.back)
                        / (float)difference_inner_outer;
   } else {}
@@ -174,7 +175,7 @@ void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_b
 }
 
 void stereo_force_field(float *vel_body_x, float stereo_range, float avoid_inner_border, float avoid_outer_border,
-                        float tinder_range, float min_vel_command, float max_vel_command)
+                        float tinder_range, float min_vel_command_lc, float max_vel_command_lc)
 {
   static const int16_t max_sensor_range = 2.0f;
 
@@ -187,17 +188,17 @@ void stereo_force_field(float *vel_body_x, float stereo_range, float avoid_inner
   if (stereo_range > max_sensor_range) {
     //do nothing
   } else if (stereo_range < avoid_inner_border) {
-    avoid_x_command -= max_vel_command;
+    avoid_x_command -= max_vel_command_lc;
 
   } else if (stereo_range < avoid_outer_border) {
     // Linear
 
-    avoid_x_command -= (max_vel_command - min_vel_command) *
+    avoid_x_command -= (max_vel_command_lc - min_vel_command_lc) *
                        (avoid_outer_border - stereo_range)
                        / difference_inner_outer;
   } else {
     if (stereo_range > tinder_range) {
-     // avoid_x_command += max_vel_command;
+     // avoid_x_command += max_vel_command_lc;
 
     }
   }

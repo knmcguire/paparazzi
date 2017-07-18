@@ -49,9 +49,9 @@ extern void range_run(void);
 
 
 void range_sensor_force_field(float *vel_body_x, float *vel_body_y, float *vel_body_z, int16_t avoid_inner_border, int16_t avoid_outer_border,
-    int16_t tinder_range, float min_vel_command, float max_vel_command);
+    int16_t tinder_range, float min_vel_command_lc, float max_vel_command_lc);
 void stereo_force_field(float *vel_body_x, float distance_stereo, float avoid_inner_border, float avoid_outer_border,
-                        float tinder_range, float min_vel_command, float max_vel_command);
+                        float tinder_range, float min_vel_command_lc, float max_vel_command_lc);
 
 
 #endif
