@@ -31,10 +31,10 @@
   </sectors>
   
   <exceptions>
-    <!--uncomment when flying for real
+    <!--uncomment when flying for real-->
     <exception cond="datalink_time > 3" deroute="landed"/>
     <exception cond="radio_control.status == RC_REALLY_LOST" deroute="kill"/>
-    <exception cond="autopilot.mode == AP_MODE_ATTITUDE_DIRECT" deroute="CL Start"/-->
+    <exception cond="autopilot.mode == AP_MODE_ATTITUDE_DIRECT" deroute="CL Start"/>
   </exceptions>
 
   <blocks>

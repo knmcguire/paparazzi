@@ -119,8 +119,8 @@ static inline void mag_pitot_parse_msg(void)
 	  uint16_t range = DL_IMCU_REMOTE_GROUND_range(mp_msg_buf);
 	  tel_buf[id] = range;
       uint8_t length = 4;
-      float bottom_range = (float)tel_buf[2] / 1000.;
-      float top_range = (float)tel_buf[0] / 1000.;
+      float bottom_range = (float)tel_buf[3] / 1000.;
+      float top_range = (float)tel_buf[1] / 1000.;
      // float agl = 2.6f - top_range;
       float agl = bottom_range;
 
@@ -133,7 +133,7 @@ static inline void mag_pitot_parse_msg(void)
       //front right back left bottom top
       AbiSendMsgRANGE_SENSORS(IMU_MAG_PITOT_ID,dummy_range, tel_buf[2],dummy_range, tel_buf[0], tel_buf[3],tel_buf[1]);
 
-      DOWNLINK_SEND_RANGE_FINDERS(DefaultChannel, DefaultDevice, length, tel_buf);
+      //DOWNLINK_SEND_RANGE_FINDERS(DefaultChannel, DefaultDevice, length, tel_buf);
       break;
   }
 
