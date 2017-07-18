@@ -232,8 +232,8 @@
     <define name="MAX_BANK" value="15" unit="deg"/>
     <!-- Bad weather -->
     <!-- define name="MAX_BANK" value="32" unit="deg"/ -->
-    <define name="PGAIN" value="80"/>
-    <define name="DGAIN" value="290"/>
+    <define name="PGAIN" value="40"/>
+    <define name="DGAIN" value="145"/>
     <define name="IGAIN" value="0"/>
     <define name="USE_SPEED_REF" value = "TRUE"/>
  <define name="REF_MAX_SPEED" value="0.5"/>

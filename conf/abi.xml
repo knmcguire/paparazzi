@@ -61,7 +61,7 @@
       <field name="flow_y" type="int16_t">Flow in y direction from the camera (in subpixels)</field>
       <field name="flow_der_x" type="int16_t">The derotated flow calculation in the x direction (in subpixels)</field>
       <field name="flow_der_y" type="int16_t">The derotated flow calculation in the y direction (in subpixels)</field>
-      <field name="quality" type="float"/>
+      <field name="flow_quality" type="float"/>
       <field name="size_divergence" type="float">Divergence as determined with the size method (in 1/seconds)</field>
       <field name="dist" type="float">Distance to ground</field>
     </message>
@@ -110,7 +110,7 @@
     <message name="STEREOCAM_OBSTACLE" id="19">
        <field name="heading"  type="float" unit="deg"/>
        <field name="range"  type="float" unit="m"/>
-       <field name="quality" type="float"/>
+       <field name="flow_quality" type="float"/>
     </message>
 
     <message name="FORCEFIELD_VELOCITY" id="20">

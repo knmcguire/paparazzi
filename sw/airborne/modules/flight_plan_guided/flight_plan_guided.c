@@ -288,10 +288,9 @@ bool avoid_wall_and_sides(float vel_body_x_command)
 
   if (autopilot.mode == AP_MODE_GUIDED) {
 
-
+      if (quality <= 100)
 	  vel_body_x_command = vel_body_x_command*quality/100.0f;
-	  if( quality > 100)
-		  vel_body_x_command = 0;
+
 
     vel_body_x_command += vel_body_FF.x;
     float vel_body_y_command = vel_body_FF.y;

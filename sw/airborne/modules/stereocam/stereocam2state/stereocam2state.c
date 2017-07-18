@@ -34,7 +34,7 @@ uint8_t stereocam_medianfilter_on = 1;
 PRINT_CONFIG_VAR(STEREOCAM2STATE_EDGEFLOW_PIXELWISE)
 
 #include "filters/median_filter.h"
-struct MedianFilterInt medianfilter_x, medianfilter_y, medianfilter_z, medianfilter_agl;
+struct MedianFilterInt medianfilter_x, medianfilter_y, medianfilter_z, medianfilter_agl, medianfilter_quality;
 
 #include "subsystems/datalink/telemetry.h"
 
@@ -47,6 +47,7 @@ void stereo_to_state_init(void)
   init_median_filter(&medianfilter_y);
   init_median_filter(&medianfilter_z);
   init_median_filter(&medianfilter_agl);
+  init_median_filter(&medianfilter_quality);
 
 }
 
@@ -88,10 +89,12 @@ void stereocam_to_state(void)
   vel_z_global_int |= (int16_t)stereocam_data.data[7];
 
   // Velocity Pixelwise
-  int16_t vel_x_pixelwise_int = (int16_t)stereocam_data.data[16] << 8;
+/*  int16_t vel_x_pixelwise_int = (int16_t)stereocam_data.data[16] << 8;
   vel_x_pixelwise_int |= (int16_t)stereocam_data.data[17];
   int16_t vel_z_pixelwise_int = (int16_t)stereocam_data.data[18] << 8;
-  vel_z_pixelwise_int |= (int16_t)stereocam_data.data[19];
+  vel_z_pixelwise_int |= (int16_t)stereocam_data.data[19];*/
+
+  float flow_quality = (float)stereocam_data.data[19];
 
 // Select what type of velocity estimate fom edgeflow is wanted
 #if STEREOCAM2STATE_EDGEFLOW_PIXELWISE == TRUE
@@ -137,7 +140,8 @@ void stereocam_to_state(void)
     vel_body_x_processed = (float)update_median_filter(&medianfilter_x, (int32_t)(quad_body_vel.x * 100)) / 100;
     vel_body_y_processed = (float)update_median_filter(&medianfilter_y, (int32_t)(quad_body_vel.y * 100)) / 100;
     vel_body_z_processed = (float)update_median_filter(&medianfilter_z, (int32_t)(quad_body_vel.z * 100)) / 100;
-    //filtered_agl = (float)update_median_filter(&medianfilter_agl, (int32_t)(agl * 10)) / 100;
+    filtered_agl = (float)update_median_filter(&medianfilter_agl, (int32_t)(agl * 10)) / 100;
+    flow_quality = (float)update_median_filter(&medianfilter_quality, (int32_t)(flow_quality));
 
   }
   else
@@ -151,7 +155,7 @@ void stereocam_to_state(void)
     float heading_obstacle = (64.0f-(float)(obst_px)) * 57.8f / 128.0f;
 
 
-    AbiSendMsgSTEREOCAM_OBSTACLE(STEREOCAM2STATE_SENDER_ID,heading_obstacle,filtered_agl);
+    AbiSendMsgSTEREOCAM_OBSTACLE(STEREOCAM2STATE_SENDER_ID,heading_obstacle,filtered_agl,flow_quality);
 
   //Send velocities to state
   AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,
@@ -166,9 +170,11 @@ void stereocam_to_state(void)
   int16_t dummy_int16 = 0;
   float dummy_float = 0;
 
+/*
   DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &dummy_uint16, &dummy_uint16, &dummy_uint16, &dummy_int16, &dummy_int16,
                                &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
-                               &dummy_float, &heading_obstacle, &distance_stereo);
+                               &flow_quality, &heading_obstacle, &distance_stereo);
+*/
 
 #endif
 
@@ -267,7 +273,6 @@ void stereocam_to_state(void)
                                &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
                                &distance_stereo, &heading_obstacle, &dummy_float);
 
-#endif
 #endif
 
 }

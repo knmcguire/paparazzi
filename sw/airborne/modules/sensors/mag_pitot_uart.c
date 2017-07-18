@@ -130,9 +130,10 @@ static inline void mag_pitot_parse_msg(void)
 
 
       uint16_t dummy_range = 0;
-      AbiSendMsgRANGE_SENSORS(IMU_MAG_PITOT_ID,dummy_range, tel_buf[1],dummy_range, tel_buf[3], tel_buf[2],tel_buf[0]);
+      //front right back left bottom top
+      AbiSendMsgRANGE_SENSORS(IMU_MAG_PITOT_ID,dummy_range, tel_buf[2],dummy_range, tel_buf[0], tel_buf[3],tel_buf[1]);
 
-      //DOWNLINK_SEND_RANGE_FINDERS(DefaultChannel, DefaultDevice, length, tel_buf);
+      DOWNLINK_SEND_RANGE_FINDERS(DefaultChannel, DefaultDevice, length, tel_buf);
       break;
   }
 

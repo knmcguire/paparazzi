@@ -324,7 +324,11 @@
       <field name="vel_body_y_FF"   type="float" unit="m/s"/>
       <field name="vel_body_z_FF"   type="float" unit="m/s"/>
     </message>
-    <!-- 39 is free -->
+
+    <message name="COLLISION_DISK" id="39">
+      <field name="imageBuffer" type="uint8[]"/>
+    </message>
+
     <!-- 40 is free -->
 
     <message name="ALT_KALMAN" id="41">

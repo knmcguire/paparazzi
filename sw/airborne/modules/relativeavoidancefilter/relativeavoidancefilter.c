@@ -69,11 +69,11 @@ float trackedVx, trackedVy;
 
 static abi_event stereocam_obstacle_ev;
 static void stereocam_obstacle_cb(uint8_t sender_id __attribute__((unused)),
-	float heading, float range,float quality);
+	float heading, float range,float flow_quality __attribute__((unused)));
 static float stereo_obst_range;
 static float stereo_obst_bearing;
 void stereocam_obstacle_cb(uint8_t sender_id __attribute__((unused)), 
-	float heading, float range, float quality)
+	float heading, float range, float flow_quality __attribute__((unused)))
 {
 	stereo_obst_range   = range;
 	stereo_obst_bearing = heading * M_PI/180;
@@ -245,6 +245,11 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 	// float temp = 0;
 };
 
+static void send_cc(struct transport_tx *trans, struct link_device *dev)
+{
+	pprz_msg_send_COLLISION_DISK(trans, dev, AC_ID,36,cc);
+}
+
 void relativeavoidancefilter_init(void)
 {
 	randomgen_init();    	// Initialize the random generator (for simulation purposes)
@@ -276,6 +281,8 @@ void relativeavoidancefilter_init(void)
 	
 	// Send out the filter data
 	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_RAFILTERDATA, send_rafilterdata);
+	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_COLLISION_DISK, send_cc);
+
 };
 
 void relativeavoidancefilter_periodic(void)
