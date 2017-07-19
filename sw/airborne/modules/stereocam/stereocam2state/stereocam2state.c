@@ -38,11 +38,27 @@ struct MedianFilterInt medianfilter_x, medianfilter_y, medianfilter_z, medianfil
 
 #include "subsystems/datalink/telemetry.h"
 
+#include "subsystems/abi.h"
+
+bool corner_compensation_on;
+float sum_of_range;
+static abi_event range_sensors_ev;
+static void range_sensors_cb(uint8_t sender_id,
+                             int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left, int16_t range_bottom, int16_t range_top);
+static void range_sensors_cb(uint8_t UNUSED(sender_id),
+                             int16_t UNUSED(range_front), int16_t range_right, int16_t UNUSED(range_back), int16_t range_left, int16_t UNUSED(range_bottom), int16_t UNUSED(range_top))
+{
+	sum_of_range = (float)(range_right + range_left)/1000;
+
+
+}
+
 void stereocam_to_state(void);
 
 void stereo_to_state_init(void)
 {
-
+	sum_of_range=0;
+	corner_compensation_on=TRUE;
   init_median_filter(&medianfilter_x);
   init_median_filter(&medianfilter_y);
   init_median_filter(&medianfilter_z);
@@ -154,6 +170,12 @@ void stereocam_to_state(void)
     distance_stereo = filtered_agl;
     float heading_obstacle = (64.0f-(float)(obst_px)) * 57.8f / 128.0f;
 
+    if (corner_compensation_on){
+    	if (sum_of_range<3.0f){
+    		float corner_distance_compensation = 1 - fabs(sum_of_range)/3;
+    		distance_stereo -= corner_distance_compensation;
+    	}
+    }
 
     AbiSendMsgSTEREOCAM_OBSTACLE(STEREOCAM2STATE_SENDER_ID,heading_obstacle,filtered_agl,flow_quality);
 
@@ -175,7 +197,7 @@ void stereocam_to_state(void)
                                &flow_quality, &heading_obstacle, &distance_stereo);
 
 #endif
-
+///////////////////////////////////////////////////////////////
 #if STEREOCAM2STATE_RECEIVED_DATA_TYPE == 1 // old stereo board code
   // opticflow and divergence (unscaled with depth)
   int16_t div_x = (int16_t)stereocam_data.data[0] << 8;
@@ -252,6 +274,8 @@ void stereocam_to_state(void)
 
   distance_stereo = filtered_agl;
   float heading_obstacle = (64.0f-(float)(obst_px)) * 57.8f / 128.0f;
+
+
 
   AbiSendMsgSTEREOCAM_OBSTACLE(STEREOCAM2STATE_SENDER_ID,heading_obstacle,filtered_agl);
   //Send velocities to state
