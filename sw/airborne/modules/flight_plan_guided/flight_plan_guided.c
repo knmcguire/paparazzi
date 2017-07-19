@@ -49,8 +49,9 @@ float distance_thres_logic;
 int32_t turn_counter;
 float hover_wait_sec;
 float forward_speed;
-
-
+float seconds_of_bad_quality;
+bool first_occurance_bad_quality = TRUE;
+float seconds_of_bad_quality_thres;
 // start and stop modules
 #include "generated/modules.h"
 
@@ -130,6 +131,10 @@ void flight_plan_guided_init(void)
    turn_counter = 3;
    hover_wait_sec = 1.5f;
    forward_speed = 0.1f;
+
+   seconds_of_bad_quality = 0;
+   seconds_of_bad_quality_thres = 1.5f;
+
 
   nom_flight_alt = NOM_FLIGHT_ALT;
   AbiBindMsgAGL(1, &agl_ev, agl_cb); // ABI to the altitude above ground level
@@ -282,6 +287,24 @@ bool avoid_wall(float vel_body_x_command)
 
 }
 
+
+/* Wraps an angle in radians between -PI and +PI */
+float wrapToPi_guided(float ang)
+{
+	if (ang > M_PI) {
+		while (ang > M_PI) {
+			ang = ang - 2*M_PI;
+		}
+	}
+	else if (ang < -M_PI) {
+		while (ang < -M_PI) {
+			ang = ang + 2*M_PI;
+		}
+	}
+	return ang;
+}
+
+float first_time_bad_quality;
 bool avoid_wall_and_sides(float vel_body_x_command)
 {
   if (autopilot.mode != AP_MODE_GUIDED) { return true; }
@@ -290,6 +313,22 @@ bool avoid_wall_and_sides(float vel_body_x_command)
 
       if (quality <= 100)
 	  vel_body_x_command = vel_body_x_command*quality/100.0f + 0.05;
+
+      if(quality==0){
+    	  if (first_occurance_bad_quality){
+    		  first_time_bad_quality=(float)get_sys_time_msec()/1000;
+    		  first_occurance_bad_quality = FALSE;
+    	  }
+    	  float current_time_bad_quality = (float)get_sys_time_msec()/1000;
+    	  seconds_of_bad_quality = current_time_bad_quality - first_time_bad_quality;
+    	  printf("%f\n",seconds_of_bad_quality);
+       }
+      else
+      {
+    	  seconds_of_bad_quality =0;
+    	  first_occurance_bad_quality = TRUE;
+      }
+
 
 
     vel_body_x_command += vel_body_FF.x;

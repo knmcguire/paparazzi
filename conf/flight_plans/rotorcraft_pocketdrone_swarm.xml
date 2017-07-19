@@ -31,10 +31,10 @@
   </sectors>
   
   <exceptions>
-    <!--uncomment when flying for real-->
+    <!--uncomment when flying for real>
     <exception cond="datalink_time > 3" deroute="landed"/>
     <exception cond="radio_control.status == RC_REALLY_LOST" deroute="kill"/>
-    <exception cond="autopilot.mode == AP_MODE_ATTITUDE_DIRECT" deroute="CL Start"/>
+    <exception cond="autopilot.mode == AP_MODE_ATTITUDE_DIRECT" deroute="CL Start"/-->
   </exceptions>
 
   <blocks>
@@ -72,16 +72,45 @@
 
 <!--go forward, with a forcefield to prevent collissons -->
 		<block name="CL Go Forward with forcefield"> 
+        <set var="seconds_of_bad_quality" value="0"/>
+        <set var="first_occurance_bad_quality" value="TRUE"/>
         <call fun="avoid_wall_and_sides(forward_speed)"/>
-        <exception cond="distance_thres_logic>distance_stereo" deroute="CL Hover with forcefield"/> <!-- If obstacle is within 1 meter, go to hover -->
+        <exception cond="distance_thres_logic>distance_stereo" deroute="CL Hover with forcefield"/>
+        <exception cond="seconds_of_bad_quality>seconds_of_bad_quality_thres" deroute="CL Hover with forcefield bad quality"/> <!-- If obstacle is within 1 meter, go to hover -->
     </block>
+
+<!--Hover with a forcefield to prevent collissons -->
+		<block name="CL Hover with forcefield bad quality">
+        <set var="wanted_heading" value="stateGetNedToBodyEulers_f()->psi + RadOfDeg(60.0)"/>
+        <call fun="avoid_wall_and_sides(-0.01)"/>
+        <exception cond="stage_time>hover_wait_sec" deroute="CL Turn bad quality"/> <!-- If 2 seconds are passed, go turn -->
+    </block>
+
+
+<!-- turn 60 deg from current heading -->
+    <block name = "CL Turn bad quality"> 
+        <call fun="change_h_mode(GUIDANCE_H_MODE_ATTITUDE)"/>
+        <!--set var="wanted_heading" value="stateGetNedToBodyEulers_f()->psi + RadOfDeg(60.0)"/-->
+				<call fun="RotateToHeading_ATT(wanted_heading, RadOfDeg(0.0f),RadOfDeg(0.0f),autopilot_in_flight)"/>
+		    <while cond="WaitforHeadingCondition(wrapToPi_guided(wanted_heading))"/>
+        <!--call fun="reset_counter()"/>
+        <call fun="wait_counter(30)"/-->
+ 				<call fun="ResetAngles_ATT(wanted_heading,autopilot_in_flight)"/>
+        <call fun="reset_counter()"/>
+        <call fun="wait_counter(turn_counter)"/>
+        <call fun="change_h_mode(GUIDANCE_H_MODE_GUIDED)"/>
+        <exception cond="stage_time>hover_wait_sec" deroute="CL Hover and Check obstacle"/>			<!-- No-->
+ 		</block>
+
 
 <!--Hover with a forcefield to prevent collissons -->
 		<block name="CL Hover with forcefield">
         <set var="wanted_heading" value="turn_angle"/>
         <call fun="avoid_wall_and_sides(0.01)"/>
         <exception cond="distance_stereo>distance_thres_logic-0.2&&stage_time>hover_wait_sec" deroute="CL Turn"/> <!-- If 2 seconds are passed, go turn -->
+
     </block>
+
 
 
 <!-- turn 60 deg from current heading -->

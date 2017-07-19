@@ -49,7 +49,9 @@ extern int32_t turn_counter;
 extern float hover_wait_sec;
 extern float forward_speed;
 extern float quality;
-
+extern float seconds_of_bad_quality;
+extern bool first_occurance_bad_quality;
+extern float seconds_of_bad_quality_thres;
 
 // Module functions
 void flight_plan_guided_init(void);
@@ -119,5 +121,6 @@ extern bool wait_counter(int32_t end_counter);
 extern bool change_v_mode(uint8_t mode);
 extern bool kill_mode(void);
 
+extern float wrapToPi_guided(float ang);
 
 #endif

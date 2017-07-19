@@ -637,6 +637,8 @@ ray_down->SetActive(true);
 
 }
 
+
+
 /**
  * Read camera images.
  *
@@ -743,9 +745,11 @@ static void gazebo_read_video(void)
  int16_t dummy_int16 = 0;
  float dummy_float = 0;
 
+ float avg_distance = (float)edgeflow.avg_dist / 100;
+
   DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &dummy_float, &dummy_uint16, &dummy_uint16, &dummy_int16, &dummy_int16,
                                &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
-                               &flow_quality, &heading_obstacle, &distance_closest_obstacle);
+                               &flow_quality, &avg_distance, &distance_closest_obstacle);
 
   uint32_t now_ts = get_sys_time_usec();
 
@@ -762,7 +766,18 @@ static void gazebo_read_video(void)
 /*if (flow_quality<10){
 	distance_closest_obstacle = 1.0;
     heading_obstacle = 0.0;
+
+
 }*/
+
+ if (!isinf(ray_left->Range(0))&&!isinf(ray_right->Range(0))){
+ float corner_distance_compensation = fabs(ray_left->Range(0) - ray_right->Range(0));
+ cout<<corner_distance_compensation<<endl;
+ distance_closest_obstacle += corner_distance_compensation;}
+
+
+
+
 
  AbiSendMsgSTEREOCAM_OBSTACLE(ABI_BROADCAST, heading_obstacle, distance_closest_obstacle, flow_quality);
 
