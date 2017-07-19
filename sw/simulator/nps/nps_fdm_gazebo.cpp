@@ -770,10 +770,10 @@ static void gazebo_read_video(void)
 
 }*/
 
- if (!isinf(ray_left->Range(0))&&!isinf(ray_right->Range(0))){
- float corner_distance_compensation = fabs(ray_left->Range(0) - ray_right->Range(0));
- cout<<corner_distance_compensation<<endl;
- distance_closest_obstacle += corner_distance_compensation;}
+ if (!isinf(ray_left->Range(0))&&!isinf(ray_right->Range(0))&&(ray_left->Range(0) + ray_right->Range(0))<3.0f){
+ float corner_distance_compensation =1 - fabs(ray_left->Range(0) + ray_right->Range(0))/3;
+ cout<<"corner compensation :"<<corner_distance_compensation<<endl;
+ distance_closest_obstacle -= corner_distance_compensation;}
 
 
 

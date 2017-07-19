@@ -305,6 +305,8 @@ float wrapToPi_guided(float ang)
 }
 
 float first_time_bad_quality;
+
+int32_t counter_checkoccurances =0;
 bool avoid_wall_and_sides(float vel_body_x_command)
 {
   if (autopilot.mode != AP_MODE_GUIDED) { return true; }
@@ -313,21 +315,37 @@ bool avoid_wall_and_sides(float vel_body_x_command)
 
       if (quality <= 100)
 	  vel_body_x_command = vel_body_x_command*quality/100.0f + 0.05;
-
       if(quality==0){
+
+
     	  if (first_occurance_bad_quality){
+        	//  printf("counter_checkoccurances: %d\n", counter_checkoccurances);
+        	  if(counter_checkoccurances<4){
+                  counter_checkoccurances = 0;
+
+        	  }else{
+
+              counter_checkoccurances = 0;
+        	  seconds_of_bad_quality =0;
+
     		  first_time_bad_quality=(float)get_sys_time_msec()/1000;
     		  first_occurance_bad_quality = FALSE;
+        	  }
     	  }
     	  float current_time_bad_quality = (float)get_sys_time_msec()/1000;
     	  seconds_of_bad_quality = current_time_bad_quality - first_time_bad_quality;
-    	  printf("%f\n",seconds_of_bad_quality);
+    	//  printf("bad quality amount of time: %f\n",seconds_of_bad_quality);
        }
       else
       {
+    	  counter_checkoccurances ++;
+    	  //printf("counter_checkoccurances: %d\n", counter_checkoccurances);
     	  seconds_of_bad_quality =0;
     	  first_occurance_bad_quality = TRUE;
       }
+
+/*      if (seconds_of_bad_quality>seconds_of_bad_quality_thres)
+      {printf("should turn now?\n"); }*/
 
 
 
