@@ -133,7 +133,7 @@ void flight_plan_guided_init(void)
    forward_speed = 0.1f;
 
    seconds_of_bad_quality = 0;
-   seconds_of_bad_quality_thres = 3.0f;
+   seconds_of_bad_quality_thres = 4.0f;
 
 
   nom_flight_alt = NOM_FLIGHT_ALT;

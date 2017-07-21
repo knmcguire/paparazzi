@@ -42,6 +42,9 @@ struct MedianFilterInt medianfilter_x, medianfilter_y, medianfilter_z, medianfil
 
 bool corner_compensation_on;
 float sum_of_range;
+#ifndef RANGE_MODULE_SENDER_ID
+#define RANGE_MODULE_SENDER_ID ABI_BROADCAST
+#endif
 static abi_event range_sensors_ev;
 static void range_sensors_cb(uint8_t sender_id,
                              int16_t range_front, int16_t range_right, int16_t range_back, int16_t range_left, int16_t range_bottom, int16_t range_top);
@@ -49,6 +52,7 @@ static void range_sensors_cb(uint8_t UNUSED(sender_id),
                              int16_t UNUSED(range_front), int16_t range_right, int16_t UNUSED(range_back), int16_t range_left, int16_t UNUSED(range_bottom), int16_t UNUSED(range_top))
 {
 	sum_of_range = (float)(range_right + range_left)/1000;
+	//  DOWNLINK_SEND_PONG(DefaultChannel, DefaultDevice);
 
 
 }
@@ -59,6 +63,8 @@ void stereo_to_state_init(void)
 {
 	sum_of_range=0;
 	corner_compensation_on=TRUE;
+	  AbiBindMsgRANGE_SENSORS(RANGE_MODULE_SENDER_ID, &range_sensors_ev, range_sensors_cb);
+
   init_median_filter(&medianfilter_x);
   init_median_filter(&medianfilter_y);
   init_median_filter(&medianfilter_z);
@@ -194,7 +200,7 @@ void stereocam_to_state(void)
 
   DOWNLINK_SEND_OPTIC_FLOW_EST(DefaultChannel, DefaultDevice, &dummy_uint16, &dummy_uint16, &dummy_uint16, &dummy_int16, &dummy_int16,
                                &dummy_int16, &dummy_int16, &vel_body_x_processed, &vel_body_y_processed,
-                               &flow_quality, &heading_obstacle, &distance_stereo);
+                               &sum_of_range, &heading_obstacle, &distance_stereo);
 
 #endif
 ///////////////////////////////////////////////////////////////

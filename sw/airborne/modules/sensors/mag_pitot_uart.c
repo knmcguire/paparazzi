@@ -51,6 +51,10 @@ static void mag_pitot_raw_downlink(struct transport_tx *trans, struct link_devic
   pprz_msg_send_IMU_MAG_RAW(trans, dev, AC_ID, &imu.mag_unscaled.x, &imu.mag_unscaled.y,
                              &imu.mag_unscaled.z);
 }
+static void range_downlink(struct transport_tx *trans, struct link_device *dev)
+{
+  pprz_msg_send_RANGE_FINDERS(trans, dev, AC_ID, 4,tel_buf);
+}
 #endif
 
 /* Initialize the magneto and pitot */
@@ -65,6 +69,8 @@ void mag_pitot_init() {
 
 #if PERIODIC_TELEMETRY
   register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_IMU_MAG_RAW, mag_pitot_raw_downlink);
+  register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_RANGE_FINDERS, range_downlink);
+
 #endif
 }
 
@@ -123,17 +129,20 @@ static inline void mag_pitot_parse_msg(void)
       float top_range = (float)tel_buf[1] / 1000.;
      // float agl = 2.6f - top_range;
       float agl = bottom_range;
+     // AbiSendMsgAGL(IMU_MAG_PITOT_ID, agl);
+
 
       if(top_range <  2.0f)
     	agl = 2.6f - top_range;
       AbiSendMsgAGL(IMU_MAG_PITOT_ID, agl);
 
 
+
       uint16_t dummy_range = 0;
       //front right back left bottom top
       AbiSendMsgRANGE_SENSORS(IMU_MAG_PITOT_ID,dummy_range, tel_buf[2],dummy_range, tel_buf[0], tel_buf[3],tel_buf[1]);
 
-      //DOWNLINK_SEND_RANGE_FINDERS(DefaultChannel, DefaultDevice, length, tel_buf);
+    //  DOWNLINK_SEND_RANGE_FINDERS(DefaultChannel, DefaultDevice, length, tel_buf);
       break;
   }
 

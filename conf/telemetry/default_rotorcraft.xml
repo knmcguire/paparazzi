@@ -27,8 +27,9 @@
       <message name="SURVEY"                 period="2.5"/>
       <!--message name="OPTIC_FLOW_EST"         period="0.05"/-->
       <!--message name="VECTORNAV_INFO"      period="0.5"/-->
-      <message name="RAFILTERDATA"					period="0.2"/>
-      <message name="COLLISION_DISK"					period="0.5"/>
+      <message name="RAFILTERDATA"					period="1.5"/>
+      <message name="COLLISION_DISK"					period="1.1"/>
+      <message name="RANGE_FINDERS"          period ="1.2"/>
     </mode>
 
     <mode name="ppm">

@@ -75,6 +75,10 @@
     <define name="ACCEL_Y_NEUTRAL" value="0"/>
     <define name="ACCEL_Z_NEUTRAL" value="0"/>
 
+    <define name="ACCEL_X_SENS" value="4.8" integer="16"/>
+    <define name="ACCEL_Y_SENS" value="4.8" integer="16"/>
+    <define name="ACCEL_Z_SENS" value="4.8" integer="16"/><!--18 : 4.57 19: 4.31 -->
+
     <!-- MAGNETO CALIBRATION DELFT -->
     <define name="MAG_X_NEUTRAL" value="286"/>
     <define name="MAG_Y_NEUTRAL" value="-72"/>
@@ -297,7 +301,7 @@
 
 <!-- An IR range sensor will replace the sonar for now -->
     <define name="USE_SONAR" value="TRUE"/> 
-
+    <define name="USE_BARO_BOARD" value="TRUE"/> 
     <module name="motor_mixing"/>
     <module name="actuators" type="pwm">
       <!-- This airframe is using the servo PWM outputs directly to drive mosfets, which in turn directly drive brushed motors.
