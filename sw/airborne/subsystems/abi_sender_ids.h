@@ -335,5 +335,8 @@
 #define RANGE_FORCEFIELD_ID 5
 #endif
 
+#ifndef RANGE_WALLFOLLOWING_ID
+#define RANGE_WALLFOLLOWING_ID 5
+#endif
 
 #endif /* ABI_SENDER_IDS_H */

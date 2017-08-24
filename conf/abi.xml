@@ -113,6 +113,10 @@
       <field name="vel_body_z_FF" type="float" unit="m/s"/>
     </message>
 
+    <message name="RANGE_WALLFOLLOWING" id="20">
+      <field name="heading_WF" type="float" unit="rad"/>
+    </message>
+
   </msg_class>
 
 </protocol>
