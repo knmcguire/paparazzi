@@ -62,7 +62,8 @@ extern "C" {
 using namespace std;
 
 #ifndef NPS_GAZEBO_WORLD
-#define NPS_GAZEBO_WORLD "ardrone.world"
+// #define NPS_GAZEBO_WORLD "ardrone.world"
+#define NPS_GAZEBO_WORLD "imav_indoor.world"
 #endif
 #ifndef NPS_GAZEBO_AC_NAME
 #define NPS_GAZEBO_AC_NAME "paparazzi_uav"
