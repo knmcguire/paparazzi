@@ -339,4 +339,8 @@
 #define RANGE_WALLFOLLOWING_ID 5
 #endif
 
+#ifndef RANGE_OBSTACLE_DETECT_ID
+#define RANGE_OBSTACLE_DETECT_ID 6
+#endif
+
 #endif /* ABI_SENDER_IDS_H */

@@ -55,7 +55,7 @@ void range_sensor_horizontal_velocity_force_field(float *vel_body_x, float *vel_
 void range_sensor_vertical_velocity_force_field(float *vel_body_z, float avoid_inner_border, float avoid_outer_border,
     float min_vel_command_lc, float max_vel_command_lc);
 
-void range_sensor_wall_following_heading_calculate(float *new_heading, float *new_vel_x_body);
+void range_sensor_wall_following_heading_calculate(float *new_heading, float *new_vel_y_body, bool *new_range_sensor_detect);
 
 #endif
 
