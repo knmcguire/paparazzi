@@ -92,7 +92,7 @@
 		</joint>
 		
     <link name="left_range_sensor">
-			<pose>0.0 0 0.1 0 0 1.57</pose>
+			<pose>0.0 0 0.15 0 0 1.57</pose>
 			<inertial>
 				<mass>0.001</mass>
 				<inertia>
@@ -123,7 +123,7 @@
 		</joint>
 
     <link name="right_range_sensor">
-			<pose>0.0 0 0.1 0 0 -1.57</pose>
+			<pose>0.0 0 0.15 0 0 -1.57</pose>
 			<inertial>
 				<mass>0.001</mass>
 				<inertia>
@@ -154,7 +154,7 @@
 		</joint>
 
     <link name="front_range_sensor">
-			<pose>0.0 0 0.1 0 0 0</pose>
+			<pose>0.0 0 0.15 0 0 0</pose>
 			<inertial>
 				<mass>0.001</mass>
 				<inertia>
@@ -185,7 +185,7 @@
 		</joint>
 
     <link name="back_range_sensor">
-			<pose>0.0 0 0.1 0 0 3.14</pose>
+			<pose>0.0 0 0.15 0 0 3.14</pose>
 			<inertial>
 				<mass>0.001</mass>
 				<inertia>

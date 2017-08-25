@@ -114,8 +114,8 @@
     </message>
 
     <message name="RANGE_WALLFOLLOWING" id="20">
-      <field name="heading_WF" type="float" unit="rad"/>
-      <field name="vel_body_y_WF" type="float" unit="m/s"/>
+      <field name="heading_leftturn_WF" type="float" unit="rad"/>
+      <field name="heading_rightturn_WF" type="float" unit="rad"/>
       <field name="range_sensors_detect" type="bool" />
     </message>
 
