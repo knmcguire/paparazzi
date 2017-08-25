@@ -23,10 +23,11 @@
     <variable var="climb_descent_vel" init="0.3f" type="float" min="0." max="1" step="0.1"/>
     <variable var="forward_vel" init="0.2f" type="float" min="0." max="2" step="0.1"/>
 	  <variable var="nominal_alt" init="NAV_DEFAULT_ALT" type="float" min="0." max="10." step="0.1"/>
-	  <variable var="gain_heading" init="10" type="float" min="0." max="100." step="1"/>
+	  <variable var="gain_heading" init="40" type="float" min="0." max="100." step="1"/>
+	  <variable var="gain_wall" init="0.1" type="float" min="0." max="1." step="0.01"/>
     <abi_binding name="OBSTACLE_DETECTION" vars="distance_obstacle_FP, _"/>
     <abi_binding name="RANGE_FORCEFIELD" vars="vel_body_x_FF, vel_body_y_FF, vel_body_z_FF"/>
-    <abi_binding name="RANGE_WALLFOLLOWING" vars="heading_WF"/>
+    <abi_binding name="RANGE_WALLFOLLOWING" vars="heading_WF,vel_body_y_WF"/>
 	</variables>
 
 <!--Example Guided flight plan:
@@ -66,12 +67,20 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
 2. If 5 seconds has passed in the block, It will go to the "Turn 90 deg" block
 An exception is triggered if an obstacle is detected (in this example given by the color detector). Then it will go to the "Turn 90 deg" block immediatly -->
 
-    <block name="Go Forward and follow wall">
+    <block name="FW_steady_distance">
       <while cond="TRUE" >
-        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,forward_vel + 0,0,-nominal_alt,heading_WF)"/>
+        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,forward_vel + 0,gain_wall*vel_body_y_WF,-nominal_alt,0)"/>
       </while>
-      <!--exception cond="2>distance_obstacle_FP" deroute="Turn 90 deg"/--> 
+      <exception cond="0.2>fabs(vel_body_y_WF)" deroute="FW_change_heading"/> 
     </block>
+
+    <block name="FW_change_heading">
+      <while cond="TRUE" >
+        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,forward_vel + 0,0,-nominal_alt,gain_heading*heading_WF)"/>
+      </while>
+      <exception cond="fabs(vel_body_y_WF)>0.2" deroute="FW_steady_distance"/> 
+    </block>
+
 
 <!-- Turn 90 deg:
 1. First the MAV will hover with all velocities on zero for 1 second

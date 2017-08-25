@@ -115,6 +115,7 @@
 
     <message name="RANGE_WALLFOLLOWING" id="20">
       <field name="heading_WF" type="float" unit="rad"/>
+      <field name="vel_body_x_WF" type="float" unit="m/s"/>
     </message>
 
   </msg_class>

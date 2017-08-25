@@ -12,6 +12,7 @@
 
 
 float heading_WF;
+float vel_body_y_WF;
 
 //abi for range sensors
 #ifndef RANGE_MODULE_RECIEVE_ID
@@ -43,7 +44,7 @@ static void range_sensors_cb(uint8_t UNUSED(sender_id),
 void range_sensor_wall_following_init(void)
 {
   heading_WF =0;
-
+  vel_body_y_WF =0;
 
   AbiBindMsgRANGE_SENSORS(RANGE_MODULE_RECIEVE_ID, &range_sensors_ev, range_sensors_cb);
 }
@@ -52,27 +53,34 @@ void range_sensor_wall_following_run(void)
 {
 	  //calculate heading
 	  heading_WF = 0;
-	  range_sensor_wall_following_heading_calculate(&heading_WF);
-	  AbiSendMsgRANGE_WALLFOLLOWING(RANGE_WALLFOLLOWING_ID, heading_WF);
+	  vel_body_y_WF=0;
+	  range_sensor_wall_following_heading_calculate(&heading_WF,&vel_body_y_WF);
+
+	  printf("heading and wall distance %f %f \n", heading_WF, vel_body_y_WF);
+	  AbiSendMsgRANGE_WALLFOLLOWING(RANGE_WALLFOLLOWING_ID, heading_WF,vel_body_y_WF);
 
 	  if(heading_WF != 0)
-	  printf("heading_WF: %f\n", heading_WF);
 	  range_finders_prev = range_finders;
 }
 
 
-void range_sensor_wall_following_heading_calculate(float *new_heading)
+void range_sensor_wall_following_heading_calculate(float *new_heading, float *new_vel_y_body)
 {
+
     //right range sensor
+	if(range_finders.right<2&&range_finders_prev.right<2){
 	float range_diff_right = range_finders.right - range_finders_prev.right;
 
 
-	*new_heading +=  20*range_diff_right;
+	*new_heading +=  range_diff_right;
+	*new_vel_y_body = (range_finders.right - 1);
 
 	if(*new_heading > 1)
 		*new_heading = 1;
 	if(*new_heading < -1)
 		*new_heading = -1;
+
+     }else { *new_heading = 0;*new_vel_y_body=0;}
 /*	if(range_diff_right<0){
 		*new_heading -= 0.1;
 	}else if(range_diff_right>0){
