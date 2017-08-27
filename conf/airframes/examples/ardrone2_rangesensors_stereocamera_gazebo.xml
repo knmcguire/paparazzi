@@ -183,6 +183,7 @@
     <define name="BYPASS_AHRS" value="1"/>
     <define name="SIMULATE_VIDEO" value="1"/>
     <define name="SIMULATE_RANGE_SENSORS" value="1"/>
+    <define name="SIMULATE_EXTERNAL_STEREO_CAMERA" value="1"/>
   </section>
 
   <section name="AUTOPILOT">
