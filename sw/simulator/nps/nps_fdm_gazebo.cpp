@@ -100,8 +100,22 @@ struct gazebo_range_sensors_t {
 
 static struct gazebo_range_sensors_t gazebo_range_sensors;
 
-
 #endif
+
+#ifdef NPS_SIMULATE_EXTERNAL_STEREO_CAMERA
+
+static void gazebo_init_stereo_camera(void);
+static void gazebo_read_stereo_camera(void);
+static void read_stereoimage(
+  struct image_t *img,
+  gazebo::sensors::MultiCameraSensorPtr  cam);
+struct gazebostereocam_t {
+  gazebo::sensors::MultiCameraSensorPtr stereocam;
+  gazebo::common::Time last_measurement_time;
+};
+static struct gazebostereocam_t gazebo_stereocam;
+#endif
+
 
 /// Holds all necessary NPS FDM state information
 struct NpsFdm fdm;
@@ -214,9 +228,16 @@ void nps_fdm_run_step(
     gazebo_read();
 #ifdef NPS_SIMULATE_VIDEO
     init_gazebo_video();
+    cout << "video_init" << endl;
+
 #endif
 #ifdef NPS_SIMULATE_RANGE_SENSORS
     gazebo_init_range_sensors();
+    cout << "range_sensor_init" << endl;
+#endif
+#ifdef NPS_SIMULATE_EXTERNAL_STEREO_CAMERA
+    gazebo_init_stereo_camera();
+    cout << "stereocamera_init" << endl;
 #endif
     gazebo_initialized = true;
   }
@@ -231,6 +252,9 @@ void nps_fdm_run_step(
 #endif
 #ifdef NPS_SIMULATE_RANGE_SENSORS
   gazebo_read_range_sensors();
+#endif
+#ifdef NPS_SIMULATE_EXTERNAL_STEREO_CAMERA
+  gazebo_read_stereo_camera();
 #endif
 
 }
@@ -619,7 +643,6 @@ static void gazebo_init_range_sensors(void)
   gazebo::sensors::SensorManager *mgr =
     gazebo::sensors::SensorManager::Instance();
 
-  cout << "Amount of sensors found: " << model->GetSensorCount() << endl;
   gazebo_range_sensors.ray_front = static_pointer_cast<gazebo::sensors::RaySensor>(mgr->GetSensor("range_sensors::front_range_sensor"));
   gazebo_range_sensors.ray_right = static_pointer_cast<gazebo::sensors::RaySensor>(mgr->GetSensor("range_sensors::right_range_sensor"));
   gazebo_range_sensors.ray_back = static_pointer_cast<gazebo::sensors::RaySensor>(mgr->GetSensor("range_sensors::back_range_sensor"));
@@ -660,6 +683,85 @@ static void gazebo_read_range_sensors(void)
 
 
 }
+#endif
+
+#if NPS_SIMULATE_EXTERNAL_STEREO_CAMERA
+static void gazebo_init_stereo_camera(void)
+{
+  gazebo::sensors::SensorManager *mgr =
+    gazebo::sensors::SensorManager::Instance();
+
+  gazebo_stereocam.stereocam = static_pointer_cast
+                               < gazebo::sensors::MultiCameraSensor > (mgr->GetSensor("stereo_camera::stereo_camera"));
+  if (!gazebo_stereocam.stereocam) {
+    cout << "ERROR: Could not get pointer to stereocam!" << endl;
+  }
+  gazebo_stereocam.stereocam->SetActive(true);
+
+  gazebo_stereocam.last_measurement_time =   gazebo_stereocam.stereocam->LastMeasurementTime();
+
+}
+
+static void gazebo_read_stereo_camera(void)
+{
+
+
+  gazebo::sensors::MultiCameraSensorPtr &stereocam = gazebo_stereocam.stereocam;
+
+
+  if (!(stereocam->LastMeasurementTime() == gazebo_stereocam.last_measurement_time
+        || stereocam->LastMeasurementTime() == 0)) {
+
+    struct image_t img;
+    read_stereoimage(&img, stereocam);
+
+//put edgeflow code here?
+
+    image_free(&img);
+    gazebo_stereocam.last_measurement_time = stereocam->LastMeasurementTime();
+  }
+}
+
+
+static void read_stereoimage(
+  struct image_t *img,
+  gazebo::sensors::MultiCameraSensorPtr cam)
+{
+  image_create(img, cam->ImageWidth(0), cam->ImageHeight(0), IMAGE_YUV422);
+
+  // Convert Gazebo's *RGB888* image to Paparazzi's YUV422
+  const uint8_t *data_rgb_left = cam->ImageData(0);
+  const uint8_t *data_rgb_right = cam->ImageData(1);
+
+  uint8_t *data_yuv = (uint8_t *)(img->buf);
+
+  for (int x = 0; x < img->w; ++x) {
+    for (int y = 0; y < img->h; ++y) {
+      int idx_rgb = 3 * (img->w * y + x);
+      int idx_yuv = 2 * (img->w * y + x);
+      int idx_px = img->w * y + x;
+
+      data_yuv[idx_yuv] =  0.257 * data_rgb_left[idx_rgb]
+                           + 0.504 * data_rgb_left[idx_rgb + 1]
+                           + 0.098 * data_rgb_left[idx_rgb + 2] + 16; // Y
+
+      data_yuv[idx_yuv + 1] = 0.257 * data_rgb_right[idx_rgb]
+                              + 0.504 * data_rgb_right[idx_rgb + 1]
+                              + 0.098 * data_rgb_right[idx_rgb + 2] + 16; // Y
+
+    }
+
+  }
+
+  // Fill miscellaneous fields
+  gazebo::common::Time ts = cam->LastMeasurementTime();
+  img->ts.tv_sec = ts.sec;
+  img->ts.tv_usec = ts.nsec / 1000.0;
+  img->pprz_ts = ts.Double() * 1e6;
+  img->buf_idx = 0; // unused*/
+
+}
+
 #endif
 
 #pragma GCC diagnostic pop // Ignore -Wdeprecated-declarations

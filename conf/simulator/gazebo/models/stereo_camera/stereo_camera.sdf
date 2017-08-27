@@ -27,7 +27,7 @@
 		</link>
 
 
-<!-- RANGE SENSORS -->
+<!-- STEREO CAMERA -->
 		<link name="stereo_camera">
 			<pose>0.15 0 0 0 0 0</pose>
 			<inertial>
@@ -83,7 +83,7 @@
 		</link>
 		
 		<joint name="stereo_camera_joint" type="fixed">
-			<parent>basis</parent>
+			<parent>base</parent>
 			<child>stereo_camera</child>
 		</joint>
 
