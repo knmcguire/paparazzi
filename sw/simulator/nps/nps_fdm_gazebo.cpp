@@ -51,6 +51,17 @@ extern "C" {
 #include "generated/airframe.h"
 #include "autopilot.h"
 
+/**********************EDGEFLOW*************************/
+
+#include "/home/knmcguire/stereoboard/stereoboard/edgeflow.h"
+#define FOVX 1.001819   // 57.4deg = 1.001819 rad
+#define FOVY 0.776672   // 44.5deg = 0.776672 rad
+
+/******************************************************/
+
+
+
+
 #ifdef NPS_SIMULATE_VIDEO
 #include "modules/computer_vision/cv.h"
 #include "modules/computer_vision/video_thread_nps.h"
@@ -96,7 +107,6 @@ struct gazebo_range_sensors_t {
   gazebo::sensors::RaySensorPtr ray_down;
   gazebo::sensors::RaySensorPtr ray_up;
   gazebo::common::Time last_measurement_time;
-
 };
 
 static struct gazebo_range_sensors_t gazebo_range_sensors;
@@ -709,6 +719,13 @@ static void gazebo_init_stereo_camera(void)
 
   gazebo_stereocam.last_measurement_time =   gazebo_stereocam.stereocam->LastMeasurementTime();
 
+  /******************************EDGEFLOW****************************/
+  edgeflow_init(128, 96, 0);
+  edgeflow_params.fovx = (int32_t)(FOVX * 100);
+  edgeflow_params.fovy = (int32_t)(FOVY * 100);
+  /******************************************************************/
+
+
 }
 
 static void gazebo_read_stereo_camera(void)
@@ -724,7 +741,25 @@ static void gazebo_read_stereo_camera(void)
     struct image_t img;
     read_stereoimage(&img, stereocam);
 
-//put edgeflow code here?
+/******************************************EDGEFLOW*******************************/
+    //dummyvalues
+    int16_t *stereocam_data;
+    uint8_t *edgeflowArray;
+
+    gazebo::common::Time ts = gazebo_stereocam.last_measurement_time;
+
+    uint32_t pprz_ts = ts.Double() * 1e6;
+
+    edgeflow_total((uint8_t *)(img.buf), pprz_ts,
+  		  stereocam_data, 0);
+
+     float  vel_body_x_processed = (float)edgeflow.vel.z/ 100;
+     float  vel_body_y_processed = (float)edgeflow.vel.x / 100;
+     float  vel_body_z_processed = (float)edgeflow.vel.y / 100;
+
+    cout<<vel_body_x_processed<<" "<<vel_body_y_processed<<" "<<vel_body_z_processed<<" "<<endl;
+
+/*********************************************************************************/
 
     image_free(&img);
     gazebo_stereocam.last_measurement_time = stereocam->LastMeasurementTime();
