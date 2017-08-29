@@ -108,6 +108,11 @@ extern bool exception_flag[10];
     while (x >= 360) x -= 360; \
   }
 
+#define NormCourseHalve(x) { \
+    while (x < 180) x += 180; \
+    while (x >= 180) x -= 180; \
+  }
+
 extern void nav_init(void);
 extern void nav_run(void);
 

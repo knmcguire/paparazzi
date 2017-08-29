@@ -45,7 +45,7 @@
       <update_rate>20.0</update_rate>
       <camera name="left">
         <pose>0 0.04 0 0 0 0</pose>
-        <horizontal_fov>1.3962634</horizontal_fov>
+        <horizontal_fov>1.001819 </horizontal_fov>
         <image>
 						<width>128</width>
 						<height>96</height>
@@ -63,7 +63,7 @@
       </camera>
       <camera name="right">
         <pose>0 -0.04 0 0 0 0</pose>
-        <horizontal_fov>1.3962634</horizontal_fov>
+        <horizontal_fov>1.001819 </horizontal_fov>
         <image>
 						<width>128</width>
 						<height>96</height>
