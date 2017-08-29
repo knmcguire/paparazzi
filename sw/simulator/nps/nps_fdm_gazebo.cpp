@@ -760,24 +760,17 @@ static void gazebo_read_stereo_camera(void)
  //   cout<<vel_body_x_processed<<" "<<vel_body_y_processed<<" "<<vel_body_z_processed<<" "<<endl;
 
 
-    int32_t vel_body_x_FF = 0;
-    int32_t vel_body_y_FF = 0;
 
-    int16_t border = edgeflow_params.window_size + edgeflow_params.disparity_range;
-    int32_t  stereo_distance_per_column[128] = {0};
+   float FF_Gain = 2;
 
-    float scale_x = 1.0f/(float)(edgeflow_params.camera_seperation * edgeflow_params.img_w) / edgeflow_params.fovx;
+    float vel_body_x_FF = - (float)edgeflow.vel_z_stereo_avoid_pixelwise/100;
+    float vel_body_y_FF = -FF_Gain*(float)edgeflow.vel_x_stereo_avoid_pixelwise/100;
 
-    int n = 0;
-    for(n=0;n<128;n++)
-    	stereo_distance_per_column[n] = (int32_t)(scale_x * (float)edgeflow.disp.stereo[n]);
+/*   		cout<< vel_body_x_FF << " "<< vel_body_y_FF<<endl;*/
 
-    avoid_velocity_from_stereo(stereo_distance_per_column, &vel_body_y_FF,
-    		&vel_body_x_FF, 30, 128,border , 0);
+    AbiSendMsgRANGE_FORCEFIELD(RANGE_FORCEFIELD_ID, vel_body_x_FF, vel_body_y_FF, 0);
+    //cout<< edgeflow.vel_z_stereo_avoid_pixelwise<< " "<<  edgeflow.vel_x_stereo_avoid_pixelwise<<endl;
 
-   cout<<vel_body_x_FF<< " "<< vel_body_y_FF<<endl;
-
-    AbiSendMsgRANGE_FORCEFIELD(RANGE_FORCEFIELD_ID, (float)vel_body_x_FF/100, (float)vel_body_y_FF/100, 0);
 
 /*********************************************************************************/
 
