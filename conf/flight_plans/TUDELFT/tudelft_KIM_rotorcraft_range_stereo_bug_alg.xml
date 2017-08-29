@@ -29,7 +29,7 @@
 	  <variable var="gain_wall" init="0.1" type="float" min="0." max="1." step="0.01"/>
     <variable var="turned_left" init="FALSE" type="bool"/>
     <variable var="turned_right" init="TRUE" type="bool"/>
-    <abi_binding name="OBSTACLE_DETECTION" vars="distance_obstacle_FP, _"/>
+    <abi_binding name="OBSTACLE_DETECTION" vars="distance_obstacle_FP, heading_obstacle_FP"/>
     <abi_binding name="RANGE_FORCEFIELD" vars="vel_body_x_FF, vel_body_y_FF, vel_body_z_FF"/>
     <abi_binding name="RANGE_WALLFOLLOWING" vars="heading_leftturn_WF,heading_rightturn_WF,range_sensor_detect_WF"/>
 	</variables>
@@ -76,7 +76,7 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
       <while cond="!CloseDegAngles(DegOfRad(stateGetNedToBodyEulers_f()->psi),DegOfRad(save_heading))"/>
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY,0.,0.,-nominal_alt,save_heading)"/>
       <while cond="LessThan(stage_time,1)"/> 
-     <deroute block="Go_forward_to_heading"/>
+     <deroute block="Go around small obstacle"/>
     </block>
 
     <block name="Go_forward_to_heading">
@@ -84,6 +84,22 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
       <while cond="LessThan(stage_time,1)"/> 
       <while cond="1">
         <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY,forward_vel + vel_body_x_FF,vel_body_y_FF,-nominal_alt,desired_heading)"/>
+      </while>
+      <!--exception cond="1.2>distance_obstacle_FP&&turned_right" deroute="Turn Left"/> 
+      <exception cond="1.2>distance_obstacle_FP&&turned_left" deroute="Turn Right"/--> 
+    </block>
+
+    <block name="Go around small obstacle">
+      <set var="save_heading" value="0.15"/>
+        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY,0,0,-nominal_alt,desired_heading)"/>
+      <while cond="LessThan(stage_time,1)"/> 
+      <while cond="1">
+        <while cond="distance_obstacle_FP==15.">
+     <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY,forward_vel + 0,0,-nominal_alt,desired_heading)"/>
+        </while>
+        <while cond="15.>distance_obstacle_FP">
+        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,forward_vel + 0,0,-nominal_alt,heading_obstacle_FP-save_heading)"/>
+        </while>
       </while>
       <!--exception cond="1.2>distance_obstacle_FP&&turned_right" deroute="Turn Left"/> 
       <exception cond="1.2>distance_obstacle_FP&&turned_left" deroute="Turn Right"/--> 

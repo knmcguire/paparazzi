@@ -768,9 +768,20 @@ static void gazebo_read_stereo_camera(void)
 
 /*   		cout<< vel_body_x_FF << " "<< vel_body_y_FF<<endl;*/
 
-    AbiSendMsgRANGE_FORCEFIELD(RANGE_FORCEFIELD_ID, vel_body_x_FF, vel_body_y_FF, 0);
+   // AbiSendMsgRANGE_FORCEFIELD(RANGE_FORCEFIELD_ID, vel_body_x_FF, vel_body_y_FF, 0);
     //cout<< edgeflow.vel_z_stereo_avoid_pixelwise<< " "<<  edgeflow.vel_x_stereo_avoid_pixelwise<<endl;
 
+
+    float pxtorad=(float)FOVX / 128;
+
+
+    float distance_closest_obstacle_float = (float)edgeflow.distance_closest_obstacle / 100;
+    float heading_closest_obstacle_float = (float)(edgeflow.px_loc_closest_obstacle - 128/2) * pxtorad;
+
+    printf("obstacle distance heading: %f, %f, %f \n",
+    		distance_closest_obstacle_float,heading_closest_obstacle_float,heading_closest_obstacle_float- RadOfDeg(15.0f));
+
+    AbiSendMsgOBSTACLE_DETECTION(RANGE_FORCEFIELD_ID,distance_closest_obstacle_float,heading_closest_obstacle_float);
 
 /*********************************************************************************/
 
