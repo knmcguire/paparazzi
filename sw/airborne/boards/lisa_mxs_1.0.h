@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Kirk Scheper
+ * Copyright (C) 2013-2014 Piotr Esden-Tempski <piotr@esden.net>
  *
  * This file is part of paparazzi.
  *
@@ -20,26 +20,20 @@
  *
  */
 
-/** @file modules/stereocam/stereocam.h
- *  @brief interface to the TU Delft serial stereocam
+#ifndef CONFIG_LISA_MXS_1_0_H
+#define CONFIG_LISA_MXS_1_0_H
+
+#include "boards/lisa_mx_common.h"
+
+/*
+ * Spektrum
  */
+/* The line that is pulled low at power up to initiate the bind process */
+/* (esden) Note to self. Revision 4 of the board is on GPIO0 not GPIO2.
+ * Note to everyone else. Revision 4 was never produced or provided to the
+ * public. :)
+ */
+#define SPEKTRUM_BIND_PIN GPIO2
+#define SPEKTRUM_BIND_PIN_PORT GPIOB
 
-#ifndef STEREOCAM_H_
-#define STEREOCAM_H_
-
-#include "pprzlink/pprz_transport.h"
-#include "math/pprz_algebra_float.h"
-
-/* Main magneto pitot strcuture */
-struct stereocam_t {
-  struct link_device *device;           ///< The device which is uses for communication
-  struct pprz_transport transport;      ///< The transport layer (PPRZ)
-  struct FloatRMat body_to_cam;         ///< IMU to magneto translation
-  bool msg_available;                   ///< If we received a message
-};
-
-extern void stereocam_init(void);
-extern void stereocam_event(void);
-extern void state2stereocam(void);
-
-#endif /* STEREOCAM_H_ */
+#endif /* CONFIG_LISA_MXS_1_0_H */
