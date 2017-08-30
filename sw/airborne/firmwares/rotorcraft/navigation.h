@@ -108,10 +108,6 @@ extern bool exception_flag[10];
     while (x >= 360) x -= 360; \
   }
 
-#define NormCourseHalve(x) { \
-    while (x < 180) x += 180; \
-    while (x >= 180) x -= 180; \
-  }
 
 extern void nav_init(void);
 extern void nav_run(void);
@@ -260,6 +256,8 @@ static inline void NavCircleWaypoint(uint8_t wp_center, float radius)
 #define NavCircleQdr() ({ int32_t qdr = INT32_DEG_OF_RAD(INT32_ANGLE_PI_2 - nav_circle_qdr) >> INT32_ANGLE_FRAC; NormCourse(qdr); qdr; })
 
 #define CloseDegAngles(_c1, _c2) ({ int32_t _diff = _c1 - _c2; NormCourse(_diff); 350 < _diff || _diff < 10; })
+#define BiggerThanDegAngles(_c1, _c2) ({ int32_t _diff = _c1 - _c2; NormCourse(_diff); 180< _diff || _diff < 360; })
+
 /** True if x (in degrees) is close to the current QDR (less than 10 degrees)*/
 #define NavQdrCloseTo(x) CloseDegAngles(((x) >> INT32_ANGLE_FRAC), NavCircleQdr())
 #define NavCourseCloseTo(x) {}
