@@ -30,6 +30,8 @@
 #include "pprzlink/intermcu_msg.h"
 #include "mcu_periph/uart.h"
 #include "subsystems/abi.h"
+#include "subsystems/datalink/telemetry.h"
+
 #include "subsystems/imu.h"
 #include "state.h"
 
@@ -121,10 +123,15 @@ static inline void mag_pitot_parse_msg(void)
       uint8_t length = 4;
 
       // Send ABI
-      float agl = bottom_range;
-      AbiSendMsgAGL(RANGE_SENSORS_ID, agl);
+      float agl = (float)tel_buf[3]/1000.;
+      AbiSendMsgAGL(IMU_MAG_PITOT_ID, agl);
       //front right back left bottom top
       uint16_t dummy_range = 0;
+      uint8_t dummy_uint8 = 0;
+      uint8_t data_size = 4;
+
+
+
       AbiSendMsgRANGE_SENSORS(RANGE_SENSORS_ID, dummy_range, tel_buf[2], dummy_range, tel_buf[0], tel_buf[3], tel_buf[1]);
       break;
     }

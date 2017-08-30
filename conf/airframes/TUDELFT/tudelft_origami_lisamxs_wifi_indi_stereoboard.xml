@@ -91,7 +91,7 @@
    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
    <define name="MODE_AUTO1" value="AP_MODE_HOVER_Z_HOLD"/>
-   <define name="MODE_AUTO2" value="AP_MODE_GUIDED"/>
+   <define name="MODE_AUTO2" value="AP_MODE_HOVER_Z_HOLD"/>
    <define name="NO_RC_THRUST_LIMIT"  value="TRUE"/>
  </section>
 
@@ -248,8 +248,12 @@
    </module>
    <module name="stereocam_stereocam2state">
      <define name="STEREOCAM2STATE_RECEIVED_DATA_TYPE" value="0"/>
-     <define name="STEREOCAM2STATE_EDGEFLOW_PIXELWISE" value="TRUE"/>
+     <define name="STEREOCAM2STATE_EDGEFLOW_PIXELWISE" value="FALSE"/>
 	 </module>
+   <module name="mag_pitot_uart.xml">
+       <configure name="MAG_PITOT_BAUD" value="38400"/>
+       <configure name="MAG_PITOT_PORT" value="UART2"/>
+   </module>
  </modules>
 
   <firmware name="rotorcraft">
