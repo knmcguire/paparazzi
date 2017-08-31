@@ -186,15 +186,25 @@ static void stereocam_parse_msg(void)
     break;
   }
 
-#ifdef STEREOCAM_FOLLOWME
   // todo is follow me still used?
   case DL_STEREOCAM_FOLLOW_ME: {
+#ifdef STEREOCAM_FOLLOWME
+
     follow_me( DL_STEREOCAM_FOLLOW_ME_headingToFollow(stereocam_msg_buf),
                DL_STEREOCAM_FOLLOW_ME_heightObject(stereocam_msg_buf),
                DL_STEREOCAM_FOLLOW_ME_distanceToObject(stereocam_msg_buf));
+#endif
+
+	    float pxtorad=(float)RadOfDeg(59) / 128;
+
+	    float heading = (float)(DL_STEREOCAM_FOLLOW_ME_headingToFollow(stereocam_msg_buf)-128/2)*pxtorad;
+	    float distance = (float)(DL_STEREOCAM_FOLLOW_ME_distanceToObject(stereocam_msg_buf))/100;
+
+	    AbiSendMsgOBSTACLE_DETECTION(STEREOCAM2STATE_SENDER_ID, distance, heading);
+	   // DOWNLINK_SEND_SETTINGS(DefaultChannel, DefaultDevice,&heading,&distance);
+
     break;
   }
-#endif
 
     default:
       break;

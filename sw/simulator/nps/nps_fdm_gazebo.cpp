@@ -57,6 +57,35 @@ extern "C" {
 #define FOVX 1.001819   // 57.4deg = 1.001819 rad
 #define FOVY 0.776672   // 44.5deg = 0.776672 rad
 
+static uint8_t bounduint8(int32_t value)
+{
+  uint8_t value_uint8;
+  if (value > UINT8_MAX) {
+    value_uint8 = UINT8_MAX;
+  } else if (value < 0) {
+    value_uint8 = 0;
+  } else {
+    value_uint8 = (uint8_t) value;
+  }
+
+  return value_uint8;
+}
+
+static int8_t boundint8(int32_t value)
+{
+  int8_t value_int8;
+  if (value > INT8_MAX) {
+    value_int8 = INT8_MAX;
+  } else if (value < INT8_MIN) {
+    value_int8 = INT8_MIN;
+  } else {
+    value_int8 = (int8_t) value;
+  }
+
+  return value_int8;
+}
+
+
 /******************************************************/
 
 
@@ -720,7 +749,9 @@ static void gazebo_init_stereo_camera(void)
   gazebo_stereocam.last_measurement_time =   gazebo_stereocam.stereocam->LastMeasurementTime();
 
   /******************************EDGEFLOW****************************/
-  edgeflow_init(128, 96, 0);
+  struct cam_state_t cam_state;
+
+  edgeflow_init(128, 96, 0,&cam_state);
   edgeflow_params.fovx = (int32_t)(FOVX * 100);
   edgeflow_params.fovy = (int32_t)(FOVY * 100);
   /******************************************************************/
@@ -750,8 +781,7 @@ static void gazebo_read_stereo_camera(void)
 
     uint32_t pprz_ts = ts.Double() * 1e6;
 
-    edgeflow_total((uint8_t *)(img.buf), pprz_ts,
-  		  stereocam_data, 0);
+    edgeflow_total((uint8_t *)(img.buf), pprz_ts);
 
      float  vel_body_x_processed = (float)edgeflow.vel.z/ 100;
      float  vel_body_y_processed = (float)edgeflow.vel.x / 100;
@@ -773,16 +803,18 @@ static void gazebo_read_stereo_camera(void)
 
 
 
+/*
 
     float pxtorad=(float)FOVX / 128;
 
 
     float distance_closest_obstacle_float = (float)edgeflow.distance_closest_obstacle / 100;
     float heading_closest_obstacle_float = (float)(edgeflow.px_loc_closest_obstacle - 128/2) * pxtorad;
+*/
 
     //printf("obstacle distance heading: %f, %f, %f \n",
 
-    bool obstacle_detected = false;
+ /*   bool obstacle_detected = false;
 
     int k;
     for(k=20;k<88;k++)
@@ -800,8 +832,18 @@ static void gazebo_read_stereo_camera(void)
     }
     else
         AbiSendMsgOBSTACLE_DETECTION(RANGE_FORCEFIELD_ID,15.,0);
-   // printf("no obstacle\n");
+   // printf("no obstacle\n");*/
 
+
+    uint8_t distance_closest_obstacle = boundint8(edgeflow.distance_closest_obstacle);
+    uint8_t px_loc_closest_obstacle = boundint8(edgeflow.px_loc_closest_obstacle);
+
+
+    float pxtorad=(float)RadOfDeg(59) / 128;
+    float heading = (float)(px_loc_closest_obstacle)*pxtorad;
+    float distance = (float)(distance_closest_obstacle)/100;
+
+    AbiSendMsgOBSTACLE_DETECTION(AGL_RANGE_SENSORS_GAZEBO_ID, distance, heading);
 
 /*********************************************************************************/
 
