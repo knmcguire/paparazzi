@@ -734,6 +734,16 @@ static void gazebo_read_range_sensors(void)
 #endif
 
 #if NPS_SIMULATE_EXTERNAL_STEREO_CAMERA
+/******************************EDGEFLOW****************************/
+///COPIED FROM STEREOCAM////////////
+#include "modules/stereocam/stereocam.h"
+
+////////////COPIED FROM main.c
+struct FloatRMat body_to_cam;
+
+//////////////////////////////////////
+/******************************************************************/
+
 static void gazebo_init_stereo_camera(void)
 {
   gazebo::sensors::SensorManager *mgr =
@@ -741,6 +751,8 @@ static void gazebo_init_stereo_camera(void)
 
   gazebo_stereocam.stereocam = static_pointer_cast
                                < gazebo::sensors::MultiCameraSensor > (mgr->GetSensor("stereo_camera::stereo_camera"));
+
+
   if (!gazebo_stereocam.stereocam) {
     cout << "ERROR: Could not get pointer to stereocam!" << endl;
   }
@@ -749,11 +761,19 @@ static void gazebo_init_stereo_camera(void)
   gazebo_stereocam.last_measurement_time =   gazebo_stereocam.stereocam->LastMeasurementTime();
 
   /******************************EDGEFLOW****************************/
-  struct cam_state_t cam_state;
+  struct cam_state_t cam_state_gzb;
 
-  edgeflow_init(128, 96, 0,&cam_state);
+  edgeflow_init(128, 96, 0,&cam_state_gzb);
   edgeflow_params.fovx = (int32_t)(FOVX * 100);
   edgeflow_params.fovy = (int32_t)(FOVY * 100);
+
+
+  // COPIED FROM STEREOCAM
+  struct FloatEulers euler = {0.5*M_PI, 0, 0.5*M_PI};
+  float_rmat_of_eulers(&body_to_cam, &euler);
+ ///////////////////
+
+
   /******************************************************************/
 
 
@@ -776,74 +796,69 @@ static void gazebo_read_stereo_camera(void)
     //dummyvalues
     int16_t *stereocam_data;
     uint8_t *edgeflowArray;
-
     gazebo::common::Time ts = gazebo_stereocam.last_measurement_time;
 
-    uint32_t pprz_ts = ts.Double() * 1e6;
+    uint32_t pprz_gzb_ts = ts.Double() * 1e6;
+    //uint32_t pprz_gzb_ts = get_sys_time_usec();
 
-    edgeflow_total((uint8_t *)(img.buf), pprz_ts);
+    ////// COPIED FROM STEREOCAM.C  ////////
+    static struct FloatEulers cam_angles;
+    float_rmat_mult(&cam_angles, &body_to_cam, stateGetNedToBodyEulers_f());
+    float agl = 0;//stateGetAgl);
+    ////////////////COPIED FROM main.c
+    cam_state->phi = cam_angles.phi;
+    cam_state->theta = cam_angles.theta;
+    cam_state->psi = cam_angles.psi;
+    cam_state->alt = agl;
+    cam_state->us_timestamp = pprz_gzb_ts;
 
-     float  vel_body_x_processed = (float)edgeflow.vel.z/ 100;
-     float  vel_body_y_processed = (float)edgeflow.vel.x / 100;
-     float  vel_body_z_processed = (float)edgeflow.vel.y / 100;
+    ///////////////////////////
 
- //   cout<<vel_body_x_processed<<" "<<vel_body_y_processed<<" "<<vel_body_z_processed<<" "<<endl;
-
-
-
-   float FF_Gain = 2;
-
-    float vel_body_x_FF = - (float)edgeflow.vel_z_stereo_avoid_pixelwise/100;
-    float vel_body_y_FF = -FF_Gain*(float)edgeflow.vel_x_stereo_avoid_pixelwise/100;
-
-/*   		cout<< vel_body_x_FF << " "<< vel_body_y_FF<<endl;*/
-
-   // AbiSendMsgRANGE_FORCEFIELD(RANGE_FORCEFIELD_ID, vel_body_x_FF, vel_body_y_FF, 0);
-    //cout<< edgeflow.vel_z_stereo_avoid_pixelwise<< " "<<  edgeflow.vel_x_stereo_avoid_pixelwise<<endl;
+    edgeflow_total((uint8_t *)(img.buf), pprz_gzb_ts);
 
 
 
-/*
+    ////// COPIED FROM STEREOCAM.C  ////////
+    static struct FloatVect3 camera_vel;
 
-    float pxtorad=(float)FOVX / 128;
+    float res = (float)bounduint8(edgeflow_params.RES);
 
+    camera_vel.x = (float)edgeflow.vel.x/res;
+    camera_vel.y = (float)edgeflow.vel.y/res;
+    camera_vel.z = (float)edgeflow.vel.z/res;
 
-    float distance_closest_obstacle_float = (float)edgeflow.distance_closest_obstacle / 100;
-    float heading_closest_obstacle_float = (float)(edgeflow.px_loc_closest_obstacle - 128/2) * pxtorad;
-*/
+    cout<<edgeflow.vel.x <<" "<<edgeflow.vel.y<<endl;
 
-    //printf("obstacle distance heading: %f, %f, %f \n",
+    float noise = 1-(float)(edgeflow.flow_quality)/res;
 
- /*   bool obstacle_detected = false;
-
-    int k;
-    for(k=20;k<88;k++)
-    {
-    	if(edgeflow.obstacle_detect[k]==1)
-    	{
-    		obstacle_detected = true;
-    	break;
-    	}
-    }
-
-    if(obstacle_detected)
-    {
-    AbiSendMsgOBSTACLE_DETECTION(RANGE_FORCEFIELD_ID,1.,0);
-    }
-    else
-        AbiSendMsgOBSTACLE_DETECTION(RANGE_FORCEFIELD_ID,15.,0);
-   // printf("no obstacle\n");*/
+    // Rotate camera frame to body frame
+    struct FloatVect3 body_vel;
+    float_rmat_transp_vmult(&body_vel, &body_to_cam, &camera_vel);
 
 
+    //Send velocities to state
+    uint32_t now_ts = get_sys_time_usec();
+
+    AbiSendMsgVELOCITY_ESTIMATE(AGL_RANGE_SENSORS_GAZEBO_ID, now_ts,
+                                body_vel.x,
+                                body_vel.y,
+                                body_vel.z,
+                                noise
+                               );
+
+
+// GET obstacle
+    ///copied from edgeflow.c
     uint8_t distance_closest_obstacle = boundint8(edgeflow.distance_closest_obstacle);
     uint8_t px_loc_closest_obstacle = boundint8(edgeflow.px_loc_closest_obstacle);
-
+////
 
     float pxtorad=(float)RadOfDeg(59) / 128;
     float heading = (float)(px_loc_closest_obstacle)*pxtorad;
     float distance = (float)(distance_closest_obstacle)/100;
 
     AbiSendMsgOBSTACLE_DETECTION(AGL_RANGE_SENSORS_GAZEBO_ID, distance, heading);
+    /////////////////////////////////
 
 /*********************************************************************************/
 
