@@ -31,6 +31,14 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
+
+//OPENCV AND PLOTTING TOOLS
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include "matplotlibcpp.h"
+namespace plt = matplotlibcpp;
+
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -50,6 +58,10 @@ extern "C" {
 
 #include "generated/airframe.h"
 #include "autopilot.h"
+
+
+#include "subsystems/abi.h"
+#include "subsystems/datalink/telemetry.h"
 
 /**********************EDGEFLOW*************************/
 
@@ -125,7 +137,6 @@ static struct gazebocam_t gazebo_cams[VIDEO_THREAD_MAX_CAMERAS] =
 #endif
 
 #ifdef NPS_SIMULATE_RANGE_SENSORS
-#include "subsystems/abi.h"
 static void gazebo_init_range_sensors(void);
 static void gazebo_read_range_sensors(void);
 struct gazebo_range_sensors_t {
@@ -738,11 +749,37 @@ static void gazebo_read_range_sensors(void)
 ///COPIED FROM STEREOCAM////////////
 #include "modules/stereocam/stereocam.h"
 
+
+#include "filters/median_filter.h"
+struct MedianFilter3Float medianfilter;
+
 ////////////COPIED FROM main.c
 struct FloatRMat body_to_cam;
 
+static struct cam_state_t cam_state;
+
+
 //////////////////////////////////////
 /******************************************************************/
+
+///////PLOTTING FUNCTION/////
+static void plot_matlab(int32_t *array, uint16_t size, double scale,char* name )
+{
+  static int plot_counter = 0;
+
+  std::vector<double> X;
+  std::vector<double> Y;
+
+  int x;
+  for (x = 0; x < size; x++) {
+    X.push_back((double)x);
+    Y.push_back((double)array[x]*scale);
+  }
+
+  plt::plot(X,Y);
+	plt::named_plot(name, X, Y);
+}
+////////////////////////////////////
 
 static void gazebo_init_stereo_camera(void)
 {
@@ -760,17 +797,18 @@ static void gazebo_init_stereo_camera(void)
 
   gazebo_stereocam.last_measurement_time =   gazebo_stereocam.stereocam->LastMeasurementTime();
 
-  /******************************EDGEFLOW****************************/
-  struct cam_state_t cam_state_gzb;
+  /******************************EDGEFLOW  INIT****************************/
 
-  edgeflow_init(128, 96, 0,&cam_state_gzb);
+  edgeflow_init(128, 96, 0,&cam_state);
   edgeflow_params.fovx = (int32_t)(FOVX * 100);
   edgeflow_params.fovy = (int32_t)(FOVY * 100);
 
-
+  edgeflow_params.derotation = 1;
   // COPIED FROM STEREOCAM
   struct FloatEulers euler = {0.5*M_PI, 0, 0.5*M_PI};
   float_rmat_of_eulers(&body_to_cam, &euler);
+  InitMedianFilterVect3Float(medianfilter, MEDIAN_DEFAULT_SIZE);
+
  ///////////////////
 
 
@@ -792,31 +830,63 @@ static void gazebo_read_stereo_camera(void)
     struct image_t img;
     read_stereoimage(&img, stereocam);
 
+/////////////OPENCV STUFF/////////////////
+/*
+    cv::Mat YUV(96,128*2,CV_8UC1,(uint8_t *)img.buf);
+    //cv::Mat RGB(96,128,CV_8UC3);
+  //   cv::cvtColor(YUV, RGB, cv::COLOR_YUV2BGR_UYVY);
+
+     cv::namedWindow("stereo", cv::WINDOW_OPENGL);  // Create a window for display.
+     cv::imshow("stereo", YUV);
+*/
+
+    cv::Mat RGB_left(96,128,CV_8UC3,(uint8_t *)stereocam->ImageData(0));
+    cv::Mat RGB_right(96,128,CV_8UC3,(uint8_t *)stereocam->ImageData(1));
+
+    cv::cvtColor(RGB_left, RGB_left, cv::COLOR_RGB2BGR);
+    cv::cvtColor(RGB_right, RGB_right, cv::COLOR_RGB2BGR);
+
+
+    cv::namedWindow("left", cv::WINDOW_AUTOSIZE);  // Create a window for display.
+    cv::imshow("left", RGB_left);
+    cv::namedWindow("right", cv::WINDOW_AUTOSIZE);  // Create a window for display.
+    cv::imshow("right", RGB_right);
+    cv::waitKey(1);
+/////////////////////////////////
+
+
 /******************************************EDGEFLOW*******************************/
     //dummyvalues
     int16_t *stereocam_data;
     uint8_t *edgeflowArray;
     gazebo::common::Time ts = gazebo_stereocam.last_measurement_time;
 
-    uint32_t pprz_gzb_ts = ts.Double() * 1e6;
-    //uint32_t pprz_gzb_ts = get_sys_time_usec();
+    //uint32_t pprz_gzb_ts = ts.Double() * 1e6;
+    uint32_t pprz_gzb_ts = get_sys_time_usec();
 
     ////// COPIED FROM STEREOCAM.C  ////////
     static struct FloatEulers cam_angles;
     float_rmat_mult(&cam_angles, &body_to_cam, stateGetNedToBodyEulers_f());
     float agl = 0;//stateGetAgl);
     ////////////////COPIED FROM main.c
-    cam_state->phi = cam_angles.phi;
-    cam_state->theta = cam_angles.theta;
-    cam_state->psi = cam_angles.psi;
-    cam_state->alt = agl;
-    cam_state->us_timestamp = pprz_gzb_ts;
+    cam_state.phi = cam_angles.phi;
+    cam_state.theta = cam_angles.theta;
+    cam_state.psi = cam_angles.psi;
+    cam_state.alt = agl;
+    cam_state.us_timestamp = pprz_gzb_ts;
 
     ///////////////////////////
 
+    //////RUN EDGEFLOW//////
+
     edgeflow_total((uint8_t *)(img.buf), pprz_gzb_ts);
 
-
+    plt::clf();
+    plot_matlab(edgeflow.edge_hist[edgeflow.current_frame_nr].x,128,1, "edge_histogram");
+    plot_matlab(edgeflow.edge_hist_right,128,1, "edge_histogram");
+    plot_matlab(edgeflow.disp.stereo,128,3, "edge_histogram");
+    plot_matlab((int32_t*)edgeflow.disp.confidence_stereo,128,3, "edge_histogram");
+    plt::pause(0.0001);
 
     ////// COPIED FROM STEREOCAM.C  ////////
     static struct FloatVect3 camera_vel;
@@ -827,24 +897,31 @@ static void gazebo_read_stereo_camera(void)
     camera_vel.y = (float)edgeflow.vel.y/res;
     camera_vel.z = (float)edgeflow.vel.z/res;
 
-    cout<<edgeflow.vel.x <<" "<<edgeflow.vel.y<<endl;
 
     float noise = 1-(float)(edgeflow.flow_quality)/res;
 
     // Rotate camera frame to body frame
     struct FloatVect3 body_vel;
-    float_rmat_transp_vmult(&body_vel, &body_to_cam, &camera_vel);
+    //float_rmat_transp_vmult(&body_vel, &body_to_cam, &camera_vel);
 
+    body_vel.x = camera_vel.z;
+    body_vel.y = camera_vel.x;
+    body_vel.z = camera_vel.y;
 
     //Send velocities to state
     uint32_t now_ts = get_sys_time_usec();
+
+    UpdateMedianFilterVect3Float(medianfilter, body_vel);
+/*
 
     AbiSendMsgVELOCITY_ESTIMATE(AGL_RANGE_SENSORS_GAZEBO_ID, now_ts,
                                 body_vel.x,
                                 body_vel.y,
                                 body_vel.z,
                                 noise
-                               );
+                               );*/
+
+
 
 
 // GET obstacle
@@ -861,6 +938,15 @@ static void gazebo_read_stereo_camera(void)
     /////////////////////////////////
 
 /*********************************************************************************/
+    uint16_t dummy_uint16 = 0;
+    uint8_t dummy_uint8 = 0;
+
+    int16_t dummy_int16 = 0;
+    float dummy_float = 0;
+
+    float avg_distance = (float)edgeflow.avg_dist / 100;
+
+    DOWNLINK_SEND_SETTINGS(DefaultChannel, DefaultDevice, &body_vel.x, &body_vel.y);
 
     image_free(&img);
     gazebo_stereocam.last_measurement_time = stereocam->LastMeasurementTime();

@@ -71,8 +71,8 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_Z_VEL_YAW_OFFSET,0.,0.,-climb_descent_vel,0.)"/>
       <while cond="LessThan(stateGetPositionEnu_f()->z,nominal_alt)"/>
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,0.)"/> 
-     <deroute block="Go Forward"/>   
       <while cond="LessThan(stage_time,1)"/>
+     <deroute block="Go Forward"/>   
     </block>
 
     <block name="Turn to heading">
