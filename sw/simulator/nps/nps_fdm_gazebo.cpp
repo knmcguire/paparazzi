@@ -846,7 +846,6 @@ static void gazebo_read_stereo_camera(void)
     cv::cvtColor(RGB_left, RGB_left, cv::COLOR_RGB2BGR);
     cv::cvtColor(RGB_right, RGB_right, cv::COLOR_RGB2BGR);
 
-
     cv::namedWindow("left", cv::WINDOW_AUTOSIZE);  // Create a window for display.
     cv::imshow("left", RGB_left);
     cv::namedWindow("right", cv::WINDOW_AUTOSIZE);  // Create a window for display.
@@ -873,7 +872,9 @@ static void gazebo_read_stereo_camera(void)
     cam_state.theta = cam_angles.theta;
     cam_state.psi = cam_angles.psi;
     cam_state.alt = agl;
-    cam_state.us_timestamp = pprz_gzb_ts;
+    cam_state.us_timestamp =  img.pprz_ts;
+
+    DOWNLINK_SEND_ATTITUDE(DefaultChannel, DefaultDevice, &cam_angles.phi, &cam_angles.psi, &cam_angles.theta);
 
     ///////////////////////////
 
@@ -883,9 +884,9 @@ static void gazebo_read_stereo_camera(void)
 
     plt::clf();
     plot_matlab(edgeflow.edge_hist[edgeflow.current_frame_nr].x,128,1, "edge_histogram");
-    plot_matlab(edgeflow.edge_hist_right,128,1, "edge_histogram");
-    plot_matlab(edgeflow.disp.stereo,128,3, "edge_histogram");
-    plot_matlab((int32_t*)edgeflow.disp.confidence_stereo,128,3, "edge_histogram");
+    plot_matlab(edgeflow.edge_hist[edgeflow.prev_frame_x].x,128,1, "edge_histogram");
+    plot_matlab(edgeflow.disp.x,128,10, "edge_histogram");
+    plot_matlab((int32_t*)edgeflow.disp.confidence_x,128,0.05, "edge_histogram");
     plt::pause(0.0001);
 
     ////// COPIED FROM STEREOCAM.C  ////////

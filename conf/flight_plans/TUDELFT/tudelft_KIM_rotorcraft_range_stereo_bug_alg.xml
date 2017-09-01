@@ -21,6 +21,7 @@
   <variables>
 	  <variable var="desired_heading" init="0.0f" type="float"/>
 	  <variable var="save_heading" init="0.0f" type="float"/>
+	  <variable var="save_heading_2" init="0.0f" type="float"/>
 	  <variable var="save_distance" init="0.0f" type="float"/>
 	  <variable var="diff_heading" init="0.0f" type="float"/>
 	  <variable var="offset_heading" init="0.0f" type="float"/>
@@ -70,10 +71,22 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
     <block name="Take off">
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_Z_VEL_YAW_OFFSET,0.,0.,-climb_descent_vel,0.)"/>
       <while cond="LessThan(stateGetPositionEnu_f()->z,nominal_alt)"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,0.)"/> 
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(135.))"/> 
       <while cond="LessThan(stage_time,1)"/>
-     <deroute block="Go Forward"/>   
+     <!--deroute block="Go Forward"/-->   
     </block>
+
+
+   <block name="Test Turn">
+      <set var="save_heading" value=" DegOfRad(45.)"/>
+      <set var="save_heading_2" value=" DegOfRad(135.)"/>
+     <while cond = "1">
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.,-nominal_alt,-0.5)"/>
+      <while cond="LessThan(stage_time,1)"/>
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.,-nominal_alt,0.5)"/>
+      <while cond="LessThan(stage_time,1)"/>
+     </while>
+   </block>
 
     <block name="Turn to heading">
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_OFFSET,0.,0.,-nominal_alt,0.)"/>
