@@ -82,7 +82,8 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_Z_VEL_YAW_OFFSET,0.,0.,-climb_descent_vel,0.)"/>
       <while cond="LessThan(stateGetPositionEnu_f()->z,nominal_alt)"/>
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,0.0)"/> 
-      <while cond="LessThan(stage_time,1)"/>
+      <!--while cond="LessThan(stage_time,1)"/-->
+      <while cond="1"/>
      <!--deroute block="Go Forward"/-->   
     </block>
 
@@ -106,10 +107,13 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
    <block name="Test Turn">
       <set var="save_heading" value=" DegOfRad(45.)"/>
       <set var="save_heading_2" value=" DegOfRad(135.)"/>
-     <while cond = "1">
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.,-nominal_alt,-0.5)"/>
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,save_heading_2)"/> 
+
       <while cond="LessThan(stage_time,1)"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.,-nominal_alt,0.5)"/>
+     <while cond = "1">
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.,-nominal_alt,-0.3)"/>
+      <while cond="LessThan(stage_time,1)"/>
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.,-nominal_alt,0.3)"/>
       <while cond="LessThan(stage_time,1)"/>
      </while>
    </block>
@@ -138,12 +142,16 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
 
 
    <block name="Turn Left">
+       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0,-nominal_alt,0)"/>
+      <while cond="LessThan(stage_time,1)"/> 
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.,-nominal_alt,-0.5)"/>
       <exception cond="distance_obstacle_FP>1.2" deroute="Go Forward"/> 
       <while cond="1"/>
     </block>
 
    <block name="Turn Right">
+       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0,-nominal_alt,0)"/>
+      <while cond="LessThan(stage_time,1)"/> 
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.,-nominal_alt,0.5)"/>
       <exception cond="distance_obstacle_FP>1.2" deroute="Go Forward"/> 
       <while cond="1"/>
@@ -151,6 +159,8 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
 
     <block name="Go Forward">
          <set var="save_heading" value="0"/>
+        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0,-nominal_alt,0)"/>
+      <while cond="LessThan(stage_time,1)"/> 
         <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,forward_vel,0,-nominal_alt,0)"/>
 
       <while cond="1">

@@ -756,8 +756,10 @@ struct MedianFilter3Float medianfilter;
 ////////////COPIED FROM main.c
 struct FloatRMat body_to_cam;
 
-static struct cam_state_t cam_state;
 
+/////////////NEW CODE
+//static struct cam_state_t cam_state; //deselect for old code
+////////////
 
 //////////////////////////////////////
 /******************************************************************/
@@ -799,7 +801,15 @@ static void gazebo_init_stereo_camera(void)
 
   /******************************EDGEFLOW  INIT****************************/
 
-  edgeflow_init(128, 96, 0,&cam_state);
+
+  //////////////////NEW CODE/////////////
+  // edgeflow_init(128, 96, 0,&cam_state);
+
+   //////////////////old CODE/////////////
+  edgeflow_init(128, 96, 0); //old code
+   ////////////////////////////////////////
+
+
   edgeflow_params.fovx = (int32_t)(FOVX * 100);
   edgeflow_params.fovy = (int32_t)(FOVY * 100);
 
@@ -867,20 +877,39 @@ static void gazebo_read_stereo_camera(void)
     static struct FloatEulers cam_angles;
     float_rmat_mult(&cam_angles, &body_to_cam, stateGetNedToBodyEulers_f());
     float agl = -1*stateGetPositionNed_f()->z;
+
+ /////NEW_CODE////////////////
     ////////////////COPIED FROM main.c
-    cam_state.phi = cam_angles.phi;
+/*     cam_state.phi = cam_angles.phi;
     cam_state.theta = cam_angles.theta;
     cam_state.psi = cam_angles.psi;
     cam_state.alt = agl;
-    cam_state.us_timestamp =  img.pprz_ts;
+    cam_state.us_timestamp =  img.pprz_ts;*/
+
+
+/////OLD CODE
+    edgeflow.edge_hist[edgeflow.current_frame_nr].roll = (int16_t)(cam_angles.phi * 100);
+    edgeflow.edge_hist[edgeflow.current_frame_nr].pitch = (int16_t)(cam_angles.theta * 100);
+    edgeflow.edge_hist[edgeflow.current_frame_nr].yaw =  (int16_t)(cam_angles.psi * 100);
+    edgeflow.edge_hist[edgeflow.current_frame_nr].alt = (int16_t)(agl*100);
+
+
+    edgeflow_params.derotation = 1;
+//////////////////////
+
 
     DOWNLINK_SEND_ATTITUDE(DefaultChannel, DefaultDevice, &cam_angles.phi, &cam_angles.psi, &cam_angles.theta);
+
 
     ///////////////////////////
 
     //////RUN EDGEFLOW//////
 
-    edgeflow_total((uint8_t *)(img.buf), pprz_gzb_ts);
+    ///////////NEWCODE////////////
+    //edgeflow_total((uint8_t *)(img.buf), pprz_gzb_ts);
+    //////////OLDCODE
+    edgeflow_total((uint8_t *)(img.buf), pprz_gzb_ts,stereocam_data,0); // old code
+    /////////////////////////
 
     ///PLOT STUFF
 /*    plt::clf();
@@ -912,7 +941,7 @@ static void gazebo_read_stereo_camera(void)
 
     body_vel.x = camera_vel.z;
     body_vel.y = camera_vel.x;
-    body_vel.z = camera_vel.y;
+    body_vel.z = 0;
 
 
     DOWNLINK_SEND_IMU_MAG(DefaultChannel, DefaultDevice, &camera_vel.x, &camera_vel.y, &camera_vel.z);
@@ -933,15 +962,16 @@ static void gazebo_read_stereo_camera(void)
                                 body_vel.z,
                                 noise
                                );
-
 */
+
+
 
 
 
 // GET obstacle
     ///copied from edgeflow.c
     uint8_t distance_closest_obstacle = boundint8(edgeflow.distance_closest_obstacle);
-    uint8_t px_loc_closest_obstacle = boundint8(edgeflow.px_loc_closest_obstacle);
+    uint8_t px_loc_closest_obstacle = 64;//boundint8(edgeflow.px_loc_closest_obstacle);
 ////
 
     float pxtorad=(float)RadOfDeg(59) / 128;
