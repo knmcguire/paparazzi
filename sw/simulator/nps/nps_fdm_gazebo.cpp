@@ -866,7 +866,7 @@ static void gazebo_read_stereo_camera(void)
     ////// COPIED FROM STEREOCAM.C  ////////
     static struct FloatEulers cam_angles;
     float_rmat_mult(&cam_angles, &body_to_cam, stateGetNedToBodyEulers_f());
-    float agl = 0;//stateGetAgl);
+    float agl = -1*stateGetPositionNed_f()->z;
     ////////////////COPIED FROM main.c
     cam_state.phi = cam_angles.phi;
     cam_state.theta = cam_angles.theta;
@@ -882,12 +882,14 @@ static void gazebo_read_stereo_camera(void)
 
     edgeflow_total((uint8_t *)(img.buf), pprz_gzb_ts);
 
-    plt::clf();
+    ///PLOT STUFF
+/*    plt::clf();
     plot_matlab(edgeflow.edge_hist[edgeflow.current_frame_nr].x,128,1, "edge_histogram");
     plot_matlab(edgeflow.edge_hist[edgeflow.prev_frame_x].x,128,1, "edge_histogram");
     plot_matlab(edgeflow.disp.x,128,10, "edge_histogram");
     plot_matlab((int32_t*)edgeflow.disp.confidence_x,128,0.05, "edge_histogram");
-    plt::pause(0.0001);
+    plt::pause(0.0001);*/
+    /////
 
     ////// COPIED FROM STEREOCAM.C  ////////
     static struct FloatVect3 camera_vel;
@@ -903,25 +905,36 @@ static void gazebo_read_stereo_camera(void)
 
     // Rotate camera frame to body frame
     struct FloatVect3 body_vel;
-    //float_rmat_transp_vmult(&body_vel, &body_to_cam, &camera_vel);
+   // float_rmat_transp_vmult(&body_vel, &body_to_cam, &camera_vel);
+
+
+
 
     body_vel.x = camera_vel.z;
     body_vel.y = camera_vel.x;
     body_vel.z = camera_vel.y;
 
+
+    DOWNLINK_SEND_IMU_MAG(DefaultChannel, DefaultDevice, &camera_vel.x, &camera_vel.y, &camera_vel.z);
+
+    //DOWNLINK_SEND_SETTINGS(DefaultChannel, DefaultDevice, &camera_vel.z, &camera_vel.x);
+
+
     //Send velocities to state
     uint32_t now_ts = get_sys_time_usec();
 
     UpdateMedianFilterVect3Float(medianfilter, body_vel);
-/*
 
+/*
+    if(agl>0.8f)
     AbiSendMsgVELOCITY_ESTIMATE(AGL_RANGE_SENSORS_GAZEBO_ID, now_ts,
                                 body_vel.x,
                                 body_vel.y,
                                 body_vel.z,
                                 noise
-                               );*/
+                               );
 
+*/
 
 
 
@@ -947,7 +960,6 @@ static void gazebo_read_stereo_camera(void)
 
     float avg_distance = (float)edgeflow.avg_dist / 100;
 
-    DOWNLINK_SEND_SETTINGS(DefaultChannel, DefaultDevice, &body_vel.x, &body_vel.y);
 
     image_free(&img);
     gazebo_stereocam.last_measurement_time = stereocam->LastMeasurementTime();
