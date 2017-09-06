@@ -758,7 +758,7 @@ struct FloatRMat body_to_cam;
 
 
 /////////////NEW CODE
-//static struct cam_state_t cam_state; //deselect for old code
+static struct cam_state_t cam_state; //deselect for old code
 ////////////
 
 //////////////////////////////////////
@@ -803,10 +803,10 @@ static void gazebo_init_stereo_camera(void)
 
 
   //////////////////NEW CODE/////////////
-  // edgeflow_init(128, 96, 0,&cam_state);
+   edgeflow_init(128, 96, 0,&cam_state);
 
    //////////////////old CODE/////////////
-  edgeflow_init(128, 96, 0); //old code
+  //edgeflow_init(128, 96, 0); //old code
    ////////////////////////////////////////
 
 
@@ -870,7 +870,7 @@ static void gazebo_read_stereo_camera(void)
     uint8_t *edgeflowArray;
     gazebo::common::Time ts = gazebo_stereocam.last_measurement_time;
 
-    //uint32_t pprz_gzb_ts = ts.Double() * 1e6;
+   // uint32_t pprz_gzb_ts = (uint32_t)(ts.Double() * 1e6);
     uint32_t pprz_gzb_ts = get_sys_time_usec();
 
     ////// COPIED FROM STEREOCAM.C  ////////
@@ -880,21 +880,20 @@ static void gazebo_read_stereo_camera(void)
 
  /////NEW_CODE////////////////
     ////////////////COPIED FROM main.c
-/*     cam_state.phi = cam_angles.phi;
+     cam_state.phi = cam_angles.phi;
     cam_state.theta = cam_angles.theta;
     cam_state.psi = cam_angles.psi;
     cam_state.alt = agl;
-    cam_state.us_timestamp =  img.pprz_ts;*/
+    cam_state.us_timestamp =  img.pprz_ts;
 
 
 /////OLD CODE
-    edgeflow.edge_hist[edgeflow.current_frame_nr].roll = (int16_t)(cam_angles.phi * 100);
+/*    edgeflow.edge_hist[edgeflow.current_frame_nr].roll = (int16_t)(cam_angles.phi * 100);
     edgeflow.edge_hist[edgeflow.current_frame_nr].pitch = (int16_t)(cam_angles.theta * 100);
     edgeflow.edge_hist[edgeflow.current_frame_nr].yaw =  (int16_t)(cam_angles.psi * 100);
-    edgeflow.edge_hist[edgeflow.current_frame_nr].alt = (int16_t)(agl*100);
+    edgeflow.edge_hist[edgeflow.current_frame_nr].alt = (int16_t)(agl*100);*/
 
-
-    edgeflow_params.derotation = 1;
+  //  edgeflow_params.derotation = 0;
 //////////////////////
 
 
@@ -906,9 +905,9 @@ static void gazebo_read_stereo_camera(void)
     //////RUN EDGEFLOW//////
 
     ///////////NEWCODE////////////
-    //edgeflow_total((uint8_t *)(img.buf), pprz_gzb_ts);
+    edgeflow_total((uint8_t *)(img.buf), pprz_gzb_ts);
     //////////OLDCODE
-    edgeflow_total((uint8_t *)(img.buf), pprz_gzb_ts,stereocam_data,0); // old code
+    //edgeflow_total((uint8_t *)(img.buf), pprz_gzb_ts,stereocam_data,0); // old code
     /////////////////////////
 
     ///PLOT STUFF
@@ -937,14 +936,12 @@ static void gazebo_read_stereo_camera(void)
    // float_rmat_transp_vmult(&body_vel, &body_to_cam, &camera_vel);
 
 
-
-
     body_vel.x = camera_vel.z;
     body_vel.y = camera_vel.x;
     body_vel.z = 0;
 
 
-    DOWNLINK_SEND_IMU_MAG(DefaultChannel, DefaultDevice, &camera_vel.x, &camera_vel.y, &camera_vel.z);
+    DOWNLINK_SEND_IMU_MAG(DefaultChannel, DefaultDevice, &camera_vel.x, &camera_vel.y, &noise);
 
     //DOWNLINK_SEND_SETTINGS(DefaultChannel, DefaultDevice, &camera_vel.z, &camera_vel.x);
 
@@ -954,15 +951,22 @@ static void gazebo_read_stereo_camera(void)
 
     UpdateMedianFilterVect3Float(medianfilter, body_vel);
 
-/*
-    if(agl>0.8f)
+
+    if(abs(body_vel.x)>1)
+    	body_vel.x = 0;
+
+    if(abs(body_vel.y)>1)
+    	body_vel.y = 0;
+   // if(agl>0.5f&&(guidance_h.sp.heading_rate==0.0))
+
+    if(agl>0.5)
     AbiSendMsgVELOCITY_ESTIMATE(AGL_RANGE_SENSORS_GAZEBO_ID, now_ts,
                                 body_vel.x,
                                 body_vel.y,
                                 body_vel.z,
                                 noise
                                );
-*/
+
 
 
 

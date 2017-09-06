@@ -65,58 +65,15 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
       <call_once fun="autopilot_set_motors_on(TRUE)"/>
       <while cond="1"/>
     </block>
-    
- <!--Take off:
- 1. The MAV will first climb with 0.3 m/s upwards (z is down)   
- 2. If it detects that the MAV has surpased the nominal altitude (given obove in the flightplan)"
- 3. It will hold the nominal altitude and wait for 1 second before it moves to Go Forward-->
 
-    <!--block name="Take off">
+    <block name="Take off">
       <call_once fun="guidance_v_set_guided_th(0.85)"/>
       <while cond="LessThan(stateGetPositionEnu_f()->z,nominal_alt)"/>
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/> 
       <while cond="LessThan(stage_time,1)"/>
      <deroute block="Go Forward"/>   
-    </block-->
-    <block name="Take off">
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_Z_VEL_YAW_OFFSET,0.,0.,-climb_descent_vel,0.)"/>
-      <while cond="LessThan(stateGetPositionEnu_f()->z,nominal_alt)"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,0.0)"/> 
-      <!--while cond="LessThan(stage_time,1)"/-->
-      <while cond="1"/>
-     <!--deroute block="Go Forward"/-->   
     </block>
 
-
-
-   <block name="Test sideways">
-     <while cond = "1">
-      <set var="counter" value="0"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,-0.3,-nominal_alt,0)"/>
-    <while cond="120 > counter">
-      <call_once fun="counter++"/>
-    </while>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.3,-nominal_alt,0)"/>
-    <while cond="240 > counter">
-      <call_once fun="counter++"/>
-    </while>
-     </while>
-   </block>
-
-
-   <block name="Test Turn">
-      <set var="save_heading" value=" DegOfRad(45.)"/>
-      <set var="save_heading_2" value=" DegOfRad(135.)"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,save_heading_2)"/> 
-
-      <while cond="LessThan(stage_time,1)"/>
-     <while cond = "1">
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.,-nominal_alt,-0.3)"/>
-      <while cond="LessThan(stage_time,1)"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.,-nominal_alt,0.3)"/>
-      <while cond="LessThan(stage_time,1)"/>
-     </while>
-   </block>
 
     <block name="Turn to heading">
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_OFFSET,0.,0.,-nominal_alt,0.)"/>
@@ -174,80 +131,6 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
     </block>
 
 
-
-   <block name="Turn Left 3">
-      <set var="save_heading" value="atan(0.5/distance_obstacle_FP)"/>
-      <set var="save_distance" value="distance_obstacle_FP"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_BODY_YAW_OFFSET,0.,0.,-nominal_alt,-save_heading)"/>
-      <while cond="LessThan(stage_time,1)"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_BODY_YAW_OFFSET,save_distance,0.,-nominal_alt,0)"/>
-      <while cond="LessThan(stage_time,1)"/>
-     <deroute block="Turn to heading"/>
-    </block>
-
-    <block name="Turn Right 3">
-      <set var="save_heading" value="atan(0.5/distance_obstacle_FP)"/>
-      <set var="save_distance" value="distance_obstacle_FP"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_BODY_YAW_OFFSET,0.,0.,-nominal_alt,+save_heading)"/>
-      <while cond="LessThan(stage_time,1)"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_BODY_YAW_OFFSET,save_distance,0.,-nominal_alt,0)"/>
-      <while cond="LessThan(stage_time,1)"/>
-     <deroute block="Turn to heading"/>
-    </block>
-
-
-<!--block name="Go around small obstacle">
-        <while cond="distance_obstacle_FP>1.2">
-     <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_OFFSET,forward_vel + 0,0,-nominal_alt,0)"/>
-        </while>
-        <while cond="1.2>distance_obstacle_FP&&0>fabs(DegOfRad(heading_obstacle_FP))">
-        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_OFFSET,forward_vel + 0,0,-nominal_alt,0.5)"/>
-        </while>
-        <while cond="1.2>distance_obstacle_FP&&fabs(DegOfRad(heading_obstacle_FP))>0">
-        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,forward_vel + 0,0,-nominal_alt,0.5)"/>
-        </while>
-      </while>
-
-</block-->
-
-<block name="Go around small obstacle_3">
-
-        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY,0,0,-nominal_alt,desired_heading)"/>
-      <while cond="LessThan(stage_time,1)"/> 
-      <while cond="1">
-        <while cond="distance_obstacle_FP>1.2">
-     <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY,forward_vel + 0,0,-nominal_alt,desired_heading)"/>
-        </while>
-        <while cond="1.2>distance_obstacle_FP">
-      <set var="save_heading" value="RadOfDeg(turn_angle)"/>
-      <set var="offset_heading" value="stateGetNedToBodyEulers_f()->psi - (RadOfDeg(90.0)-heading_obstacle_FP)"/>
-      <set var="vel_x_NED_heading_offset" value="cosf(-offset_heading)*forward_vel + sinf(-offset_heading) * (heading_obstacle_FP-1.0)"/>
-      <set var="vel_y_NED_heading_offset" value="-sinf(-offset_heading)*forward_vel + cosf(-offset_heading) *(1.0-heading_obstacle_FP-1.0)"/>
-        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY,forward_vel,0,-nominal_alt,stateGetNedToBodyEulers_f()->psi+(heading_obstacle_FP-save_heading))"/>
-        </while>
-      </while>
-      <!--exception cond="1.2>distance_obstacle_FP&&turned_right" deroute="Turn Left"/> 
-      <exception cond="1.2>distance_obstacle_FP&&turned_left" deroute="Turn Right"/--> 
-    </block>
-
-
-    <block name="Go around small obstacle_2">
-      <set var="save_heading" value="0.15"/>
-
-        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY,0,0,-nominal_alt,desired_heading)"/>
-      <while cond="LessThan(stage_time,1)"/> 
-      <while cond="1">
-        <while cond="distance_obstacle_FP==15.">
-     <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY,forward_vel + 0,0,-nominal_alt,desired_heading)"/>
-        </while>
-        <while cond="15.>distance_obstacle_FP">
-        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_OFFSET,forward_vel + 0,0,-nominal_alt,heading_obstacle_FP-save_heading)"/>
-        </while>
-      </while>
-      <!--exception cond="1.2>distance_obstacle_FP&&turned_right" deroute="Turn Left"/> 
-      <exception cond="1.2>distance_obstacle_FP&&turned_left" deroute="Turn Right"/--> 
-    </block>
-
  
 
 
@@ -277,14 +160,6 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
      <deroute block="FW_change_heading"/>
     </block>
 
-    <!--block name="FW_steady_distance">
-      <while cond="TRUE" >
-        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,forward_vel + 0,gain_wall*vel_body_y_WF,-nominal_alt,0)"/>
-      </while>
-      <exception cond="1>distance_obstacle_FP" deroute="FW_change_heading"/> 
-    </block-->
-
-
 
     <block name="FW_change_heading">
 
@@ -296,30 +171,6 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
       </while>
      <deroute block="Turn to heading"/>
     </block>
-
-
-<!-- Turn 90 deg:
-1. First the MAV will hover with all velocities on zero for 1 second
-2. An wanted heading is determined from the MAVs current state (90 deg offset is default)
-3. Then the drone turns with an constant rate (default: 0.5 rad/s)
-4. Once the desired heading is reached, the MAV will stop turning and keep this heading
-5. After 1 second, it will go back to the "Go Forward" block  >
-		
-    <block name="Turn 90 deg">
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_OFFSET,0.,0.,-nominal_alt,0.)"/>
-      <while cond="LessThan(stage_time,1)"/>
-      <set var="desired_heading" value="stateGetNedToBodyEulers_f()->psi + RadOfDeg(turn_angle)"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0.,0.,-nominal_alt,turn_rate)"/>
-      <while cond="!CloseDegAngles(DegOfRad(stateGetNedToBodyEulers_f()->psi),DegOfRad(desired_heading))"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY,0.,0.,-nominal_alt,desired_heading)"/>
-      <while cond="LessThan(stage_time,1)"/>
-      <deroute block="Go Forward"/>
-    </block-->
-
-<!-- Land:
-1. Same as take off, but now it descents with an constant speed (default: 0.3 m/s)
-2. If the MAV is close to the ground (0.1 m), the drone will set its desired height to zero
-3. After 3 seconds, it will shut off its motors -->
 
     <block name="Land">
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_Z_VEL_YAW_OFFSET,0.,0.,climb_descent_vel,0.)"/>
