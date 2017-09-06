@@ -752,6 +752,7 @@ static void gazebo_read_range_sensors(void)
 
 #include "filters/median_filter.h"
 struct MedianFilter3Float medianfilter;
+struct MedianFilter3Float medianfilter_angle;
 
 ////////////COPIED FROM main.c
 struct FloatRMat body_to_cam;
@@ -818,6 +819,7 @@ static void gazebo_init_stereo_camera(void)
   struct FloatEulers euler = {0.5*M_PI, 0, 0.5*M_PI};
   float_rmat_of_eulers(&body_to_cam, &euler);
   InitMedianFilterVect3Float(medianfilter, MEDIAN_DEFAULT_SIZE);
+  InitMedianFilterVect3Float(medianfilter_angle, MEDIAN_DEFAULT_SIZE);
 
  ///////////////////
 
@@ -877,10 +879,11 @@ static void gazebo_read_stereo_camera(void)
     static struct FloatEulers cam_angles;
     float_rmat_mult(&cam_angles, &body_to_cam, stateGetNedToBodyEulers_f());
     float agl = -1*stateGetPositionNed_f()->z;
+    GetMedianFilterEulerFloat(medianfilter_angle, cam_angles);
 
  /////NEW_CODE////////////////
     ////////////////COPIED FROM main.c
-     cam_state.phi = cam_angles.phi;
+    cam_state.phi = cam_angles.phi;
     cam_state.theta = cam_angles.theta;
     cam_state.psi = cam_angles.psi;
     cam_state.alt = agl;
@@ -895,7 +898,6 @@ static void gazebo_read_stereo_camera(void)
 
   //  edgeflow_params.derotation = 0;
 //////////////////////
-
 
     DOWNLINK_SEND_ATTITUDE(DefaultChannel, DefaultDevice, &cam_angles.phi, &cam_angles.psi, &cam_angles.theta);
 
@@ -959,7 +961,7 @@ static void gazebo_read_stereo_camera(void)
     	body_vel.y = 0;
    // if(agl>0.5f&&(guidance_h.sp.heading_rate==0.0))
 
-    if(agl>0.5)
+    if(agl>0.3)
     AbiSendMsgVELOCITY_ESTIMATE(AGL_RANGE_SENSORS_GAZEBO_ID, now_ts,
                                 body_vel.x,
                                 body_vel.y,

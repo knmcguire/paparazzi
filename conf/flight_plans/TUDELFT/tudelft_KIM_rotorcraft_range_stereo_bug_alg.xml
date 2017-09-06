@@ -67,7 +67,7 @@ Remember to choose AP_MODE_GUIDED or else it won't work!!!
     </block>
 
     <block name="Take off">
-      <call_once fun="guidance_v_set_guided_th(0.85)"/>
+      <call_once fun="guidance_v_set_guided_th(0.75)"/>
       <while cond="LessThan(stateGetPositionEnu_f()->z,nominal_alt)"/>
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/> 
       <while cond="LessThan(stage_time,1)"/>
