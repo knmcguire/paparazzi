@@ -879,7 +879,7 @@ static void gazebo_read_stereo_camera(void)
     static struct FloatEulers cam_angles;
     float_rmat_mult(&cam_angles, &body_to_cam, stateGetNedToBodyEulers_f());
     float agl = -1*stateGetPositionNed_f()->z;
-    GetMedianFilterEulerFloat(medianfilter_angle, cam_angles);
+   // GetMedianFilterEulerFloat(medianfilter_angle, cam_angles);
 
  /////NEW_CODE////////////////
     ////////////////COPIED FROM main.c
@@ -943,7 +943,7 @@ static void gazebo_read_stereo_camera(void)
     body_vel.z = 0;
 
 
-    DOWNLINK_SEND_IMU_MAG(DefaultChannel, DefaultDevice, &camera_vel.x, &camera_vel.y, &noise);
+    DOWNLINK_SEND_IMU_MAG(DefaultChannel, DefaultDevice, &body_vel.x, &body_vel.y, &noise);
 
     //DOWNLINK_SEND_SETTINGS(DefaultChannel, DefaultDevice, &camera_vel.z, &camera_vel.x);
 
@@ -954,13 +954,14 @@ static void gazebo_read_stereo_camera(void)
     UpdateMedianFilterVect3Float(medianfilter, body_vel);
 
 
-    if(abs(body_vel.x)>1)
+    if(fabs(body_vel.x)>2)
     	body_vel.x = 0;
 
-    if(abs(body_vel.y)>1)
+    if(fabs(body_vel.y)>2)
     	body_vel.y = 0;
    // if(agl>0.5f&&(guidance_h.sp.heading_rate==0.0))
 
+/*
     if(agl>0.3)
     AbiSendMsgVELOCITY_ESTIMATE(AGL_RANGE_SENSORS_GAZEBO_ID, now_ts,
                                 body_vel.x,
@@ -968,6 +969,7 @@ static void gazebo_read_stereo_camera(void)
                                 body_vel.z,
                                 noise
                                );
+*/
 
 
 
