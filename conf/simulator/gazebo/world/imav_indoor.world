@@ -366,7 +366,7 @@
         <type>uniform</type>
       </distribution>
     </population>
-    <population name="bush_population">
+    <!--population name="bush_population">
       <model name="bush">
         <static>true</static>
         <link name="body">
@@ -398,7 +398,7 @@
       <distribution>
         <type>uniform</type>
       </distribution>
-    </population>
+    </population-->
     <model name="helipad_static">
       <static>true</static>
       <link name="helipad_link">

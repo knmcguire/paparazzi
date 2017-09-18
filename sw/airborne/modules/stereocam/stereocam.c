@@ -146,8 +146,20 @@ void stereocam_parse_vel(struct FloatVect3 camera_vel, float R2, struct FloatVec
   }
 
   DOWNLINK_SEND_IMU_MAG(DOWNLINK_TRANSPORT, DOWNLINK_DEVICE, &body_vel.x, &body_vel.y, &body_vel.z);
+  //DOWNLINK_SEND_SETTINGS(DOWNLINK_TRANSPORT, DOWNLINK_DEVICE, &R2, &distance_R2);
 
-  if(stateGetPositionEnu_f()->z > 0.4 && body_vel.x < 2.f && body_vel.y < 2.f)
+  /*if(fabs(guidance_h.sp.heading_rate)>0)
+  {
+      body_vel.y-=0.1*guidance_h.sp.heading_rate/fabs(guidance_h.sp.heading_rate);
+  }*/
+
+  if(autopilot.motors_on == false || stateGetPositionEnu_f()->z < 0.4){
+      body_vel.x=0;
+      body_vel.y=0;
+      body_vel.z=0;
+  }
+
+  if( body_vel.x < 2.f && body_vel.y < 2.f)
   {
     //Send velocities to state
     AbiSendMsgVELOCITY_ESTIMATE(STEREOCAM2STATE_SENDER_ID, now_ts,

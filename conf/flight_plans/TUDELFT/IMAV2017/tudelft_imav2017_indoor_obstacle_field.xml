@@ -42,6 +42,7 @@
 	  <variable var="nominal_alt" init="NAV_DEFAULT_ALT" type="float" min="0." max="10." step="0.1"/>
 	  <variable var="gain_heading" init="40" type="float" min="0." max="100." step="1"/>
 	  <variable var="gain_wall" init="0.1" type="float" min="0." max="1." step="0.01"/>
+	  <variable var="obstacle_distance_threshold" init="1.5" type="float" min="0.5" max="2.5" step="0.1"/>
     <variable var="turned_left" init="FALSE" type="bool"/>
     <variable var="turned_right" init="TRUE" type="bool"/>
     <variable var="x_offset_collision" init="0.45" type="float"/>
@@ -54,24 +55,24 @@
     <abi_binding name="STEREO_FORCEFIELD" vars="vel_body_x_FF_stereo, vel_body_y_FF_stereo, vel_body_z_FF_stereo"/>
 	</variables>
   <includes>
-     <include name="avoid_pillars" procedure="avoid_pillars_v2.xml"/>
+     <include name="avoid_pillars" procedure="avoid_pillars_v4.xml"/>
      <include name="go_through_gate" procedure="go_through_gate.xml"/>
   </includes>
   <exceptions>
-      <!--exception cond="datalink_time>3" deroute="Land"/--> 
-      <!--exception cond="autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT" deroute="Wait for Guided"/--> 
+      <exception cond="datalink_time>=3" deroute="Land"/> 
+      <exception cond="autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT&&3>datalink_time" deroute="Wait for Guided"/> 
   </exceptions>
 
   <blocks>
     <block name="FPInit">
-      <while cond="!GpsFixValid()"/>
+      <set var="desired_heading" value="stateGetNedToBodyEulers_f()->psi"/>
       <set var = "distance_obstacle_FP" value="10.0"/><!--Or else it will turn everytime if the abi message is not received-->
       <call_once fun="ins_reset_altitude_ref()"/>
-      <set var="desired_heading" value="stateGetNedToBodyEulers_f()->psi"/>
+
       <while cond="1"/>
     </block>
 
-<!--For Autonomous Take-off -->
+<!--For Autonomous Take-off >
     <block name="Start Engine">
 			<call_once fun="guidance_v_set_guided_th(0.2)"/>
       <call_once fun="autopilot_set_motors_on(TRUE)"/>
@@ -83,22 +84,24 @@
       <while cond="LessThan(stateGetPositionEnu_f()->z,nominal_alt)"/>
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/> 
       <while cond="LessThan(stage_time,1)"/>
-     <!--deroute block="Go Forward"/-->   
     </block>
 
     <block name="Hover">
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/> 
       <while cond="1"/>
-    </block>
+    </block-->
+
 
 
 <!--For Manual Take-off -->
-    <!--block name="Wait for Guided">
+    <block name="Wait for Guided">
       <while cond="!(autopilot_get_mode() == AP_MODE_GUIDED)"/>
+      <call_once fun="guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT)"/>
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/>
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/>
      <while cond="LessThan(stage_time,1)"/>
-     <deroute block="Go Forward"/>   
-    </block-->
+     <deroute block="avoid_pillars.Go_Forward"/>   
+    </block>
 
 
 

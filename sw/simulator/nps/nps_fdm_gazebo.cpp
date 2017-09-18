@@ -761,7 +761,7 @@ static void plot_matlab(int32_t *array, uint16_t size, double scale,char* name )
 	plt::named_plot(name, X, Y);
 }
 ////////////////////////////////////
-
+float desired_heading_2=0;
 static void gazebo_init_stereo_camera(void)
 {
   gazebo::sensors::SensorManager *mgr =
@@ -781,6 +781,7 @@ static void gazebo_init_stereo_camera(void)
   /******************************EDGEFLOW  INIT****************************/
 
    edgeflow_init(128, 96, 0);
+   desired_heading_2 = stateGetNedToBodyEulers_f()->psi;
 
 #ifdef STEREO_BODY_TO_STEREO_PHI
   struct FloatEulers euler;
