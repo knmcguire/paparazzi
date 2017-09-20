@@ -867,6 +867,7 @@ static void gazebo_read_stereo_camera(void)
 
     stereocam_parse_vel(camera_vel, R2,camera_dist,distance_R2);
 
+    DOWNLINK_SEND_SETTINGS(DOWNLINK_TRANSPORT, DOWNLINK_DEVICE, &R2, &edgeflow.num_of_fits);
 
     //////Gate Detector//////
     struct image_t left_img, gradient;
@@ -927,11 +928,20 @@ static void gazebo_read_stereo_camera(void)
     float heading = (float)(pixel_location_of_closest_object-49)*pxtorad;
     float distance = (float)(closest_average_distance)/100;
 
-  // DOWNLINK_SEND_SETTINGS(DOWNLINK_TRANSPORT, DOWNLINK_DEVICE, &distance, &heading);
+   // DOWNLINK_SEND_SETTINGS(DOWNLINK_TRANSPORT, DOWNLINK_DEVICE, &distance, &heading);
 
-    //float x_offset_collision = tanf(heading)*distance;
+    float x_offset_collision = tanf(heading)*distance;
+    float vel_x_stereo_FF =0, vel_y_stereo_FF=0;
+    if (fabs(x_offset_collision)>0.5)
+    {
+    	vel_y_stereo_FF=-0.2*x_offset_collision/fabs(x_offset_collision);
+    }
+    if (fabs(x_offset_collision)<0.2)
+    {
+    	vel_x_stereo_FF=-0.2;
+    }
 
-    //AbiSendMsgSTEREO_FORCEFIELD(ABI_BROADCAST, 0, 0,0);
+    AbiSendMsgSTEREO_FORCEFIELD(ABI_BROADCAST, vel_x_stereo_FF, vel_y_stereo_FF,0);
 
     AbiSendMsgOBSTACLE_DETECTION(AGL_RANGE_SENSORS_GAZEBO_ID, distance, heading);
     /////////////////////////////////

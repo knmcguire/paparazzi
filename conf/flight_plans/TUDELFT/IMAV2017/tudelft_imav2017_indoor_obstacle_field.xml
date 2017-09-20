@@ -38,15 +38,15 @@
 	  <variable var="turn_angle" init="10.0f" type="float" min="-180" max="180" step="1"/>
 	  <variable var="turn_rate" init="0.5f" type="float" min="0." max="10." step="0.1"/>
     <variable var="climb_descent_vel" init="0.3f" type="float" min="0." max="1" step="0.1"/>
-    <variable var="forward_vel" init="0.2f" type="float" min="0." max="2" step="0.1"/>
-	  <variable var="nominal_alt" init="NAV_DEFAULT_ALT" type="float" min="0." max="10." step="0.1"/>
+    <variable var="forward_vel" init="0.4f" type="float" min="0." max="2" step="0.1"/>
+	  <variable var="nominal_alt" init="NAV_DEFAULT_ALT" type="float" min="0." max="10." step="0.1"/>	  <variable var="take_off_th" init="0.58" type="float" min="0." max="0.8" step="0.01"/>
 	  <variable var="gain_heading" init="40" type="float" min="0." max="100." step="1"/>
 	  <variable var="gain_wall" init="0.1" type="float" min="0." max="1." step="0.01"/>
-	  <variable var="obstacle_distance_threshold" init="1.5" type="float" min="0.5" max="2.5" step="0.1"/>
+	  <variable var="obstacle_distance_threshold" init="1.8" type="float" min="0.5" max="2.5" step="0.1"/>
     <variable var="turned_left" init="FALSE" type="bool"/>
     <variable var="turned_right" init="TRUE" type="bool"/>
     <variable var="x_offset_collision" init="0.45" type="float"/>
-    <variable var="save_offset" init="0.5" type="float" min=" 0.1" max="2.5" step="0.1"/>
+    <variable var="save_offset" init="0.8" type="float" min=" 0.1" max="2.5" step="0.1"/>
 
     <abi_binding name="OBSTACLE_DETECTION" vars="distance_obstacle_FP, heading_obstacle_FP"/>
     <abi_binding name="RANGE_FORCEFIELD" vars="vel_body_x_FF, vel_body_y_FF, vel_body_z_FF"/>
@@ -55,12 +55,12 @@
     <abi_binding name="STEREO_FORCEFIELD" vars="vel_body_x_FF_stereo, vel_body_y_FF_stereo, vel_body_z_FF_stereo"/>
 	</variables>
   <includes>
-     <include name="avoid_pillars" procedure="avoid_pillars_v4.xml"/>
+     <include name="avoid_pillars" procedure="avoid_pillars_v3.xml"/>
      <include name="go_through_gate" procedure="go_through_gate.xml"/>
   </includes>
   <exceptions>
-      <exception cond="datalink_time>=3" deroute="Land"/> 
-      <exception cond="autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT&&3>datalink_time" deroute="Wait for Guided"/> 
+      <exception cond="datalink_time>=2" deroute="Kill Engines"/> 
+      <!--exception cond="autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT&&3>datalink_time" deroute="Wait for Guided"/--> 
   </exceptions>
 
   <blocks>
@@ -72,15 +72,15 @@
       <while cond="1"/>
     </block>
 
-<!--For Autonomous Take-off >
+<!--For Autonomous Take-off-->
     <block name="Start Engine">
-			<call_once fun="guidance_v_set_guided_th(0.2)"/>
+			<call_once fun="guidance_v_set_guided_th(0.01)"/>
       <call_once fun="autopilot_set_motors_on(TRUE)"/>
-      <while cond="LessThan(stage_time,1)"/>
+            <while cond="1"/>
     </block>
 
     <block name="Take off">
-      <call_once fun="guidance_v_set_guided_th(0.75)"/>
+      <call_once fun="guidance_v_set_guided_th(take_off_th)"/>
       <while cond="LessThan(stateGetPositionEnu_f()->z,nominal_alt)"/>
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/> 
       <while cond="LessThan(stage_time,1)"/>
@@ -89,7 +89,7 @@
     <block name="Hover">
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/> 
       <while cond="1"/>
-    </block-->
+    </block>
 
 
 
@@ -101,6 +101,7 @@
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/>
      <while cond="LessThan(stage_time,1)"/>
      <deroute block="avoid_pillars.Go_Forward"/>   
+     <!--deroute block="go_through_gate.Find_Window"/-->   
     </block>
 
 

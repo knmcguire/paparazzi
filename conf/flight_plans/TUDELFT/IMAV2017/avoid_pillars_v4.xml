@@ -15,7 +15,7 @@
       <while cond="LessThan(stage_time,1)"/> 
 
       <while cond="1">
-        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,forward_vel,vel_body_y_FF_stereo,-nominal_alt,0)"/>
+        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,forward_vel,0,-nominal_alt,0)"/>
          <set var="save_distance" value="distance_obstacle_FP"/>
          <set var="x_offset_collision" value="tanf(heading_obstacle_FP)*distance_obstacle_FP"/>
       </while>
@@ -30,10 +30,16 @@
        <while cond="30 > counter">
          <set var="counter" value="counter+1"/>
        </while>
-       <while cond="diff_heading>=0">
+       <while cond="diff_heading>=0.20&&x_offset_collision>=0">
          <deroute block="Turn_Left"/>
        </while>
-       <while cond="0>diff_heading">
+      <while cond="0.20>diff_heading&&diff_heading>=0">
+         <deroute block="Turn_Left"/>
+       </while>
+       <while cond="-0.2>diff_heading&&0>x_offset_collision">
+         <deroute block="Turn_Right"/>
+       </while>
+       <while cond="diff_heading>=-0.2&&0>diff_heading">
          <deroute block="Turn_Right"/>
        </while>
    </block>
@@ -41,19 +47,45 @@
    <block name="Turn_Left">
         <set var="x_offset_collision" value="tanf(heading_obstacle_FP)*distance_obstacle_FP"/>
       <while cond ="save_offset>fabs(x_offset_collision)">
+        <!--while cond="(save_offset-0.2)>fabs(x_offset_collision)">
+            <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,-0.2,-nominal_alt,0)"/>
+        </while>
+        <while cond="fabs(x_offset_collision)>(save_offset-0.2)&&save_offset>fabs(x_offset_collision)">
+          <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0,-nominal_alt,-0.3)"/>
+        </while-->
         <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0,-nominal_alt,-0.3)"/>
         <set var="x_offset_collision" value="tanf(heading_obstacle_FP)*distance_obstacle_FP"/>
       </while>
+    <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,-0.2,-nominal_alt,0.0)"/>
+      <set var="counter" value="0"/>
+       <while cond="10 > counter">
+         <set var="counter" value="counter+1"/>
+       </while>
       <deroute block="Go_Forward"/>
+
+
     </block>
 
    <block name="Turn_Right">
         <set var="x_offset_collision" value="tanf(heading_obstacle_FP)*distance_obstacle_FP"/>
       <while cond ="save_offset>fabs(x_offset_collision)">
+        <!--while cond="(save_offset-0.2)>fabs(x_offset_collision)">
+            <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.2,-nominal_alt,0)"/>
+        </while>
+        <while cond="fabs(x_offset_collision)>(save_offset-0.2)&&save_offset>fabs(x_offset_collision)">
+          <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0,-nominal_alt,0.3)"/>
+        </while-->
         <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0,-nominal_alt,0.3)"/>
         <set var="x_offset_collision" value="tanf(heading_obstacle_FP)*distance_obstacle_FP"/>
       </while>
-      <deroute block="Go_Forward"/>
+        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0.2,-nominal_alt,0.0)"/>
+      <set var="counter" value="0"/>
+       <while cond="10 > counter">
+         <set var="counter" value="counter+1"/>
+       </while>
+ <deroute block="Go_Forward"/>
+
+               
     </block>
 
    <!--block name="Go Past Obstacle">

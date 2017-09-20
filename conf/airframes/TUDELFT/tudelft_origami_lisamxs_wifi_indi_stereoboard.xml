@@ -62,7 +62,7 @@
 
   <section name="IMU" prefix="IMU_">
     <define name="BODY_TO_IMU_PHI"   value="0." unit="deg"/>
-    <define name="BODY_TO_IMU_THETA" value="0." unit="deg"/>
+    <define name="BODY_TO_IMU_THETA" value="1." unit="deg"/>
     <define name="BODY_TO_IMU_PSI"   value="135." unit="deg"/>
 
     <define name="ACCEL_X_NEUTRAL" value="0"/>
@@ -194,11 +194,11 @@
 
  <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
 <!-- Guidance in vertical plane especially for use of range sensor-->
-   <define name="HOVER_KP" value="331"/>
-   <define name="HOVER_KD" value="546"/>
-   <define name="HOVER_KI" value="120"/>
-   <define name="NOMINAL_HOVER_THROTTLE" value="0.75"/>
-   <define name="ADAPT_THROTTLE_ENABLED" value="true"/>
+   <define name="HOVER_KP" value="600"/>
+   <define name="HOVER_KD" value="0"/>
+   <define name="HOVER_KI" value="100"/>
+   <define name="NOMINAL_HOVER_THROTTLE" value="0.60"/>
+   <define name="ADAPT_THROTTLE_ENABLED" value="false"/>
   </section>
 
   <section name="AHRS" prefix="AHRS_">
@@ -210,8 +210,8 @@
   </section>
 
  <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
-   <define name="PGAIN" value="40"/><!--80-->
-   <define name="DGAIN" value="145"/><!--260-->
+   <define name="PGAIN" value="0"/><!--80-->
+   <define name="DGAIN" value="260"/><!--260-->
    <define name="IGAIN" value="0"/>
    <define name="MAX_BANK" value="RadOfDeg(15)"/>
    <define name="REF_MAX_SPEED" value="0.3"/>

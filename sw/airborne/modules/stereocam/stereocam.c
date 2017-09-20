@@ -159,6 +159,8 @@ void stereocam_parse_vel(struct FloatVect3 camera_vel, float R2, struct FloatVec
       body_vel.z=0;
   }
 
+  //body_vel.z=0;
+
   if( body_vel.x < 2.f && body_vel.y < 2.f)
   {
     //Send velocities to state
@@ -319,6 +321,9 @@ static void stereocam_parse_msg(void)
     if(q>15)
     	gate_detected = 1;
     imav2017_set_gate(q, w, h, body_bearing.psi, body_bearing.theta, d,gate_detected);
+    if(gate_detected)
+    DOWNLINK_SEND_SETTINGS(DOWNLINK_TRANSPORT, DOWNLINK_DEVICE, &w, &h);
+
     break;
   }
 
