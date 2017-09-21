@@ -1,12 +1,14 @@
 <!DOCTYPE flight_plan SYSTEM "../../flight_plan.dtd">
 
-<flight_plan alt="1.0" ground_alt="0" lat0="51.990634" lon0="4.376789" max_dist_from_home="20" name="Rotorcraft Optitrack (Delft)" security_height="0.3">
+<flight_plan alt="1.4" ground_alt="0" lat0="51.990634" lon0="4.376789" max_dist_from_home="20" name="Rotorcraft Optitrack (Delft)" security_height="0.3">
   <header>
   	#include "autopilot_guided.h"
 		#include "autopilot.h"
  		#include "subsystems/datalink/datalink.h"
 		#include "subsystems/datalink/telemetry.h"
 		#include "firmwares/rotorcraft/guidance/guidance_h.h"
+    #include "firmwares/rotorcraft/stabilization.h"
+
 
 		// Useful Combination of the flags fir the autopilot_guided_update
 		#define GUIDED_FLAG_XY_VEL_BODY GUIDED_FLAG_XY_BODY|GUIDED_FLAG_XY_VEL
@@ -17,7 +19,9 @@
 		#define GUIDED_FLAG_XY_VEL_YAW_RATE GUIDED_FLAG_XY_OFFSET|GUIDED_FLAG_YAW_RATE
     #define GUIDED_FLAG_XY_OFFSET_BODY_YAW_OFFSET GUIDED_FLAG_XY_OFFSET|GUIDED_FLAG_XY_BODY|GUIDED_FLAG_YAW_OFFSET
     #define GUIDED_FLAG_XY_OFFSET_BODY_YAW_RATE GUIDED_FLAG_XY_OFFSET|GUIDED_FLAG_XY_BODY|GUIDED_FLAG_YAW_RATE
-    #define GUIDED_FLAG_XY_VEL_BODY_Z_VEL_YAW_OFFSET GUIDED_FLAG_XY_BODY|GUIDED_FLAG_Z_VEL|GUIDED_FLAG_YAW_OFFSET
+    #define GUIDED_FLAG_XY_BODY_VEL_YAW_OFFSET GUIDED_FLAG_XY_BODY|GUIDED_FLAG_XY_VEL|GUIDED_FLAG_YAW_OFFSET
+    #define GUIDED_FLAG_XY_VEL_BODY_Z_VEL_YAW_OFFSET GUIDED_FLAG_XY_BODY|GUIDED_FLAG_XY_VEL|GUIDED_FLAG_Z_VEL|GUIDED_FLAG_YAW_OFFSET
+    #define GUIDED_FLAG_XY_VEL_BODY_YAW_OFFSET GUIDED_FLAG_XY_BODY|GUIDED_FLAG_XY_VEL|GUIDED_FLAG_YAW_OFFSET
 
   </header>
   <waypoints>
@@ -40,7 +44,8 @@
 	  <variable var="turn_rate" init="0.5f" type="float" min="0." max="10." step="0.1"/>
     <variable var="climb_descent_vel" init="0.3f" type="float" min="0." max="1" step="0.1"/>
     <variable var="forward_vel" init="0.4f" type="float" min="0." max="2" step="0.1"/>
-	  <variable var="nominal_alt" init="NAV_DEFAULT_ALT" type="float" min="0." max="10." step="0.1"/>	  <variable var="take_off_th" init="0.58" type="float" min="0." max="0.8" step="0.01"/>
+	  <variable var="nominal_alt" init="NAV_DEFAULT_ALT" type="float" min="0." max="10." step="0.1"/>	  
+    <variable var="take_off_th" init="0.58" type="float" min="0." max="0.8" step="0.01"/>
 	  <variable var="gain_heading" init="40" type="float" min="0." max="100." step="1"/>
 	  <variable var="gain_wall" init="0.1" type="float" min="0." max="1." step="0.01"/>
 	  <variable var="obstacle_distance_threshold" init="1.8" type="float" min="0.5" max="2.5" step="0.1"/>
@@ -49,6 +54,7 @@
     <variable var="x_offset_collision" init="0.45" type="float"/>
     <variable var="save_offset" init="0.8" type="float" min=" 0.1" max="2.5" step="0.1"/>
     <variable var="min_num_of_fits" init="40." type="float" min="20" max="120" step="10"/>
+    <variable var="number_of_obstacles" init="0" type="int32_t"/>
 
     <abi_binding name="OBSTACLE_DETECTION" vars="distance_obstacle_FP, heading_obstacle_FP"/>
     <abi_binding name="RANGE_FORCEFIELD" vars="vel_body_x_FF, vel_body_y_FF, vel_body_z_FF"/>
@@ -62,9 +68,9 @@
      <!--include name="go_through_gate" procedure="go_through_gate.xml"/-->
   </includes>
   <exceptions>
-      <exception cond="datalink_time>=3" deroute="Kill Engines"/> 
-      <exception cond="autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT&&3>datalink_time" deroute="Wait for Guided"/> 
-      <exception cond="min_num_of_fits>num_of_fits&&3>datalink_time" deroute="Avoid_bushes"/>
+      <exception cond="datalink_time>=5" deroute="Kill Engines"/> 
+      <exception cond="autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT&&5>datalink_time" deroute="Wait for Guided"/> 
+      <!--exception cond="min_num_of_fits>num_of_fits&&>datalink_time&&number_of_obstacles>5" deroute="Avoid_bushes"/-->
   </exceptions>
 
   <blocks>
@@ -73,10 +79,10 @@
       <set var = "distance_obstacle_FP" value="10.0"/><!--Or else it will turn everytime if the abi message is not received-->
       <call_once fun="ins_reset_altitude_ref()"/>
 
-      <while cond="1"/>
+      <exception cond="block_time>2" deroute="Wait for Guided"/> 
     </block>
 
-<!--For Autonomous Take-off-->
+<!--For Autonomous Take-off>
     <block name="Start Engine">
 			<call_once fun="guidance_v_set_guided_th(0.01)"/>
       <call_once fun="autopilot_set_motors_on(TRUE)"/>
@@ -93,16 +99,18 @@
     <block name="Hover">
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/> 
       <while cond="1"/>
-    </block>
+    </block-->
 
 
 
 <!--For Manual Take-off -->
     <block name="Wait for Guided">
-      <while cond="!(autopilot_get_mode() == AP_MODE_GUIDED)"/>
-      <call_once fun="guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT)"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/>
-      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/>
+      <while cond="!(autopilot_get_mode() == AP_MODE_GUIDED)">
+				<set var="guidance_v_nominal_throttle" value="(1.*stabilization_cmd[COMMAND_THRUST]/9600.)"/>
+    </while>
+      <!--call_once fun="guidance_v_mode_changed(GUIDANCE_V_MODE_RC_DIRECT)"/-->
+      
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_BODY_VEL_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/>
      <while cond="LessThan(stage_time,1)"/>
      <deroute block="avoid_pillars.Go_Forward"/>   
      <!--deroute block="go_through_gate.Find_Window"/-->   
@@ -112,9 +120,24 @@
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_Z_VEL_YAW_OFFSET,0,0,-0.2,0)"/>
       <while cond="min_num_of_fits>num_of_fits"/>
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_Z_VEL_YAW_OFFSET,forward_vel,0,0,0)"/>
+      <set var="counter" value="0"/>
       <while cond="32 > counter">
          <set var="counter" value="counter+1"/>
       </while>
+    </block>
+
+    <block name="Go through Wind">
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_OFFSET,0,0,-nominal_alt,90)"/>
+      <set var="counter" value="0"/>
+      <while cond="16 > counter">
+         <set var="counter" value="counter+1"/>
+      </while>
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,forward_vel,0,0,0)"/>
+      <while cond="64 > counter">
+         <set var="counter" value="counter+1"/>
+      </while>
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_OFFSET,0,0,-nominal_alt,90)"/>
+     <deroute block="avoid_pillars.Go_Forward"/>    
     </block>
 
 
@@ -124,6 +147,9 @@
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_OFFSET_YAW_OFFSET,0.,0.,0.,0.)"/>  
       <while cond="LessThan(block_time,5)"/>
       <deroute block="Kill Engines"/>
+       <set var="number_of_obstacles" value="0"/>
+     <deroute block="avoid_pillars.Go_Forward"/>   
+
     </block>
 
     <block name="Kill Engines">

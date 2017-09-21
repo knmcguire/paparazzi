@@ -18,22 +18,19 @@
 
 
   <block name="Go_Forward">
-         <set var="save_heading" value="0"/>
-        <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,0,0,-nominal_alt,0)"/>
-      <while cond="LessThan(stage_time,1)"/> 
 
       <while cond="1">
         <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_RATE,forward_vel,0,-nominal_alt,0)"/>
          <set var="save_distance" value="distance_obstacle_FP"/>
          <set var="x_offset_collision" value="tanf(heading_obstacle_FP)*distance_obstacle_FP"/>
-        
       </while>
-      <exception cond="save_offset>fabs(x_offset_collision)&&2>distance_obstacle_FP" deroute="Hover_before_Turning"/> 
+      <exception cond="save_offset>fabs(x_offset_collision)&&obstacle_distance_threshold>distance_obstacle_FP" deroute="Hover_before_Turning"/> 
     </block>
 
    <block name="Hover_before_Turning">
       <set var="counter" value="0"/>
       <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_YAW_OFFSET,0.,0.,-nominal_alt,DegOfRad(0))"/>
+       <set var="number_of_obstacles" value="number_of_obstacles+1"/>
        <while cond="5 > counter">
          <set var="counter" value="counter+1"/>
        </while>

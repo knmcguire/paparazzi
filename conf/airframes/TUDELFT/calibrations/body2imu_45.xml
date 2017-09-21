@@ -1,0 +1,30 @@
+<!DOCTYPE airframe SYSTEM "../../airframe.dtd">
+
+<airframe>
+<section name="IMU" prefix="IMU_">
+    <define name="BODY_TO_IMU_PHI"   value="-1" unit="deg"/>
+    <define name="BODY_TO_IMU_THETA" value="-2.6" unit="deg"/>
+    <define name="BODY_TO_IMU_PSI"   value="135." unit="deg"/>
+
+    <define name="ACCEL_X_NEUTRAL" value="0"/>
+    <define name="ACCEL_Y_NEUTRAL" value="0"/>
+    <define name="ACCEL_Z_NEUTRAL" value="0"/>
+
+    <!--define name="ACCEL_X_SENS" value="4.8" integer="16"/>
+    <define name="ACCEL_Y_SENS" value="4.8" integer="16"/>
+    <define name="ACCEL_Z_SENS" value="4.8" integer="16"/--><!--18 : 4.57 19: 4.31 -->
+
+    <!-- MAGNETO CALIBRATION DELFT -->
+    <define name="MAG_X_NEUTRAL" value="286"/>
+    <define name="MAG_Y_NEUTRAL" value="-72"/>
+    <define name="MAG_Z_NEUTRAL" value="97"/>
+    <define name="MAG_X_SENS" value="3.94431833863" integer="16"/>
+    <define name="MAG_Y_SENS" value="4.14629702271" integer="16"/>
+    <define name="MAG_Z_SENS" value="4.54518768636" integer="16"/>
+
+    <!-- MAGNETO CURRENT CALIBRATION -->
+    <define name="MAG_X_CURRENT_COEF" value="0.0103422023767"/>
+    <define name="MAG_Y_CURRENT_COEF" value="0.0084568317783"/>
+    <define name="MAG_Z_CURRENT_COEF" value="-0.01935617335"/>
+  </section>
+</airframe>
