@@ -61,7 +61,7 @@
   </section>
 
 
-  <include href="conf/airframes/TUDELFT/calibrations/body2imu_$AC_ID.xml" />
+  <include href="conf/airframes/TUDELFT/calibrations/body2imu_44.xml" />
   
 
  <section name="AUTOPILOT">
@@ -256,8 +256,8 @@
       <define name="SERVO_HZ" value="36000"/>
     </module>
 		<module name="Decawave_Serial_Communication">
-			<configure name="SERIAL_UART" value="UART2"/>
-			<configure name="SERIAL_BAUD" value="B57600"/>
+				<configure name="SERIAL_UART" value="UART2"/>
+				<configure name="SERIAL_BAUD" value="B57600"/>
 		</module>
 		<module name="relativelocalizationfilter"/>
 		<module name="guided_control_imav2017"/>
