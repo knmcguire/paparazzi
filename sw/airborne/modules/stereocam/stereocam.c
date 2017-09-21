@@ -264,22 +264,22 @@ static void stereocam_parse_msg(void)
     float x_offset_collision = tanf(heading)*distance;
 
     float vel_x_FF=0, vel_y_FF=0;
-    if(pixel_location_of_closest_object !=0&&distance<1.5)
+    if(pixel_location_of_closest_object !=0 && distance<1.0)
     {
-      if(fabs(heading)<0.2)
-      {
-    	  vel_x_FF = -0.3;
-      }
+    	if(fabs(heading)<0.2)
+    	{
+    		vel_x_FF = -0.3;
+    	}
 
-    	  vel_y_FF = -0.2 * heading/fabs(heading);
+    	vel_y_FF = -0.2 * heading/fabs(heading);
 
+    	AbiSendMsgSTEREO_FORCEFIELD(ABI_BROADCAST, vel_x_FF, vel_y_FF,0);
 
     }else{
-        AbiSendMsgSTEREO_FORCEFIELD(ABI_BROADCAST, vel_x_FF, vel_y_FF,0);
+    	AbiSendMsgSTEREO_FORCEFIELD(ABI_BROADCAST, 0, 0,0);
 
     }
 
-    AbiSendMsgSTEREO_FORCEFIELD(ABI_BROADCAST, 0, 0,0);
 
 
 

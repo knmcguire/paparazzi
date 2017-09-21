@@ -91,7 +91,7 @@
    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
    <define name="MODE_AUTO1" value="AP_MODE_HOVER_Z_HOLD"/>
-   <define name="MODE_AUTO2" value="AP_MODE_HOVER_Z_HOLD"/>
+   <define name="MODE_AUTO2" value="AP_MODE_GUIDED"/>
    <define name="NO_RC_THRUST_LIMIT"  value="TRUE"/>
  </section>
 
@@ -214,7 +214,7 @@
    <define name="DGAIN" value="260"/><!--260-->
    <define name="IGAIN" value="0"/>
    <define name="MAX_BANK" value="RadOfDeg(15)"/>
-   <define name="REF_MAX_SPEED" value="0.3"/>
+   <define name="REF_MAX_SPEED" value="0.5"/>
    <define name="USE_SPEED_REF" value="TRUE"/>
 
  </section>
@@ -293,8 +293,8 @@
     <module name="stabilization" type="rate_indi"/>
     <module name="ahrs" type="int_cmpl_quat"/>
     <module name="ins" type="hff_extended">
-				<define name="VFF_EXTENDED_ACCEL_NOISE" value="100"/>
-   <define name="HFF_ACCEL_NOISE" value="100"/>
+		  <define name="VFF_EXTENDED_ACCEL_NOISE" value="100"/>
+      <define name="HFF_ACCEL_NOISE" value="100"/>
     </module>
     <configure name="USE_MAGNETOMETER" value="FALSE"/>
     <module name="air_data">

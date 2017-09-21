@@ -17,6 +17,7 @@
 		#define GUIDED_FLAG_XY_VEL_YAW_RATE GUIDED_FLAG_XY_OFFSET|GUIDED_FLAG_YAW_RATE
     #define GUIDED_FLAG_XY_OFFSET_BODY_YAW_OFFSET GUIDED_FLAG_XY_OFFSET|GUIDED_FLAG_XY_BODY|GUIDED_FLAG_YAW_OFFSET
     #define GUIDED_FLAG_XY_OFFSET_BODY_YAW_RATE GUIDED_FLAG_XY_OFFSET|GUIDED_FLAG_XY_BODY|GUIDED_FLAG_YAW_RATE
+    #define GUIDED_FLAG_XY_VEL_BODY_Z_VEL_YAW_OFFSET GUIDED_FLAG_XY_BODY|GUIDED_FLAG_Z_VEL|GUIDED_FLAG_YAW_OFFSET
 
   </header>
   <waypoints>
@@ -47,20 +48,23 @@
     <variable var="turned_right" init="TRUE" type="bool"/>
     <variable var="x_offset_collision" init="0.45" type="float"/>
     <variable var="save_offset" init="0.8" type="float" min=" 0.1" max="2.5" step="0.1"/>
+    <variable var="min_num_of_fits" init="40." type="float" min="20" max="120" step="10"/>
 
     <abi_binding name="OBSTACLE_DETECTION" vars="distance_obstacle_FP, heading_obstacle_FP"/>
     <abi_binding name="RANGE_FORCEFIELD" vars="vel_body_x_FF, vel_body_y_FF, vel_body_z_FF"/>
     <abi_binding name="RANGE_WALLFOLLOWING" vars="heading_leftturn_WF,heading_rightturn_WF,range_sensor_detect_WF"/>
     <abi_binding name="GATE_DETECTION" vars="gate_detected,gate_x_offset,gate_y_offset,gate_distance"/>
-    <abi_binding name="STEREO_FORCEFIELD" vars="vel_body_x_FF_stereo, vel_body_y_FF_stereo, vel_body_z_FF_stereo"/>
+    <abi_binding name="STEREO_FORCEFIELD" vars="vel_body_x_FF_stereo, vel_body_y_FF_stereo, _"/>
+    <abi_binding name="VELOCITY_ESTIMATE" vars="_, _, _, _, _, _, _, _, num_of_fits"/>
 	</variables>
   <includes>
      <include name="avoid_pillars" procedure="avoid_pillars_v3.xml"/>
-     <include name="go_through_gate" procedure="go_through_gate.xml"/>
+     <!--include name="go_through_gate" procedure="go_through_gate.xml"/-->
   </includes>
   <exceptions>
-      <exception cond="datalink_time>=2" deroute="Kill Engines"/> 
+      <exception cond="datalink_time>=3" deroute="Kill Engines"/> 
       <exception cond="autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT&&3>datalink_time" deroute="Wait for Guided"/> 
+      <exception cond="min_num_of_fits>num_of_fits&&3>datalink_time" deroute="Avoid_bushes"/>
   </exceptions>
 
   <blocks>
@@ -104,7 +108,14 @@
      <!--deroute block="go_through_gate.Find_Window"/-->   
     </block>
 
-
+    <block name="Avoid_bushes">
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_Z_VEL_YAW_OFFSET,0,0,-0.2,0)"/>
+      <while cond="min_num_of_fits>num_of_fits"/>
+      <call_once fun="autopilot_guided_update(GUIDED_FLAG_XY_VEL_BODY_Z_VEL_YAW_OFFSET,forward_vel,0,0,0)"/>
+      <while cond="32 > counter">
+         <set var="counter" value="counter+1"/>
+      </while>
+    </block>
 
 
     <block name="Land">
