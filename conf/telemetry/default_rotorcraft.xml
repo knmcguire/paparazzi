@@ -28,7 +28,8 @@
       <message name="OPTIC_FLOW_EST"         period="0.05"/>
       <message name="VECTORNAV_INFO"         period="0.5"/>
       <message name="DIVERGENCE"             period="0.05"/>
-    </mode>
+      <!--message name="RLFILTER"               period="0.2"/-->
+    </mode> 
 
     <mode name="ppm">
       <message name="DL_VALUE"                 period="0.5"/>

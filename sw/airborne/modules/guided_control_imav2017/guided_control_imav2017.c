@@ -63,7 +63,7 @@ static float pgainy = 0.2;
 static float dgain = 0.0;
 static float vgain = 0.5;
 
-static pthread_mutex_t ekf_mutex;
+//static pthread_mutex_t ekf_mutex;
 
 static void keepBounded(float bound);
 static void uwb_cb(uint8_t sender_id __attribute__((unused)),
@@ -102,10 +102,10 @@ bool trackOther(float cmd_height){
 
 	bool temp = true;
 	temp &= guidance_v_set_guided_z(-cmd_height);
-	pthread_mutex_lock(&ekf_mutex);
+	//pthread_mutex_lock(&ekf_mutex);
 	float relx = ekf[0].X[0];
 	float rely = ekf[0].X[1];
-	pthread_mutex_unlock(&ekf_mutex);
+	//pthread_mutex_unlock(&ekf_mutex);
 
 	float relxerr = relx-relxcom; //positive error means VX must increase
 	float relyerr = rely-relycom; // positive error means VY must increase
@@ -130,7 +130,7 @@ bool trackRelPos(float cmd_height){
 
 	bool temp = true;
 	temp &= guidance_v_set_guided_z(-cmd_height);
-	pthread_mutex_lock(&ekf_mutex);
+	//pthread_mutex_lock(&ekf_mutex);
 	float relx, rely;
 
 	if(stateGetPositionEnu_f()->z > 1.0)
@@ -143,7 +143,7 @@ bool trackRelPos(float cmd_height){
 		relx = relxcom;
 		rely = relycom;
 	}
-	pthread_mutex_unlock(&ekf_mutex);
+	//pthread_mutex_unlock(&ekf_mutex);
 
 	float relxerr = relx-relxcom; //positive error means VX must increase
 	float relyerr = rely-relycom; // positive error means VY must increase
@@ -196,10 +196,10 @@ bool setForwardAndTrack(float velx, float cmd_height){
 	bool temp = true;
 	temp &= guidance_v_set_guided_z(-cmd_height);
 
-	pthread_mutex_lock(&ekf_mutex);
+	//pthread_mutex_lock(&ekf_mutex);
 	float relx = ekf[0].X[0];
 	float rely = ekf[0].X[1];
-	pthread_mutex_unlock(&ekf_mutex);
+	//pthread_mutex_unlock(&ekf_mutex);
 
 	float relxerr = relx-relxcom; //positive error means VX must increase
 	float relyerr = rely-relycom; // positive error means VY must increase

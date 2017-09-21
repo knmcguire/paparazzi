@@ -49,8 +49,6 @@ uint32_t now_ts[NUAVS-1]; 	// Time of last received message from each MAV
 int nf;						// Number of filters registered
 ekf_filter ekf[NUAVS-1]; 	// EKF structure
 float rangearray[NUAVS-1];	// Recorded RSSI values (so they can all be sent)
-struct EnuCoor_f current_pos;
-struct EnuCoor_f current_speed;
 int counter = 0;
 
 //char rlFileName[50] = "/data/ftp/internal_000/rlLogFile1.csv";
@@ -59,7 +57,7 @@ int counter = 0;
 static FILE *rlFileLogger = NULL;
 char* rlconcat(const char *s1, const char *s2);
 
-static pthread_mutex_t ekf_mutex;
+//static pthread_mutex_t ekf_mutex;
 
 #define RLLOG 0
 /*
@@ -178,7 +176,7 @@ static void uwbmsg_cb(uint8_t sender_id __attribute__((unused)),
 	if (( !array_find_int(NUAVS-1, IDarray, ac_id, &i))  // If yes, a new drone is found.
 		   && (nf < NUAVS-1))  // If yes, the amount of drones does not exceed the maximum.
 	{
-		pthread_mutex_lock(&ekf_mutex);
+		//pthread_mutex_lock(&ekf_mutex);
 		IDarray[nf] = ac_id; 				// Store ID in an array (logging purposes)
 		ekf_filter_new(&ekf[nf]); 			// Initialize an EKF filter for the newfound drone
 
@@ -210,7 +208,7 @@ static void uwbmsg_cb(uint8_t sender_id __attribute__((unused)),
 
 		ekf[nf].dt  = 0.1;  // Initial assumption for time difference between messages (STDMA code runs at 5Hz)
 		nf++; 			 	// Number of filter is present is increased
-		pthread_mutex_unlock(&ekf_mutex);
+		//pthread_mutex_unlock(&ekf_mutex);
 	}
 	// Else, if we do recognize the ID, then we can update the measurement message data
 	else if ((i != -1) || (nf == (NUAVS-1)) )
@@ -225,14 +223,12 @@ static void uwbmsg_cb(uint8_t sender_id __attribute__((unused)),
 		keepbounded(&ownVy,-2.0,2.0);
 
 		//if (guidance_h.mode == GUIDANCE_H_MODE_GUIDED)
-		if(stateGetPositionEnu_f()->z > 1.0)
-		{
 		// Make the filter only in Guided mode (flight).
 		// This is because it is best for the filter should only start once the drones are in motion, 
 		// otherwise it might diverge while drones are not moving.
 			
 			ekf[i].dt = (get_sys_time_usec() - now_ts[i])/pow(10,6); // Update the time between messages
-			pthread_mutex_lock(&ekf_mutex);
+			//pthread_mutex_lock(&ekf_mutex);
 			// As for own velocity, bind to realistic amounts to avoid occasional spikes/NaN/inf errors
 			keepbounded(&trackedVx,-2.0,2.0);
 			keepbounded(&trackedVy,-2.0,2.0);
@@ -249,60 +245,28 @@ static void uwbmsg_cb(uint8_t sender_id __attribute__((unused)),
 			// Run the steps of the EKF, but only if velocity difference is significant (to filter out minimal noise)		
 			ekf_filter_predict(&ekf[i]); // Prediction step of the EKF
 			ekf_filter_update(&ekf[i], Y);	// Update step of the EKF
-		}
-		else
-		{
-			ekf[i].X[0] = 0.0; // Relative position North
-			ekf[i].X[1] = 1.5; // Relative position East
-			// The other variables can be initialized at 0
-			ekf[i].X[2] = 0.0; // Own Velocity North
-			ekf[i].X[3] = 0.0; // Own Velocity East
-			ekf[i].X[4] = 0.0; // Velocity other North
-			ekf[i].X[5] = 0.0; // Velocity other East
-			ekf[i].X[6] = 0.0; // Height difference
-			ekf[i].X[7] = 0.0; // Bias
-		}
-	}
-	pthread_mutex_unlock(&ekf_mutex);
-	if(RLLOG){
-		current_speed = *stateGetSpeedEnu_f();
-		current_pos = *stateGetPositionEnu_f();
 
-		if(rlFileLogger!=NULL){
-			pthread_mutex_lock(&ekf_mutex);
-			fprintf(rlFileLogger,"%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
-					counter,
-					i,
-					(float)(now_ts[i]/pow(10,6)),
-					ekf[i].dt,
-					current_pos.y,
-					current_pos.x,
-					-current_pos.z,
-					current_speed.y,
-					current_speed.x,
-					-current_speed.z,
-					range,
-					trackedVx,
-					trackedVy,
-					trackedh,
-					ekf[i].X[0],
-					ekf[i].X[1],
-					ekf[i].X[2],
-					ekf[i].X[3],
-					ekf[i].X[4],
-					ekf[i].X[5],
-					ekf[i].X[6],
-					ekf[i].X[7]);
-			counter++;
-			pthread_mutex_unlock(&ekf_mutex);
-		}
+
 	}
+	//pthread_mutex_unlock		}
+	else
+	{
+		ekf[i].X[0] = 0.0; // Relative position North
+		ekf[i].X[1] = 1.5; // Relative position East
+		// The other variables can be initialized at 0
+		ekf[i].X[2] = 0.0; // Own Velocity North
+		ekf[i].X[3] = 0.0; // Own Velocity East
+		ekf[i].X[4] = 0.0; // Velocity other North
+		ekf[i].X[5] = 0.0; // Velocity other East
+		ekf[i].X[6] = 0.0; // Height difference
+		ekf[i].X[7] = 0.0; // Bias
+	};
 	now_ts[i] = get_sys_time_usec();  // Store latest time
+
+    DOWNLINK_SEND_SETTINGS(DOWNLINK_TRANSPORT, DOWNLINK_DEVICE, &ekf[i].X[0], &ekf[i].X[1]);
+
 };
 //#endif
-
-
-#ifdef PPRZ_MSG_ID_RLFILTER
 
 static void send_rafilterdata(struct transport_tx *trans, struct link_device *dev)
 {
@@ -318,41 +282,13 @@ static void send_rafilterdata(struct transport_tx *trans, struct link_device *de
 		trans, dev, AC_ID,			 // Standard stuff
 		&IDarray[cnt],			     		 // ID of the tracked UAV in question
 		&rangearray[cnt], 		    	 // Received ID and RSSI
-		&ekf[cnt].X[0], &ekf[cnt].X[1],  // Relative position [North, East]
-		&ekf[cnt].X[2], &ekf[cnt].X[3],  // Own velocity [North, East]
-		&ekf[cnt].X[4], &ekf[cnt].X[5],  // Relative velocity of other drone [North, East]
-		&ekf[cnt].X[6]				 // Height separation [Down]
-		);
+		&ekf[cnt].X[0], &ekf[cnt].X[1]);
 
 			 
 };
-#endif
 
 void relativelocalizationfilter_init(void)
 {
-
-
-
-	time_t rawtime;
-	struct tm * timeinfo;
-
-
-	time ( &rawtime );
-	timeinfo = localtime ( &rawtime );
-	char time[30];
-	strftime(time,sizeof(time),"%Y-%m-%d-%X",timeinfo);
-
-	//printf ( "Current local time and date: %s", asctime (timeinfo) );
-	char* temp = rlconcat("/data/ftp/internal_000/rlLogFile_",time);
-	char* rlFileName=rlconcat(temp,".txt");
-
-
-	if(RLLOG){
-		rlFileLogger = fopen(rlFileName,"w");
-		if (rlFileLogger!=NULL){
-			fprintf(rlFileLogger,"msg_count,AC_ID,time,dt,own_x,own_y,own_z,own_vx,own_vy,own_vz,Range,track_vx_meas,track_vy_meas,track_z_meas,kal_x,kal_y,kal_vx,kal_vy,kal_oth_vx,kal_oth_vy,kal_rel_h,kal_bias\n");
-		}
-	}
 	array_make_zeros_int(NUAVS-1, IDarray); // Clear out the known IDs
 	nf = 0; // Number of active filters upon initialization
 /*
@@ -363,10 +299,8 @@ void relativelocalizationfilter_init(void)
 	*/
 	AbiBindMsgUWB(ABI_BROADCAST, &uwb_ev, uwbmsg_cb); // Subscribe to the ABI RSSI messages
 
-	#ifdef PPRZ_MSG_ID_RLFILTER
 	cnt = 0;
 	register_periodic_telemetry(DefaultPeriodic, PPRZ_MSG_ID_RLFILTER, send_rafilterdata); // Send out the filter data
-	#endif
 };
 
 void relativelocalizationfilter_periodic(void)

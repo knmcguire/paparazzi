@@ -136,6 +136,14 @@
       <field name="vel_body_z_FF_stereo" type="float" unit="m/s"/>
     </message>
 
+    <message name="UWB" id="23">
+      <field name="ac_id" type="uint8_t"/>
+      <field name="range" type="float" unit="m"/>
+      <field name="vx" type="float" unit="m/s^2"/>
+      <field name="vy" type="float" unit="m/s^2"/>
+      <field name="h" type="float" unit="m"/>
+    </message>
+
   </msg_class>
 
 </protocol>
