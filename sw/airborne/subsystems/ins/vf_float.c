@@ -44,7 +44,7 @@
 
 /** measurement noise covariance R */
 #ifndef VFF_MEAS_NOISE
-#define VFF_MEAS_NOISE 1.0
+#define VFF_MEAS_NOISE 10.0
 #endif
 
 /* default parameters */

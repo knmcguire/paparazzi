@@ -194,9 +194,9 @@
 
  <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
 <!-- Guidance in vertical plane especially for use of range sensor-->
-   <define name="HOVER_KP" value="600"/>
-   <define name="HOVER_KD" value="0"/>
-   <define name="HOVER_KI" value="100"/>
+   <define name="HOVER_KP" value="300"/>
+   <define name="HOVER_KD" value="55"/>
+   <define name="HOVER_KI" value="32"/>
    <define name="NOMINAL_HOVER_THROTTLE" value="0.60"/>
    <define name="ADAPT_THROTTLE_ENABLED" value="false"/>
   </section>
@@ -292,7 +292,10 @@
     <module name="stabilization" type="indi_simple"/>
     <module name="stabilization" type="rate_indi"/>
     <module name="ahrs" type="int_cmpl_quat"/>
-    <module name="ins" type="hff_extended"/>
+    <module name="ins" type="hff_extended">
+				<define name="VFF_EXTENDED_ACCEL_NOISE" value="100"/>
+   <define name="HFF_ACCEL_NOISE" value="100"/>
+    </module>
     <configure name="USE_MAGNETOMETER" value="FALSE"/>
     <module name="air_data">
       <define name="AIR_DATA_CALC_AMSL_BARO" value="TRUE"/>

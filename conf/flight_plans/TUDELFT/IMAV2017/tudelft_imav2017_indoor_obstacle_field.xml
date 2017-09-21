@@ -60,7 +60,7 @@
   </includes>
   <exceptions>
       <exception cond="datalink_time>=2" deroute="Kill Engines"/> 
-      <!--exception cond="autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT&&3>datalink_time" deroute="Wait for Guided"/--> 
+      <exception cond="autopilot_get_mode() == AP_MODE_ATTITUDE_DIRECT&&3>datalink_time" deroute="Wait for Guided"/> 
   </exceptions>
 
   <blocks>
