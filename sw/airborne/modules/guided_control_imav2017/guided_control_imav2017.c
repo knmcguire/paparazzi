@@ -26,6 +26,7 @@
  */
 
 #include <math.h>
+#include <pthread.h>
 #include "modules/relativelocalizationfilter/relativelocalizationfilter.h"
 #include "math/pprz_algebra_int.h"
 #include "navigation.h"
