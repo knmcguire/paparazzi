@@ -23,14 +23,14 @@
  * A simple module showing what you can do with opencv on the bebop.
  */
 
-#ifndef OPENCV_EXAMPLE_H
-#define OPENCV_EXAMPLE_H
+#ifndef OPENCV_OPTICFLOW_H
+#define OPENCV_OPTICFLOW_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int opencv_opticflow(char *img, int width, int height);
+bool opencv_opticflow(char *img, int width, int height, float *flow_x, float *flow_y);
 
 #ifdef __cplusplus
 }

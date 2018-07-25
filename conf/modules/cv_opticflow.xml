@@ -111,7 +111,7 @@
   <init fun="opticflow_module_init()"/>
   <periodic fun="opticflow_module_run()" autorun="TRUE"/>
 
-  <makefile target="ap|nps">
+  <makefile target="ap">
     <!-- Include the needed Computer Vision files -->
     <include name="modules/computer_vision"/>
     <file name="image.c" dir="modules/computer_vision/lib/vision"/>
@@ -132,5 +132,55 @@
     <file name="fast_rosten.c" dir="modules/computer_vision/lib/vision"/>
     <file name="lucas_kanade.c" dir="modules/computer_vision/lib/vision"/>
     <file name="edge_flow.c" dir="modules/computer_vision/lib/vision"/>
+
+    <!-- OpenCV files-->
+    <file name="opencv_opticflow.cpp"/>
+    <file name="opencv_image_functions.cpp"/>
+    <flag name="CXXFLAGS" value="I$(PAPARAZZI_SRC)/sw/ext/opencv_bebop/install/include"/>
+
+	<flag name="LDFLAGS" value="L$(PAPARAZZI_HOME)/sw/ext/opencv_bebop/install/lib" />
+	<flag name="LDFLAGS" value="lopencv_world" />
+	<flag name="LDFLAGS" value="L$(PAPARAZZI_HOME)/sw/ext/opencv_bebop/install/share/OpenCV/3rdparty/lib" />
+	<flag name="LDFLAGS" value="ltegra_hal" />
+	<flag name="LDFLAGS" value="lzlib" />
+	<flag name="LDFLAGS" value="llibjpeg" />
+	<flag name="LDFLAGS" value="llibpng" />
+	<flag name="LDFLAGS" value="llibtiff" />
+	<flag name="LDFLAGS" value="lstdc++" />
+	<flag name="LDFLAGS" value="ldl" />
+	<flag name="LDFLAGS" value="lm" />
+	<flag name="LDFLAGS" value="lpthread" />
+	<flag name="LDFLAGS" value="lrt" />
+  </makefile>
+
+  <makefile target="nps">
+    <!-- Include the needed Computer Vision files -->
+    <include name="modules/computer_vision"/>
+    <file name="image.c" dir="modules/computer_vision/lib/vision"/>
+    <file name="jpeg.c" dir="modules/computer_vision/lib/encoding"/>
+    <file name="rtp.c" dir="modules/computer_vision/lib/encoding"/>
+    <file name="v4l2.c" dir="modules/computer_vision/lib/v4l"/>
+
+    <!-- The optical flow module (calculator) -->
+    <file name="opticflow_module.c"/>
+    <file name="opticflow_calculator.c" dir="modules/computer_vision/opticflow"/>
+    <file name="size_divergence.c" dir="modules/computer_vision/opticflow"/>
+    <file name="linear_flow_fit.c" dir="modules/computer_vision/opticflow"/>
+    <file name="pprz_algebra_float.c" dir="math"/>
+    <file name="pprz_matrix_decomp_float.c" dir="math"/>
+
+    <!-- Main vision calculations -->
+    <file name="act_fast.c" dir="modules/computer_vision/lib/vision"/>
+    <file name="fast_rosten.c" dir="modules/computer_vision/lib/vision"/>
+    <file name="lucas_kanade.c" dir="modules/computer_vision/lib/vision"/>
+    <file name="edge_flow.c" dir="modules/computer_vision/lib/vision"/>
+
+    <!-- OpenCV files-->
+    <file name="opencv_opticflow.cpp"/>
+    <file name="opencv_image_functions.cpp"/>
+    <raw>
+      nps.CXXFLAGS += $(shell pkg-config opencv --cflags)
+      nps.LDFLAGS  += -lopencv_imgproc -lopencv_highgui -lopencv_core
+    </raw>
   </makefile>
 </module>

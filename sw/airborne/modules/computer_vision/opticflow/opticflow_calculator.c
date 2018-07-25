@@ -45,6 +45,12 @@
 #include "linear_flow_fit.h"
 #include "modules/sonar/agl_dist.h"
 
+
+//Opencv
+#include "modules/computer_vision/cv.h"
+#include "modules/computer_vision/opencv_opticflow.h"
+
+
 // whether to show the flow and corners:
 #define OPTICFLOW_SHOW_FLOW 0
 #define OPTICFLOW_SHOW_CORNERS 0
@@ -161,8 +167,8 @@ PRINT_CONFIG_VAR(OPTICFLOW_FAST9_PADDING)
 #endif
 PRINT_CONFIG_VAR(OPTICFLOW_METHOD)
 
-#if OPTICFLOW_METHOD > 1
-#error WARNING: Both Lukas Kanade and EdgeFlow are NOT selected
+#if OPTICFLOW_METHOD > 2
+#error WARNING: Lukas Kanade,  EdgeFlow and opencv are NOT selected
 #endif
 
 #ifndef OPTICFLOW_DEROTATION
@@ -813,6 +819,53 @@ bool calc_edgeflow_tot(struct opticflow_t *opticflow, struct image_t *img,
   return true;
 }
 
+bool calc_opencv_opticflow(struct opticflow_t *opticflow, struct image_t *img,
+        struct opticflow_result_t *result){
+
+
+	  if (opticflow->just_switched_method) {
+	    // Create the image buffers
+
+	    // Set the previous values
+	    opticflow->got_first_img = false;
+
+	  }
+
+	  if (!opticflow->got_first_img) {
+	    opticflow->got_first_img = true;
+	    return false;
+	  }
+
+	  float flow_x, flow_y;
+
+	  opencv_opticflow((char *) img->buf, img->w, img->h, &flow_x, &flow_y);
+
+	  uint16_t RES = opticflow->resolution_factor;
+	  result->flow_x = (int16_t)(flow_x * 6.0 *opticflow->subpixel_factor);
+	  result->flow_y = (int16_t)(flow_y * 6.0 *opticflow->subpixel_factor);
+	  result->fps = 30.0f;
+
+	  result->vel_cam.x = (float)result->flow_x * result->fps * agl_dist_value_filtered /
+	                      (opticflow->subpixel_factor * OPTICFLOW_FX);
+	  result->vel_cam.y = (float)result->flow_y * result->fps * agl_dist_value_filtered /
+	                      (opticflow->subpixel_factor * OPTICFLOW_FY);
+	  //TODO: implement divergence
+	  result->vel_cam.z = 0;
+	  result->corner_cnt= 0;
+	  result->div_size = 0;
+	  result->divergence=0;
+	  result->flow_der_x=0;
+	  result->flow_der_y = 0;
+	  result->noise_measurement = 0;
+	  result->surface_roughness = 0;
+	  result->tracked_cnt=0;
+
+     return true;
+
+}
+
+
+
 
 /**
  * Run the optical flow on a new image frame
@@ -842,7 +895,11 @@ bool opticflow_calc_frame(struct opticflow_t *opticflow, struct image_t *img,
     flow_successful = calc_fast9_lukas_kanade(opticflow, img, result);
   } else if (opticflow->method == 1) {
     flow_successful = calc_edgeflow_tot(opticflow, img, result);
+  } else if (opticflow->method==2) {
+	    flow_successful = calc_opencv_opticflow(opticflow, img, result);
+
   }
+
 
   /* Rotate velocities from camera frame coordinates to body coordinates for control
   * IMPORTANT!!! This frame to body orientation should be the case for the Parrot

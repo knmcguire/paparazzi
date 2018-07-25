@@ -56,7 +56,7 @@ static void drawOptFlowMap(const Mat &flow, Mat &cflowmap, int step,
 }
 static UMat prevgray;
 
-int opencv_opticflow(char *img, int width, int height)
+bool opencv_opticflow(char *img, int width, int height, float *flow_x, float *flow_y)
 {
  // struct timeval stop, start;
   //gettimeofday(&start, NULL);
@@ -87,8 +87,8 @@ int opencv_opticflow(char *img, int width, int height)
     split(flow, channels);
     Scalar flow_x_s = mean(channels[0]);
     Scalar flow_y_s = mean(channels[1]);
-    float flow_x = flow_x.val[0];
-    float flow_y = flow_y.val[0];
+    *flow_x = flow_x_s.val[0];
+    *flow_y = flow_y_s.val[0];
 
 #ifdef OPENCV_OPTICFLOW_DEBUG
     //Draw flow map
@@ -113,5 +113,5 @@ int opencv_opticflow(char *img, int width, int height)
  // gettimeofday(&stop, NULL);
  // printf("It's %f hz\n", (float)(1/((stop.tv_usec - start.tv_usec)/1000000.0)));
 
-  return 0;
+  return true;
 }
