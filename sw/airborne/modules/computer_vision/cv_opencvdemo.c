@@ -26,9 +26,11 @@
 #include "modules/computer_vision/cv.h"
 #include "modules/computer_vision/cv_opencvdemo.h"
 #include "modules/computer_vision/opencv_example.h"
+#include "modules/computer_vision/opencv_opticflow.h"
+
 
 #ifndef OPENCVDEMO_FPS
-#define OPENCVDEMO_FPS 0       ///< Default FPS (zero means run at camera fps)
+#define OPENCVDEMO_FPS 30       ///< Default FPS (zero means run at camera fps)
 #endif
 PRINT_CONFIG_VAR(OPENCVDEMO_FPS)
 
@@ -39,7 +41,8 @@ struct image_t *opencv_func(struct image_t *img)
 
   if (img->type == IMAGE_YUV422) {
     // Call OpenCV (C++ from paparazzi C function)
-    opencv_example((char *) img->buf, img->w, img->h);
+    //    opencv_example((char *) img->buf, img->w, img->h);
+	  opencv_opticflow((char *) img->buf, img->w, img->h);
   }
 
 // opencv_example(NULL, 10,10);
